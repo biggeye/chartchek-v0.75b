@@ -1,104 +1,107 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# chartChek: AI-Powered Compliance Assistant for Behavioral Health Facilities
+### **v0.75b**
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+Welcome to **chartChek**, an advanced compliance assistant designed to streamline regulatory compliance for mental health and substance-abuse recovery centers. Built with NextJS 15 and OpenAI's Assistants API, chartChek provides instant, accurate, and actionable insights tailored to each facility's unique requirements.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+## Tech Stack
 
-## Features
+- **Frontend**: Next.js 15 with App Router
+- **Authentication**: Supabase Auth
+- **Database**: Supabase Postgresql 
+- **State Management**: Zustand
+- **AI**: OpenAI Assistants API / DeepSeek API
+- **Deployment**: Vercel
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+## Purpose
 
-## Demo
+The primary goal of this project is to serve as a **Joint Commission/DHCS compliance assistant**, equipping behavioral health facilities with an intelligent chatbot to assist in navigating regulatory standards, tracking compliance, and managing documentation. Each instance of chartChek can be customized with facility-specific information.
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## Key Features
 
-## Deploy to Vercel
+### **AI-Powered Assistance**
+- Leverages OpenAI's Assistants API for intelligent, context-aware responses
+- Maintains conversation history through Assistant threads
+- Supports file attachments and citations in responses
 
-Vercel deployment will guide you through creating a Supabase account and project.
+### **Document Management**
+- Processes and stores facility documents securely
+- Enables document search and citation in conversations
+- Supports multiple file formats including PDFs
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+### **Regulatory Knowledge Base**
+- Pre-loaded with Joint Commission and DHCS standards
+- Context-aware responses using vector similarity search
+- File citations to track information sources
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### **Multi-User Support**
+- Secure authentication and authorization
+- Facility-specific customization
+- Isolated data storage per facility
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+### **Real-time Updates**
+- Message streaming & tool status
+- Progress tracking for document processing
+- Instant response notifications
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+## Architecture Overview
 
-## Clone and run locally
+### OpenAI Assistants Integration
+- Utilizes Assistants API for maintaining conversation context
+- Implements thread management for persistent conversations
+- Supports file attachments and tool calls
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
 
-2. Create a Next.js app using the Supabase Starter template npx command
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### State Management (Zustand)
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+```typescript
+interface AssistantStore {
+  // Current state
+  currentAssistant: Assistant | null
+  currentThread: Thread | null
+  messages: Message[]
+  runs: Run[]
+  
+  // Async actions
+  createAssistant: (data: CreateAssistantParams) => Promise<void>
+  createThread: (data: CreateThreadParams) => Promise<void>
+  sendMessage: (content: string, fileIds?: string[]) => Promise<void>
+  startRun: (params: RunParams) => Promise<void>
+  pollRunStatus: (threadId: string, runId: string) => Promise<void>
+  
+  // UI state
+  isLoading: boolean
+  error: Error | null
+}
+```
 
-3. Use `cd` to change into the app's directory
+## Usage Flow
 
-   ```bash
-   cd with-supabase-app
-   ```
+1. User selects or creates an Assistant
+2. System creates a new Thread or loads existing
+3. User sends messages with optional files
+4. System creates a Run and starts polling status
+5. Messages are displayed as they are created
+6. File citations and annotations are rendered
+7. Required actions are prompted when needed
 
-4. Rename `.env.example` to `.env.local` and update the following:
+## Key Features
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
+- Real-time updates using polling
+- Proper error handling and retry logic
+- File upload progress and validation
+- Message rendering with citations
+- Tool execution status tracking
+- Thread history and management
+- Assistant configuration
+- User authentication integration
 
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://app.supabase.com/project/_/settings/api)
+## Security Considerations
 
-5. You can now run the Next.js local development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
-
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
-
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
-
-## Feedback and issues
-
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
-
-## More Supabase examples
-
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+- All API routes require authentication
+- File uploads are validated and scanned
+- Thread ownership is verified
+- API keys are properly secured
+- Rate limiting is implemented
+- File size and type restrictions
