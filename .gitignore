@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.vs/VSWorkspaceState.json
+.vs/chartchek-v0.75b/FileContentIndex/5e8a00c6-75fd-4d1b-9e17-f0f2dd3680c8.vsidx
+.vs/chartchek-v0.75b/v17/.wsuo
+.vs/slnx.sqlite
+.vs/ProjectSettings.json
+.vs/chartchek-v0.75b/v17/DocumentLayout.json

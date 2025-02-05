@@ -52,56 +52,5 @@ The primary goal of this project is to serve as a **Joint Commission/DHCS compli
 
 
 
-
+(FUTURE) TODO:
 ### State Management (Zustand)
-
-```typescript
-interface AssistantStore {
-  // Current state
-  currentAssistant: Assistant | null
-  currentThread: Thread | null
-  messages: Message[]
-  runs: Run[]
-  
-  // Async actions
-  createAssistant: (data: CreateAssistantParams) => Promise<void>
-  createThread: (data: CreateThreadParams) => Promise<void>
-  sendMessage: (content: string, fileIds?: string[]) => Promise<void>
-  startRun: (params: RunParams) => Promise<void>
-  pollRunStatus: (threadId: string, runId: string) => Promise<void>
-  
-  // UI state
-  isLoading: boolean
-  error: Error | null
-}
-```
-
-## Usage Flow
-
-1. User selects or creates an Assistant
-2. System creates a new Thread or loads existing
-3. User sends messages with optional files
-4. System creates a Run and starts polling status
-5. Messages are displayed as they are created
-6. File citations and annotations are rendered
-7. Required actions are prompted when needed
-
-## Key Features
-
-- Real-time updates using polling
-- Proper error handling and retry logic
-- File upload progress and validation
-- Message rendering with citations
-- Tool execution status tracking
-- Thread history and management
-- Assistant configuration
-- User authentication integration
-
-## Security Considerations
-
-- All API routes require authentication
-- File uploads are validated and scanned
-- Thread ownership is verified
-- API keys are properly secured
-- Rate limiting is implemented
-- File size and type restrictions
