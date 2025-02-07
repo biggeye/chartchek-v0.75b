@@ -1,46 +1,29 @@
 'use client'
 
-import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import { Components } from 'react-markdown'
-import { MessageContent as MessageContentType } from '@/types/types'
-import { TypographyInlineCode } from '@/components/typography/inline-code'
+import { cn } from '@/lib/utils'
+import { MessageContent as MessageContentType } from '@/types/api/openai'
 
 interface MessageContentProps {
-  content: MessageContentType[]
+  content: MessageContentType | MessageContentType[]
+  className?: string
   isStreaming?: boolean
 }
 
-export function MessageContent({ content, isStreaming = false }: MessageContentProps) {
-  const components: Components = {
-    code(props) {
-      const { className, children } = props
-      const isInline = !className?.includes('language-')
-      
-      if (isInline) {
-        return <TypographyInlineCode className={className}>{children}</TypographyInlineCode>
-      }
-
-      return (
-        <pre className="block-code relative rounded bg-muted p-4 font-mono text-sm">
-          <code className={className}>{children}</code>
-        </pre>
-      )
-    }
-  }
+export function MessageContent({ content, className, isStreaming }: MessageContentProps) {
+  const contentArray = Array.isArray(content) ? content : [content]
 
   return (
-    <div className="space-y-4">
-      {content.map((item, index) => (
-        <div 
-          key={index} 
-          className={`prose dark:prose-invert max-w-none ${isStreaming ? 'animate-pulse' : ''}`}
-        >
-          <ReactMarkdown components={components}>
-            {item.text}
-          </ReactMarkdown>
-        </div>
-      ))}
+    <div className={cn('text-sm', className)}>
+      {contentArray.map((item, i) => {
+        if (item.type === 'text') {
+          return (
+            <div key={i} className="whitespace-pre-wrap">
+              {item.text.value}
+            </div>
+          )
+        }
+        return null
+      })}
     </div>
   )
 }

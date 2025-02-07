@@ -1,20 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertCircle, Bot, CheckCircle2, Loader2, MessageSquare } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/client'
+import type { RunStatusProps } from '@/types'
 
-interface RunStatusProps {
-  isStreaming?: boolean
-  error?: string
-  assistantId?: string
-  threadId?: string
-  className?: string
-}
-
-export function RunStatus({ isStreaming, error, assistantId, threadId, className }: RunStatusProps) {
+export function RunStatus({ 
+  isStreaming, 
+  error, 
+  assistantId, 
+  threadId,
+  className 
+}: RunStatusProps) {
   const [assistantName, setAssistantName] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,53 +35,26 @@ export function RunStatus({ isStreaming, error, assistantId, threadId, className
   }, [assistantId])
 
   return (
-    <div className={cn("grid grid-cols-3 gap-4 w-full", className)}>
-      {/* Assistant Info */}
-      <Alert className="flex items-center space-x-2">
-        <Bot className="h-4 w-4" />
-        <AlertDescription className="flex-1 truncate">
-          {assistantId ? (
-            <span className="font-mono text-xs" title={assistantId}>
-              {assistantName || 'Loading...'} ({assistantId.slice(0, 8)}...)
-            </span>
-          ) : (
-            <span className="text-muted-foreground">No Assistant</span>
-          )}
-        </AlertDescription>
-      </Alert>
-
-      {/* Thread Info */}
-      <Alert className="flex items-center space-x-2">
-        <MessageSquare className="h-4 w-4" />
-        <AlertDescription className="flex-1 truncate">
-          {threadId ? (
-            <span className="font-mono text-xs" title={threadId}>
-              Thread: {threadId.slice(0, 8)}...
-            </span>
-          ) : (
-            <span className="text-muted-foreground">No Thread</span>
-          )}
-        </AlertDescription>
-      </Alert>
-
-      {/* Status Info */}
+    <div className={cn("flex items-center gap-2", className)}>
       {error ? (
-        <Alert variant="destructive" className="flex items-center space-x-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="flex-1 truncate">
-            {error}
-          </AlertDescription>
-        </Alert>
+        <>
+          <AlertCircle className="h-4 w-4 text-destructive" />
+          <span className="text-sm text-destructive">{error}</span>
+        </>
       ) : isStreaming ? (
-        <Alert className="flex items-center space-x-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <AlertDescription>Processing...</AlertDescription>
-        </Alert>
+        <>
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {assistantName ? `${assistantName} is thinking...` : 'Processing...'}
+          </span>
+        </>
       ) : (
-        <Alert className="flex items-center space-x-2">
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription>Ready</AlertDescription>
-        </Alert>
+        <>
+          <CheckCircle2 className="h-4 w-4 text-muted-foreground/50" />
+          <span className="text-sm text-muted-foreground/50">
+            {assistantName ? `${assistantName} is ready` : 'Ready'}
+          </span>
+        </>
       )}
     </div>
   )

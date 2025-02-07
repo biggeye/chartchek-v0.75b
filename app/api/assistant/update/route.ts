@@ -1,51 +1,138 @@
-import OpenAI from "openai";
-import { createServer } from "@/utils/supabase/server";
+import { NextRequest } from 'next/server'
+import { createServer } from '@/utils/supabase/server'
+import { OpenAI } from 'openai'
+import type { AssistantUpdateRequest, AssistantUpdateResponse, ApiResponse } from '@/types/api/routes'
+import type { UserAssistant } from '@/types/database'
+import { Tool } from '@/types/api/openai'
 
-export async function POST(req: Request) {
-    const supabase = await createServer();
-    const user = await supabase.auth.getUser();
-    if (!user) {
-      return new Response("Unauthorized", { status: 401 })
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+export async function POST(request: NextRequest): Promise<Response> {
+  try {
+    const supabase = await createServer()
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
-    
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-  });
 
-    const formData = await req.formData();
-    try {
-        const assistantId = formData.get("assistant_id") as string;
-        const vectorStoreId = formData.get("vector_store_id") as string;
-    
-        if (!assistantId || !vectorStoreId) {
-            return new Response(JSON.stringify({
-                success: false,
-                error: "Missing required fields: assistant_id or vector_store_id"
-            }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+    const formData = await request.formData()
+    const requestData: AssistantUpdateRequest = {
+      assistant_id: formData.get('assistant_id') as string,
+      vector_store_id: formData.get('vector_store_id') as string || undefined,
+      name: formData.get('name') as string || undefined,
+      description: formData.get('description') as string || undefined,
+      instructions: formData.get('instructions') as string || undefined,
+      tools: formData.get('tools') ? JSON.parse(formData.get('tools') as string) : undefined,
+      model: formData.get('model') as string || undefined,
+      metadata: formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined,
+      is_active: formData.get('is_active') ? formData.get('is_active') === 'true' : undefined
+    }
+
+    if (!requestData.assistant_id) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required field: assistant_id', 
+        code: 'INVALID_REQUEST' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Verify user owns this assistant
+    const { data: existingAssistant, error: queryError } = await supabase
+      .from('user_assistants')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('assistant_id', requestData.assistant_id)
+      .single()
+
+    if (queryError || !existingAssistant) {
+      return new Response(JSON.stringify({ 
+        error: 'Assistant not found or unauthorized', 
+        code: 'NOT_FOUND' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Update OpenAI assistant
+    const updateData: any = {}
+    if (requestData.name) updateData.name = requestData.name
+    if (requestData.description) updateData.description = requestData.description
+    if (requestData.instructions) updateData.instructions = requestData.instructions
+    if (requestData.tools) updateData.tools = requestData.tools
+    if (requestData.model) updateData.model = requestData.model
+    if (requestData.metadata) updateData.metadata = requestData.metadata
+    if (requestData.vector_store_id) {
+      updateData.file_ids = existingAssistant.file_ids
+      const retrievalTool: Tool = {
+        type: "file_search"
+      }
+      updateData.tools = [
+        ...(existingAssistant.tools || []).filter((t: Tool) => t.type !== 'file_search'),
+        retrievalTool
+      ]
+      updateData.tool_resources = {
+        file_search: {
+          vector_store_ids: [requestData.vector_store_id]
         }
-        
-        const assistantUpdate = await openai.beta.assistants.update(assistantId, {
-            tool_resources: { file_search: { vector_store_ids: [vectorStoreId] } },
-        });
-    
-        return new Response(JSON.stringify({
-            success: true,
-            body: assistantUpdate,
-        }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-    
-    } catch (error) {
-        console.error("Failed to update assistant:", error);
-        return new Response(JSON.stringify({
-            success: false,
-            error: "Failed to update assistant with vector store id"
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+      }
     }
+
+    const assistant = await openai.beta.assistants.update(
+      requestData.assistant_id,
+      updateData
+    )
+
+    // Update database record
+    const userAssistantUpdate: Partial<UserAssistant> = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    }
+    if (requestData.is_active !== undefined) {
+      userAssistantUpdate.is_active = requestData.is_active
+    }
+    if (requestData.vector_store_id) {
+      userAssistantUpdate.vector_store_id = [requestData.vector_store_id]
+    }
+
+    const { data: updatedAssistant, error: updateError } = await supabase
+      .from('user_assistants')
+      .update(userAssistantUpdate)
+      .eq('assistant_id', requestData.assistant_id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw updateError
+    }
+
+    const response: ApiResponse<AssistantUpdateResponse> = {
+      success: true,
+      assistant: updatedAssistant
+    }
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+  } catch (error: any) {
+    console.error('[/api/assistant/update] Error:', error)
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Internal server error',
+      code: error.code || 'UNKNOWN_ERROR'
+    }), {
+      status: error.status || 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
 }

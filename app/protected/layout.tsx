@@ -1,4 +1,3 @@
-
 import { createServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -15,10 +14,8 @@ export default async function ProtectedLayout({
   }
 
   return (
-      <div className="flex h-screen w-screen bg-white dark:bg-gray-900">
-
-          {children}
-
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        {children}
       </div>
   );
 }

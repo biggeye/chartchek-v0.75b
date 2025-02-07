@@ -1,85 +1,60 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import { FileIcon, X } from 'lucide-react'
+import { useRef, useCallback, useState } from 'react'
+import { Paperclip } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useDropzone } from 'react-dropzone'
+import { cn } from '@/lib/utils'
+import type { FileUploadProps } from '@/types'
 
-interface FileUploadProps {
-  onFileUpload?: (file: File, uploadPromise: Promise<Response>) => Promise<void>;
-  threadId: string;
-}
-
-export function FileUpload({ onFileUpload, threadId }: FileUploadProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export function FileUpload({ threadId, onFileUpload }: FileUploadProps) {
+  const [isLoading, setIsLoading] = useState(false)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!onFileUpload) return;
-    
+    if (!onFileUpload || acceptedFiles.length === 0) return
+
+    const file = acceptedFiles[0]
+    setIsLoading(true)
+
     try {
-      setIsLoading(true);
-      for (const file of acceptedFiles) {
-        // Basic file validation
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-          throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
-        }
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('thread_id', threadId)
 
-        const formData = new FormData();
-        formData.append('file', file);
-        console.log('[FileUpload] File received:', { name: file.name, size: file.size, type: file.type })
-        console.log('[FileUpload] Thread ID:', threadId)
-        formData.append('thread_id', threadId);
+      const uploadPromise = fetch('/api/file/upload', {
+        method: 'POST',
+        body: formData,
+      })
 
-        const uploadPromise = fetch('/api/file/upload', {
-          method: 'POST',
-          body: formData
-        });
-
-        // Pass both the file and upload promise to parent
-        await onFileUpload(file, uploadPromise);
-      }
+      await onFileUpload(file, uploadPromise)
     } catch (error) {
-      console.error('[FileUpload] Error:', error);
-      throw error; // Re-throw to let parent handle the error
+      console.error('[FileUpload] Error uploading file:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [onFileUpload, threadId]);
+  }, [onFileUpload, threadId])
 
-  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'text/plain': ['.txt'],
-      'application/json': ['.json'],
-    },
-    disabled: isLoading,
-    maxSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    disabled: isLoading,
   })
 
   return (
-    <div className="space-y-4">
-      <div
-        {...getRootProps()}
-        className={`
-          border-2 border-dashed rounded-lg p-4 text-center cursor-pointer
-          transition-colors
-          ${isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/25'}
-          ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary hover:bg-primary/5'}
-        `}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-2">
-          <FileIcon className="h-8 w-8 text-muted-foreground/50" />
-          <div className="text-sm text-muted-foreground">
-            {isDragActive ? (
-              <span>Drop the files here</span>
-            ) : (
-              <span>Drag & drop files here, or click to select files</span>
-            )}
-          </div>
-        </div>
-      </div>
+    <div
+      {...getRootProps()}
+      className={cn(
+        'flex items-center justify-center w-10 h-10 rounded-md cursor-pointer transition-colors',
+        'hover:bg-accent hover:text-accent-foreground',
+        {
+          'opacity-50 cursor-not-allowed': isLoading,
+          'bg-accent': isDragActive,
+        }
+      )}
+    >
+      <input {...getInputProps()} />
+      <Paperclip className="h-5 w-5 text-muted-foreground/50" />
     </div>
   )
 }

@@ -1,29 +1,68 @@
-import { createServer } from "@/utils/supabase/server";
-import { OpenAI } from "openai";
+import { NextRequest } from 'next/server'
+import { createServer } from "@/utils/supabase/server"
+import { OpenAI } from "openai"
+import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
+import type { ChatThread } from '@/types/database'
 
-export async function GET(req: Request) {
-    const supabase = await createServer();
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+export async function GET(request: NextRequest): Promise<Response> {
+  try {
+    const supabase = await createServer()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-        return new Response(JSON.stringify({
-            success: false,
-            error: "Unauthorized"
-        }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED'
+      }), { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json' } 
+      })
     }
-      // here we will get the list of threads for the user
-      const { data: threads, error: threadsError } = await supabase.from('threads').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-      if (threadsError) {
-        return new Response(JSON.stringify({
-            success: false,
-            error: threadsError.message
-        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+
+    // Get pagination params
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const offset = (page - 1) * pageSize
+
+    // Get threads from database
+    const { data: threads, error: threadsError, count } = await supabase
+      .from('chat_threads')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('last_message_at', { ascending: false })
+      .range(offset, offset + pageSize - 1)
+
+    if (threadsError) {
+      throw threadsError
+    }
+
+    const response: ApiResponse<ThreadListResponse> = {
+      threads: threads as ChatThread[],
+      pagination: {
+        page,
+        pageSize,
+        totalItems: count || 0,
+        totalPages: count ? Math.ceil(count / pageSize) : 0
       }
-      // now with the thread ids we can retrieve the list of id's and parse a list to be returned to front end
-      return new Response(JSON.stringify({
-        success: true,
-        data: threads
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
+
+    return new Response(JSON.stringify(response), { 
+      status: 200, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+
+  } catch (error) {
+    console.error('[/api/thread] Error:', error)
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Failed to list threads',
+      code: 'INTERNAL_ERROR'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+}

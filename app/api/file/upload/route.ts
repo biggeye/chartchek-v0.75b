@@ -53,22 +53,9 @@ export async function POST(req: Request) {
                     vector_store_id: newVectorStoreFile.vector_store_id,
                     file_id: fileUpload.id
                 })
-                // attach vector store to thread
-                const fileAttachedToThread = await openai.beta.threads.messages.create(
-                    threadId,
-                    {
-                        content: "",  
-                        role: "user", 
-                        attachments: [
-                            {
-                                file_id: fileUpload.id,
-                                tools: [{ type: "file_search" }]
-                            }
-                        ]
-                    }
-                  );
-                  console.log('[FileUpload] File attached to thread:', { thread_id: threadId, file_id: fileUpload.id })
-                // Store file info in Supabase
+    
+ 
+                       // Store file info in Supabase
                 console.log('[FileUpload] Storing file info in Supabase...')
                 const { data, error } = await supabase
                     .from('documents')
