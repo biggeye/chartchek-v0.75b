@@ -17,6 +17,7 @@ export interface UserAssistant {
   model: string
   tools?: Tool[]
   file_ids?: string[]
+  vector_store_id?: string[]
   metadata?: Record<string, any>
   is_active: boolean
 }

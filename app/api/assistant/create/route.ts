@@ -96,7 +96,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       description: assistant.description || requestData.description,
       instructions: assistant.instructions || requestData.instructions,
       model: assistant.model,
-      vector_store_id: assistant.tool_resources?.file_search?.vector_store_ids || [],
       metadata: assistant.metadata || requestData.metadata,
       is_active: true
     }
