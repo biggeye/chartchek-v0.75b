@@ -6,40 +6,35 @@ import { Button } from '@/components/ui/button'
 import { useDropzone } from 'react-dropzone'
 import { cn } from '@/lib/utils'
 import type { FileUploadProps } from '@/types'
+import { useDocumentStore } from '@/store/documentStore';
 
 export function FileUpload({ threadId, onFileUpload }: FileUploadProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
+  const { addToFileQueue } = useDocumentStore();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!onFileUpload || acceptedFiles.length === 0) return
+    if (acceptedFiles.length === 0) return;
 
-    const file = acceptedFiles[0]
-    setIsLoading(true)
+    const file = acceptedFiles[0];
+    setIsLoading(true);
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('thread_id', threadId)
-
-      const uploadPromise = fetch('/api/file/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      await onFileUpload(file, uploadPromise)
+      // Add file to queue instead of uploading immediately
+      addToFileQueue(file);
+      console.log('[FileUpload] File added to queue:', file.name);
     } catch (error) {
-      console.error('[FileUpload] Error uploading file:', error)
+      console.error('[FileUpload] Error adding file to queue:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [onFileUpload, threadId])
+  }, [addToFileQueue]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024, // 10MB
     disabled: isLoading,
-  })
+  });
 
   return (
     <div
@@ -49,7 +44,6 @@ export function FileUpload({ threadId, onFileUpload }: FileUploadProps) {
         'hover:bg-accent hover:text-accent-foreground',
         {
           'opacity-50 cursor-not-allowed': isLoading,
-          'bg-accent': isDragActive,
         }
       )}
     >

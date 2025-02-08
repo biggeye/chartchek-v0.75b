@@ -29,7 +29,8 @@ export async function POST(request: NextRequest): Promise<Response> {
       thread_id: formData.get('thread_id') as string,
       role: formData.get('role') as MessageRole,
       content: formData.get('content') as string,
-      attachments: formData.get('attachments') ? JSON.parse(formData.get('attachments') as string) : undefined
+      attachments: formData.get('attachments') ? JSON.parse(formData.get('attachments') as string) : undefined,
+      annotations: formData.get('annotations') ? JSON.parse(formData.get('annotations') as string) : undefined
     }
 
     if (!requestData.thread_id) {
@@ -42,24 +43,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       })
     }
 
-    /* Verify user owns this thread
-    const { data: thread, error: queryError } = await supabase
-      .from('chat_threads')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('thread_id', requestData.thread_id)
-      .single()
-
-    if (queryError || !thread) {
-      return new Response(JSON.stringify({ 
-        error: 'Thread not found or unauthorized', 
-        code: 'NOT_FOUND'
-      }), { 
-        status: 404, 
-        headers: { 'Content-Type': 'application/json' } 
-      })
-    }
-*/
     // Add message to OpenAI thread
     const threadMessage = await openai.beta.threads.messages.create(
       requestData.thread_id,
@@ -77,10 +60,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       throw new Error("Failed to create message with OpenAI")
     }
 
-    console.log('[API] Message created:', { 
-      thread_id: requestData.thread_id,
-      message_id: threadMessage.id
-    })
+
 
     // Add message to database
     const chatMessage: Partial<ChatMessage> = {
@@ -91,7 +71,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       content: {type: 'text', 
                 text: {
                   value: requestData.content,
-                  annotations: []
+                  annotations: requestData.annotations
                   }},
     }
 
@@ -103,6 +83,16 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (insertError) {
       throw insertError
+    }
+
+    // Update the chat_threads table with the created_at timestamp
+    const { error: updateError } = await supabase
+      .from('chat_threads')
+      .update({ updated_at: savedMessage.created_at })
+      .eq('thread_id', requestData.thread_id)
+
+    if (updateError) {
+      throw updateError
     }
 
     const response: ApiResponse<ThreadMessageResponse> = {

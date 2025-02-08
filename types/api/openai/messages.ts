@@ -33,7 +33,7 @@ export interface ChatMessageAnnotation {
 
 export interface TextContent {
   value: string
-  annotations: ChatMessageAnnotation[]
+  annotations?: ChatMessageAnnotation[]
 }
 
 export interface MessageContent {

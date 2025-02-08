@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
+import { XCircleIcon } from '@heroicons/react/20/solid'
 
 interface AlertProps {
   variant?: 'default' | 'destructive'
@@ -15,13 +16,19 @@ export function Alert({
   return (
     <div
       className={cn(
-        'relative w-full rounded-lg border p-4',
-        variant === 'default' && 'bg-background text-foreground',
-        variant === 'destructive' && 'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+        'rounded-md bg-red-50 p-4',
+        variant === 'destructive' && 'bg-red-100',
         className
       )}
     >
-      {children}
+      <div className="flex">
+        <div className="shrink-0">
+          <XCircleIcon aria-hidden="true" className="w-5 h-5 text-red-400" />
+        </div>
+        <div className="ml-3">
+          {children}
+        </div>
+      </div>
     </div>
   )
 }

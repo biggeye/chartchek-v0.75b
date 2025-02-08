@@ -1,9 +1,37 @@
+'use client'
+
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import { useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useDocumentStore } from '@/store/documentStore';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 export default function DocumentDetail() {
+  const { id } = useParams();
+  const { documents, fetchDocuments, isLoading, error } = useDocumentStore();
+
+  useEffect(() => {
+    if (id) {
+      fetchDocuments();
+    }
+  }, [id, fetchDocuments]);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  const document = documents.find((doc) => doc.id === id);
+
+  if (!document) return <div>Document not found</div>;
+
+  const breadcrumbPages = [
+    { name: 'Documents', href: '/protected/documents', current: false },
+    { name: document.filename, href: `#`, current: true },
+  ];
+
   return (
-    <div className="px-4 py-10 sm:px-6 lg:px-8">
+    <div>
+      <Breadcrumb pages={breadcrumbPages} />
       <div className="mx-auto flex items-center justify-between gap-x-8 lg:mx-0">
         <div className="flex items-center gap-x-6">
           <img
@@ -13,9 +41,11 @@ export default function DocumentDetail() {
           />
           <h1>
             <div className="text-sm/6 text-gray-500">
-              Invoice <span className="text-gray-700">#00011</span>
+              Document <span className="text-gray-700">#{document.id}</span>
             </div>
-            <div className="mt-1 text-base font-semibold text-gray-900">Tuple, Inc</div>
+            <div className="mt-1 text-base font-semibold text-gray-900">{document.filename}</div>
+            <div className="mt-1 text-sm text-gray-600">Type: {document.file_type}</div>
+            {document.vector_store_id && <div className="badge">In Vector Store</div>}
           </h1>
         </div>
         <div className="flex items-center gap-x-4 sm:gap-x-6">
@@ -51,12 +81,12 @@ export default function DocumentDetail() {
                 </button>
               </MenuItem>
               <MenuItem>
-                <a
-                  href="#"
-                  className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                <button
+                  type="button"
+                  className="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
                 >
                   Edit
-                </a>
+                </button>
               </MenuItem>
             </MenuItems>
           </Menu>

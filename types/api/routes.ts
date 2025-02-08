@@ -1,4 +1,4 @@
-import type { Assistant, Message, Thread, Run, Tool, MessageRole, FileAttachment, ToolResources } from './openai'
+import type { ChatMessageAnnotation, Assistant, Message, Thread, Run, Tool, MessageRole, FileAttachment, ToolResources } from './openai'
 import type { UserAssistant, ChatThread, ChatMessage, Document } from '../database'
 
 // Assistant Routes
@@ -67,6 +67,7 @@ export interface ThreadMessageRequest {
   role: MessageRole
   attachments?: FileAttachment[]
   metadata?: Record<string, any>
+  annotations?: ChatMessageAnnotation[]
 }
 
 export interface ThreadMessageResponse {

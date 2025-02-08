@@ -53,4 +53,20 @@ The primary goal of this project is to serve as a **Joint Commission/DHCS compli
 
 
 (FUTURE) TODO:
-### State Management (Zustand)
+### File Upload Management - attaching to threads
+- [ ] from /protected/documents/* route, user should be able to select a thread from a dropdown to attach any given file to it
+
+- [ ] from AssistantChat component, user should be able to drag and drop a file and have it automatically uploaded to OpenAI and attached to the active thread
+
+**both actions should utilize /store/documentStore.ts, /api/file/upload/route.ts and FileUpload component**
+**related typefiles:  /types/store/index.ts, /types/database/index.ts, /types/api/openai/* ***
+
+### Thread Management
+- [ ] from ThreadList component, when new thread is created or message added to old one, the list should refresh and show the most recent at top
+
+- [ ] add an openai call to summarize the thread content and update the "title" column of chat_threads
+
+### Chat Component
+- [ ] factor rendering of annotations from assistant when present
+
+### Extend State Management (Zustand)

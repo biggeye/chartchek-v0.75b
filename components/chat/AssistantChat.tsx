@@ -6,6 +6,7 @@ import { MessageList } from './MessageList'
 import { FileUpload } from './FileUpload'
 import { EnhancedSubmitButton } from './EnhancedSubmitButton'
 import { useAssistantStore } from '@/store/assistantStore'
+import { useDocumentStore } from '@/store/documentStore'
 import { FormMessage } from '@/components/form-message'
 import { Message, MessageContent, TextContent, MessageRole } from '@/types/api/openai'
 import { UserAssistant } from '@/types/database'
@@ -27,6 +28,10 @@ export function AssistantChat({
     setMessages: setStoreMessages,
     addMessage
   } = useAssistantStore()
+  const {
+    fileQueue,
+    clearFileQueue
+  } = useDocumentStore()
   const [message, setMessage] = useState('')
   const [threadId, setThreadId] = useState('')
   const [assistantId, setAssistantId] = useState(currentAssistant?.assistant_id || '')
@@ -71,7 +76,7 @@ export function AssistantChat({
 
     initThread()
   }, [assistantId])
-  
+
   const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -99,7 +104,6 @@ export function AssistantChat({
     streamRequestRef.current = new AbortController()
 
     try {
-      console.log('[AssistantChat] Sending message to thread:', threadId)
       let currentThreadId = threadId
 
       // Add user message to store immediately
@@ -118,7 +122,7 @@ export function AssistantChat({
         created_at: Date.now(),
         metadata: null
       }
-      addMessage(userMessage)
+      addMessageIfNotEmpty(userMessage)
 
       // Send message to API
       const formData = new FormData()
@@ -138,12 +142,9 @@ export function AssistantChat({
       }
 
       const messageData = await messageRes.json()
-      console.log('[AssistantChat] Message sent:', messageData)
-
-      // Start the run
+        // Start the run
       if (currentThreadId && assistantId) {
-        console.log('[AssistantChat] Starting run with:', { currentThreadId, assistantId })
-
+      
         // Check if there's an active run
         if (activeRunRef.current) {
           console.log('[AssistantChat] Waiting for active run to complete:', activeRunRef.current)
@@ -174,10 +175,10 @@ export function AssistantChat({
           throw new Error('No response stream available')
         }
 
-        console.log('[AssistantChat] Processing run stream')
-        let currentMessageId: string | null = null
+          let currentMessageId: string | null = null
         let currentMessageContent = ''
         let messageStarted = false
+        let annotations: any[] = []
 
         try {
           while (true) {
@@ -197,6 +198,7 @@ export function AssistantChat({
                 if (data.type === 'textCreated') {
                   messageStarted = true
                   currentMessageContent = ''
+                  annotations = []
                   // Create initial empty message
                   const assistantMessage: Message = {
                     id: currentMessageId || `temp-${Date.now()}`,
@@ -213,35 +215,38 @@ export function AssistantChat({
                     created_at: Date.now(),
                     metadata: null
                   }
-                  addMessage(assistantMessage)
+                  addMessageIfNotEmpty(assistantMessage)
                 }
                 else if (data.type === 'textDelta' && messageStarted) {
                   const delta = data.data?.delta?.value || ''
-                  currentMessageContent += delta
-                  setStreamingContent((prev: MessageContent[]) => {
+                  const newAnnotations = data.data?.delta?.annotations || [];
+                    currentMessageContent += delta;
+                  annotations = [...annotations, ...newAnnotations];
+                   setStreamingContent((prev: MessageContent[]) => {
                     const newContent: MessageContent[] = prev.length > 0
                       ? [...prev.slice(0, -1), {
                         type: 'text',
                         text: {
                           value: prev[prev.length - 1].text.value + delta,
-                          annotations: []
+                          annotations: [...(prev[prev.length - 1].text.annotations || []), ...newAnnotations]
                         }
                       }]
                       : [{
                         type: 'text',
                         text: {
                           value: delta,
-                          annotations: []
+                          annotations: newAnnotations
                         }
-                      }]
-                    return newContent
-                  })
+                      }];
+                    return newContent;
+                  });
                 }
                 else if (data.type === 'end' && messageStarted) {
                   // Store the final message in the database
                   const formData = new FormData()
                   formData.append('thread_id', currentThreadId)
                   formData.append('content', currentMessageContent)
+                  formData.append('annotations', JSON.stringify(annotations))
                   formData.append('role', 'assistant')
 
                   const storeRes = await fetch('/api/thread/message', {
@@ -264,7 +269,7 @@ export function AssistantChat({
                         type: 'text',
                         text: {
                           value: currentMessageContent,
-                          annotations: []
+                          annotations
                         }
                       }],
                       thread_id: currentThreadId,
@@ -272,7 +277,7 @@ export function AssistantChat({
                       created_at: Date.now(),
                       metadata: null
                     }
-                    addMessage(finalMessage)
+                    addMessageIfNotEmpty(finalMessage)
                   }
                   // Clear streaming content after message is complete
                   setStreamingContent([])
@@ -300,6 +305,27 @@ export function AssistantChat({
     }
   }
 
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // Send message and files in queue
+      if (fileQueue.length > 0) {
+        // Logic to send files with the message
+        // Example: await sendFilesWithMessage(fileQueue, message);
+        clearFileQueue();
+      }
+      // Logic to send message
+      // Example: await sendMessage(message);
+      await submitMessage();
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Form submit handler.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -322,18 +348,26 @@ export function AssistantChat({
       metadata: null
     }
 
-    addMessage(userMessage)
+    addMessageIfNotEmpty(userMessage)
 
-    await submitMessage()
+    await handleSendMessage();
+    // Clear the input field after sending the message
+    setMessage('');
   }
 
   // Textarea onKeyDown handler.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !submittingRef.current) {
       e.preventDefault()
-      void submitMessage()
+      void handleSendMessage()
     }
   }
+
+  const addMessageIfNotEmpty = (msg: Message) => {
+    if (msg.content.some(content => content.text.value.trim() !== '')) {
+      addMessage(msg);
+    }
+  };
 
   const floatingAlertStyle = {
     position: 'fixed',

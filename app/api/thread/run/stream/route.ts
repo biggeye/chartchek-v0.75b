@@ -47,8 +47,7 @@ export async function POST(req: Request) {
 
           // Text event: textCreated
           run.on('textCreated', (text) => {
-            console.log('[API]', new Date().toISOString(), 'Event received: textCreated', text);
-            controller.enqueue(`data: ${JSON.stringify({
+             controller.enqueue(`data: ${JSON.stringify({
               type: 'textCreated',
               data: text
             })}\n\n`);
@@ -56,8 +55,7 @@ export async function POST(req: Request) {
 
           // Text event: textDelta
           run.on('textDelta', (textDelta, snapshot) => {
-            console.log('[API]', new Date().toISOString(), 'Event received: textDelta', { textDelta, snapshot });
-            controller.enqueue(`data: ${JSON.stringify({
+             controller.enqueue(`data: ${JSON.stringify({
               type: 'textDelta',
               data: { delta: textDelta, snapshot }
             })}\n\n`);
@@ -100,7 +98,6 @@ export async function POST(req: Request) {
 
           // Tool call event: toolCallDelta
           run.on('toolCallDelta', (toolCallDelta, snapshot) => {
-            console.log('[API]', new Date().toISOString(), 'Event received: toolCallDelta', { toolCallDelta, snapshot });
             controller.enqueue(`data: ${JSON.stringify({
               type: 'toolCallDelta',
               data: { delta: toolCallDelta, snapshot }

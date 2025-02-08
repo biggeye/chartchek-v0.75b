@@ -55,13 +55,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  let headerContent;
+  switch (pathname) {
+    case '/protected/chat':
+      headerContent = (
+        <div className="flex-grow flex justify-center items-center">
+          <AssistantSelector />
+          <button
+            onClick={() => setThreadListOpen(true)}
+            className="ml-2 text-gray-400 hover:text-gray-500 xl:hidden"
+          >
+            <ChatBubbleLeftIcon className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      );
+      break;
+    default:
+      headerContent = null; // or some default component
+  }
+
   let asideContent;
   switch (pathname) {
     case '/protected/chat':
       asideContent = (
-   
-          <ThreadList />
-  
+
+        <ThreadList />
+
       );
       break;
     default:
@@ -94,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex h-16 shrink-0 items-center">
                   <img
                     alt="ChartChek"
-                    src="/logo.svg"
+                    src="/chartChek.jpg"
                     className="h-8 w-auto"
                   />
                 </div>
@@ -119,8 +138,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </ul>
                 </nav>
                 <div className="flex justify-center pb-4">
-          <ThemeSwitcher />
-        </div>
+                  <ThemeSwitcher />
+                </div>
               </div>
             </DialogPanel>
           </div>
@@ -154,8 +173,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </ul>
           </nav>
           <div className="flex justify-center pb-4">
-          <ThemeSwitcher />
-        </div>
+            <ThemeSwitcher />
+          </div>
         </div>
 
         <div className="lg:pl-20 overflow-hidden">
@@ -165,15 +184,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Bars3Icon aria-hidden="true" className="size-6" />
             </button>
 
-            <div className="flex-grow flex justify-center items-center">
-              <AssistantSelector />
-              <button 
-                onClick={() => setThreadListOpen(true)} 
-                className="ml-2 text-gray-400 hover:text-gray-500 xl:hidden"
-              >
-                <ChatBubbleLeftIcon className="size-4" aria-hidden="true" />
-              </button>
-            </div>
+            {headerContent}
 
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
@@ -217,8 +228,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <main className="xl:pl-96 min-h-[calc(100vh-10rem)] overflow-hidden">
-         
-              {children}
+
+            {children}
 
           </main>
         </div>
