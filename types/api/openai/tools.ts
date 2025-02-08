@@ -1,15 +1,4 @@
-// OpenAI Tool Types
-export interface ChatMessageAnnotation {
-  id: string
-  message_id: string
-  type: string
-  text: string
-  file_id?: string
-  quote?: string
-  start_index?: number
-  end_index?: number
-  created_at: string
-}
+
 
 export interface FunctionDefinition {
   name: string
@@ -46,13 +35,6 @@ export interface ToolResources {
   }
 }
 
-export interface MessageContent {
-  type: 'text'
-  text: {
-    value: string
-    annotations: ChatMessageAnnotation[]
-  }
-}
 // Message Attachment Types
 export interface MessageFileAttachment {
   type: 'file'
