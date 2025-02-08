@@ -1,8 +1,9 @@
 import { Tool } from '../api/openai'
+import { ToolResources } from '@/types/api/openai/tools'
+import { MessageRole, MessageContent } from '@/types/api/openai/messages'
 
 // Shared Types
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
-export type MessageRole = 'user' | 'assistant'
 
 // Database Types
 export interface UserAssistant {
@@ -16,22 +17,21 @@ export interface UserAssistant {
   instructions?: string
   model: string
   tools?: Tool[]
-  file_ids?: string[]
-  vector_store_id?: string[]
+  tool_resources?: ToolResources
   metadata?: Record<string, any>
-  is_active: boolean
+  is_active?: boolean
 }
 
 export interface ChatMessage {
   id: string
-  content: string
+  content: MessageContent
   created_at: string
-  updated_at: string
+  updated_at?: string
   role: MessageRole
   message_id: string
   user_id: string
   thread_id: string
-  file_ids: string[]
+  attachments: string[]
   metadata?: Record<string, any>
 }
 
@@ -65,19 +65,8 @@ export interface Document {
   storage_path?: string
   mime_type?: string
   metadata?: Record<string, any>
-  purpose?: 'assistants' | 'messages'
   assistant_id?: string
   embedding_status?: ProcessingStatus
 }
 
-export interface ChatMessageAnnotation {
-  id: string
-  message_id: string
-  type: string
-  text: string
-  file_id?: string
-  quote?: string
-  start_index?: number
-  end_index?: number
-  created_at: string
-}
+

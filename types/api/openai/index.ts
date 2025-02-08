@@ -14,7 +14,7 @@ export interface Assistant {
   model: string
   instructions: string | null
   tools: Tool[]
-  file_ids?: string[]
+  attachments?: string[]
   tool_resources?: ToolResources
   metadata?: Record<string, any> | null
 }

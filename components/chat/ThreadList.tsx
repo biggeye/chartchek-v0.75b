@@ -43,20 +43,15 @@ export function ThreadList() {
                     >
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-900 truncate">
-                                {thread.id}
+                                {thread.title || "Untitled Thread"} {/* Display thread title */}
                             </span>
                             <span className="text-xs text-gray-500">
-                                {new Date(thread.created_at).toLocaleDateString()}
+                                {thread.last_message_at ? new Date(thread.last_message_at).toLocaleDateString() : "No messages"} {/* Display last message date */}
                             </span>
                         </div>
                     </li>
                 ))}
             </ul>
-            {userThreads.length === 0 && (
-                <div className="text-center py-4 text-sm text-gray-500">
-                    No chat history available
-                </div>
-            )}
         </div>
-    )
+    );
 }

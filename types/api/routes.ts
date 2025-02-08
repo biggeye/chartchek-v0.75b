@@ -3,13 +3,13 @@ import type { UserAssistant, ChatThread, ChatMessage, Document } from '../databa
 
 // Assistant Routes
 export interface AssistantCreateRequest {
-  name: string
-  instructions: string
-  tools: Tool[]
+  name?: string
+  instructions?: string
+  tools?: Tool[]
   model: string
   description?: string
   metadata?: Record<string, any>
-  file_ids?: string[]
+  tool_resources?: string[]
 }
 
 export interface AssistantCreateResponse {

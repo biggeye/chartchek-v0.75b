@@ -30,7 +30,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       model: formData.get('model') as string,
       description: formData.get('description') as string || undefined,
       metadata: formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined,
-      file_ids: formData.get('file_ids') ? JSON.parse(formData.get('file_ids') as string) : undefined
+      tool_resources: formData.get('tool_resources') ? JSON.parse(formData.get('file_ids') as string) : undefined
     }
 
     // Validate required fields

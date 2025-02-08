@@ -146,7 +146,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         message_id: newMessage.id,
         role: 'user',
         content: `[File Attached: ${file.name}]`,
-        file_ids: [openAIFile.id]
+        attachments: [openAIFile.id]
       })
 
     if (messageError) {

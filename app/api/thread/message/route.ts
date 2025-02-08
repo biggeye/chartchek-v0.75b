@@ -88,7 +88,11 @@ export async function POST(request: NextRequest): Promise<Response> {
       thread_id: requestData.thread_id,
       message_id: threadMessage.id,
       role: requestData.role,
-      content: requestData.content,
+      content: {type: 'text', 
+                text: {
+                  value: requestData.content,
+                  annotations: []
+                  }},
     }
 
     const { data: savedMessage, error: insertError } = await supabase

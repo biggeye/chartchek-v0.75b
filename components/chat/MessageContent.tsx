@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { MessageContent as MessageContentType } from '@/types/api/openai'
+import { MessageContent as MessageContentType } from '@/types/api/openai/messages'
 
 interface MessageContentProps {
   content: MessageContentType | MessageContentType[]
@@ -13,16 +13,13 @@ export function MessageContent({ content, className, isStreaming }: MessageConte
   const contentArray = Array.isArray(content) ? content : [content]
 
   return (
-    <div className={cn('text-sm', className)}>
-      {contentArray.map((item, i) => {
+    <div className={className}>
+      {contentArray.map((item, id) => {
         if (item.type === 'text') {
-          return (
-            <div key={i} className="whitespace-pre-wrap">
-              {item.text.value}
-            </div>
-          )
+          return <span key={id}>{item.text.value}</span>; // Access the value correctly
         }
-        return null
+        // Handle other content types if necessary
+        return null;
       })}
     </div>
   )
