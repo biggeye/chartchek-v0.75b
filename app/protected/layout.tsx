@@ -1,10 +1,12 @@
 import { createServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { ReactNode } from "react";
+import AppLayout from "./AppLayout";
 
 export default async function ProtectedLayout({
-  children,
+  children
 }: {
-  children: React.ReactNode;
+  children: ReactNode
 }) {
   const supabase = await createServer();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -15,7 +17,10 @@ export default async function ProtectedLayout({
 
   return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
-        {children}
+        <AppLayout>
+          {children}
+        </AppLayout>
+        
       </div>
   );
 }

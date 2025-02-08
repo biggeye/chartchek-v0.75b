@@ -22,6 +22,8 @@ interface AssistantStore extends AssistantState, UIState {
   createThread: (assistantId?: string) => Promise<string | null>
   fetchThreadMessages: () => Promise<void>
   fetchUserId: () => Promise<string | null>
+  updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>
+  deleteThread: (threadId: string) => Promise<any>
 
   // UI Actions
   setError: (error: UIState['error']) => void
@@ -103,8 +105,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Fetched Threads:', threads); // Add this line
-      if (error) throw error
+       if (error) throw error
 
       store.setUserThreads(threads ?? [])
     } catch (error) {
@@ -123,21 +124,12 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       if (assistantId) {
         formData.append('assistant_id', assistantId)
-        console.log('[Store:createThread] Added assistant_id to FormData:', assistantId)
       }
       formData.append('title', 'New Chat')
-      console.log('[Store:createThread] FormData prepared:', {
-        assistant_id: formData.get('assistant_id'),
-        title: formData.get('title')
-      })
-
-      console.log('[Store:createThread] Sending request to /api/thread/create')
       const response = await fetch('/api/thread/create', {
         method: 'POST',
         body: formData
       })
-      console.log('[Store:createThread] Response status:', response.status)
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => {
           console.error('[Store:createThread] Failed to parse error response')
@@ -146,18 +138,13 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         console.error('[Store:createThread] Error response:', errorData)
         throw new Error(errorData?.error || 'Failed to create thread')
       }
-
       const data = await response.json()
-      console.log('[Store:createThread] Success response:', data)
-
       // Extract thread_id from the response (this should be the OpenAI thread ID)
       const threadId = data.thread?.thread_id
       if (!threadId) {
         console.error('[Store:createThread] No thread ID in response:', data)
         throw new Error('No thread ID in response')
       }
-
-      console.log('[Store:createThread] Extracted OpenAI threadId:', threadId)
       set({ currentThread: threadId })
       return threadId
     } catch (error) {
@@ -166,8 +153,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       return null
     } finally {
       set({ isLoading: false })
-      console.log('[Store:createThread] Completed')
-    }
+     }
   },
 
   fetchThreadMessages: async () => {
@@ -185,15 +171,13 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       const supabase = createClient()
       // Inside fetchThreadMessages
-      console.log('Fetching messages for thread:', currentThread.thread_id);
-      const { data: messages, error } = await supabase
+        const { data: messages, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('thread_id', currentThread.thread_id)
         .order('created_at', { ascending: true });
 
-      console.log('Fetched Messages:', messages); // Add this line to log fetched messages
-      if (error) throw error
+         if (error) throw error
 
       // Transform database messages into the Message format
       const formattedMessages = messages?.map((msg) => {
@@ -211,7 +195,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       }) || [];
   
       store.setMessages(formattedMessages);
-      console.log('Messages stored in state:', formattedMessages);
     } catch (error) {
       store.setError(error instanceof Error ? error.message : 'Failed to fetch thread messages');
       console.error('Error fetching thread messages:', error);
@@ -219,7 +202,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       store.setLoading(false);
     }
   },
-  
+
   fetchUserId: async () => {
     const store = get()
     try {
@@ -239,6 +222,37 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       return null
     } finally {
       store.setLoading(false)
+    }
+  },
+
+  updateThreadTitle: async (threadId: string, newTitle: string) => {
+    const client = createClient();
+    try {
+      console.log('[Store:updateThreadTitle] updating title for thread: ', threadId);
+        const { data, error } = await client
+            .from('chat_threads')
+            .update({ title: newTitle })
+            .eq('thread_id', threadId);
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error updating thread title:', error);
+    }
+  },
+
+  deleteThread: async (threadId: string) => {
+    const client = createClient();
+    try {
+        const { data, error } = await client
+            .from('chat_threads')
+            .delete()
+            .eq('thread_id', threadId);
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error deleting thread:', error);
     }
   },
 
