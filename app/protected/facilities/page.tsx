@@ -3,7 +3,7 @@
 export default function AssistantsPage() {
     return (
         <div>
-            Assistants
+            Facilities
         </div>
     )
 }
