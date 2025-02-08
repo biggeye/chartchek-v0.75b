@@ -27,7 +27,7 @@ export const assistantRoster = [
       - Best Practices: Share industry best practices and patterns
       - Limitations: Clearly state any limitations or assumptions in your analysis
     `,
-    tools: [{ type: "code_interpreter" }] as AssistantCreateParams['tools'],
+    tools: [{ type: "file_search" }] as AssistantCreateParams['tools'],
     model: "gpt-4o"
   },
   {

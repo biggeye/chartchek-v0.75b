@@ -36,7 +36,7 @@ export function AssistantSelector() {
     }
 
     return (
-        <div className="relative p-3">
+        <div className="relative">
             <DropdownMenu
                 buttonLabel="Select an assistant"
                 selectedLabel={selectedAssistantName}
@@ -48,7 +48,7 @@ export function AssistantSelector() {
             />
             
             {isLoading && (
-                <div className="absolute right-2 top-2">
+                <div className="absolute">
                     <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
             )}
