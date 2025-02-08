@@ -16,7 +16,6 @@ export type {
   ChatThread,
   ChatMessage,
   Document,
-  ChatMessageAnnotation
 } from './database'
 
 export type {
