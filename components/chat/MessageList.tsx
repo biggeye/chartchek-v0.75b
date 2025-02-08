@@ -34,7 +34,6 @@ export function MessageList({ messages = [], streamingContent = [] }: MessageLis
   }, [messages, streamingContent])
 
   // Console log to check the messages being passed
-  console.log('Messages to display:', messages);
 
   return (
     <ScrollArea className="h-[calc(100vh-12rem)] w-full">

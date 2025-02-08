@@ -193,8 +193,7 @@ export function AssistantChat({
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = JSON.parse(line.slice(6))
-                console.log('[AssistantChat] Stream data:', data)
-
+  
                 if (data.type === 'textCreated') {
                   messageStarted = true
                   currentMessageContent = ''
