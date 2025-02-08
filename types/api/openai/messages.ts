@@ -4,6 +4,20 @@ export type MessageRole = 'user' | 'assistant'
 export type MessageStatus = 'streaming' | 'in_progress' | 'completed' | 'incomplete'
 
 // OpenAI Tool Types
+export interface Match {
+  snippet: string;
+  start: number;
+  end: number;
+}
+
+export interface FileAnnotation {
+  fileId: string;
+  matches: Match[];
+  score?: number; // Optional score field
+  id?: number; // Optional id for supertext reference
+  type?: 'supertext' | 'link'; // Added type field
+}
+
 export interface ChatMessageAnnotation {
   id: string
   message_id: string
@@ -14,6 +28,7 @@ export interface ChatMessageAnnotation {
   start_index?: number
   end_index?: number
   created_at: string
+  annotations?: FileAnnotation[]
 }
 
 export interface TextContent {
@@ -38,4 +53,5 @@ export interface Message {
   created_at: number
   metadata?: Record<string, any> | null
   attachments?: FileAttachment[]
+  annotations?: FileAnnotation[]
 }

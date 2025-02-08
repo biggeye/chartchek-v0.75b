@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   try {
     const { thread_id, assistant_id } = await req.json();
     console.log('[API] Starting stream:', { thread_id, assistant_id });
-    
+
     if (!thread_id || !assistant_id) {
       console.error('[API] Missing required parameters:', { thread_id, assistant_id });
       return new Response(

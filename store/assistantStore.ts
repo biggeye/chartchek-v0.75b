@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import { createClient } from "@/utils/supabase/client"
 import { AssistantState, UIState } from '@/types/store'
-import { MessageRole } from '@/types/api/openai/messages'
+import { MessageRole, ChatMessageAnnotation } from '@/types/api/openai/messages'
+
+interface Match {
+  snippet: string;
+  start: number;
+  end: number;
+}
+
 
 interface AssistantStore extends AssistantState, UIState {
   // State Actions
@@ -24,6 +31,7 @@ interface AssistantStore extends AssistantState, UIState {
   fetchUserId: () => Promise<string | null>
   updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>
   deleteThread: (threadId: string) => Promise<any>
+  parseAnnotations: (rawResponse: any) => ChatMessageAnnotation[]
 
   // UI Actions
   setError: (error: UIState['error']) => void
@@ -254,6 +262,15 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     } catch (error) {
         console.error('Error deleting thread:', error);
     }
+  },
+
+  parseAnnotations(rawResponse: any): ChatMessageAnnotation[] {
+    if (!rawResponse.annotations) return [];
+    return rawResponse.annotations.map((annotation: ChatMessageAnnotation, index: number) => ({
+      ...annotation,
+      id: index + 1, // Assigning a number starting from 1
+      type: annotation.type || 'supertext', // Default type to 'supertext'
+    }));
   },
 
   // Utils
