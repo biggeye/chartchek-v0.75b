@@ -25,11 +25,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     const formData = await request.formData()
     const requestData: AssistantUpdateRequest = {
       assistant_id: formData.get('assistant_id') as string,
-      vector_store_id: formData.get('vector_store_id') as string || undefined,
+      tool_resources: formData.get('tool_resources') ? JSON.parse(formData.get('tool_resources') as string) : undefined,
+      tools: formData.get('tools') ? JSON.parse(formData.get('tools') as string) : undefined,
       name: formData.get('name') as string || undefined,
       description: formData.get('description') as string || undefined,
       instructions: formData.get('instructions') as string || undefined,
-      tools: formData.get('tools') ? JSON.parse(formData.get('tools') as string) : undefined,
       model: formData.get('model') as string || undefined,
       metadata: formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined,
       is_active: formData.get('is_active') ? formData.get('is_active') === 'true' : undefined
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (requestData.tools) updateData.tools = requestData.tools
     if (requestData.model) updateData.model = requestData.model
     if (requestData.metadata) updateData.metadata = requestData.metadata
-    if (requestData.vector_store_id) {
+    if (requestData.tool_resources) {
       updateData.file_ids = existingAssistant.file_ids
       const retrievalTool: Tool = {
         type: "file_search"
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       ]
       updateData.tool_resources = {
         file_search: {
-          vector_store_ids: [requestData.vector_store_id]
+          vector_store_ids: [requestData.tool_resources[0].file_search.vector_store_ids[0]]
         }
       }
     }
@@ -100,9 +100,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (requestData.is_active !== undefined) {
       userAssistantUpdate.is_active = requestData.is_active
     }
-    if (requestData.vector_store_id) {
-      userAssistantUpdate.vector_store_id = [requestData.vector_store_id]
-    }
+
 
     const { data: updatedAssistant, error: updateError } = await supabase
       .from('user_assistants')

@@ -38,10 +38,10 @@ export type Tool = FunctionTool | CodeInterpreterTool | FileSearchTool
 
 // OpenAI Tool Resources
 export interface ToolResources {
-  file_search?: {
+  file_search: {
     vector_store_ids: string[]
   }
-  code_interpreter?: {
+  code_interpreter: {
     attachments: string[]
   }
 }

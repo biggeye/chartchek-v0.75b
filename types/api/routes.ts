@@ -1,4 +1,4 @@
-import type { Assistant, Message, Thread, Run, Tool, MessageRole, FileAttachment } from './openai'
+import type { Assistant, Message, Thread, Run, Tool, MessageRole, FileAttachment, ToolResources } from './openai'
 import type { UserAssistant, ChatThread, ChatMessage, Document } from '../database'
 
 // Assistant Routes
@@ -19,14 +19,15 @@ export interface AssistantCreateResponse {
 
 export interface AssistantUpdateRequest {
   assistant_id: string
-  vector_store_id?: string
+  tool_resources?: ToolResources[]
+  tools?: Tool[]
   name?: string
   description?: string
   instructions?: string
-  tools?: Tool[]
   model?: string
   metadata?: Record<string, any>
   is_active?: boolean
+  vector_store_id?: string;
 }
 
 export interface AssistantUpdateResponse {
