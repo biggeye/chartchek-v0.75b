@@ -43,8 +43,7 @@ const navigation = [
 ]
 const userNavigation = [
   { name: 'Your profile', href: '/protected/account' },
-  // for the Sign Out below, we have an action exported from "/actions.ts:  signOutAction, lets make this work in an api route"
-  { name: 'Sign out', href: '', action: signOutAction },  // this doesnt appear to be working
+  { name: 'Sign out', onClick: async () => await signOutAction() },
 ]
 
 function classNames(...classes: string[]) {
@@ -91,6 +90,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     default:
       asideContent = null; // or some default component
   }
+
+  const handleSignOut = async () => {
+    await signOutAction();
+    router.push('/sign-in');
+  };
+
   return (
     <>
       <div>
@@ -215,12 +220,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 >
                   {userNavigation.map((item) => (
                     <MenuItem key={item.name}>
-                      <a
-                        href={item.href}
-                        className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                      <button
+                        onClick={item.onClick || handleSignOut}
+                        className="block w-full text-left px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
                       >
                         {item.name}
-                      </a>
+                      </button>
                     </MenuItem>
                   ))}
                 </MenuItems>
