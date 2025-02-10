@@ -15,17 +15,18 @@ interface MessageListProps {
 }
 
 const parseMarkdown = (text: string) => {
-    const parts = text.split(/```markdown(.*?)```/s);
-    return parts.map((part, index) => {
-        if (index % 2 === 0) {
-            return <span key={index}>{part}</span>;
-        } else {
-            return <ReactMarkdown key={index} children={part} />;
-        }
-    });
+  const parts = text.split(/```markdown(.*?)```/s);
+  return parts.map((part, index) => {
+    if (index % 2 === 0) {
+      return <span key={index}>{part}</span>;
+    } else {
+      return <ReactMarkdown key={index} children={part} />;
+    }
+  });
 };
 
 export function MessageList({ messages = [], streamingContent = [] }: MessageListProps) {
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const parseAnnotations = useAssistantStore(state => state.parseAnnotations);
 
@@ -49,13 +50,10 @@ export function MessageList({ messages = [], streamingContent = [] }: MessageLis
             <div className="text-xs font-medium text-muted-foreground">
               {message.role === 'user' ? 'You' : 'Assistant'}
             </div>
-            {parseMarkdown(message.content[0].text.value)}
-            {message.annotations && parseAnnotations(message) && parseAnnotations(message).map((annotation) => (
-              <span key={annotation.id} className="supertext">[{annotation.id}]</span>
-            ))}
+            {message.content && message.content[0] && message.content[0].text && message.content[0].text.value}          
           </div>
         ))}
-        
+
         {streamingContent && streamingContent.length > 0 && (
           <div className="flex flex-col gap-2 p-4 rounded-lg bg-primary/5">
             <div className="text-xs font-medium text-muted-foreground">
@@ -65,7 +63,7 @@ export function MessageList({ messages = [], streamingContent = [] }: MessageLis
           </div>
         )}
         <div className="links">
-          {messages.flatMap(message => 
+          {messages.flatMap(message =>
             parseAnnotations(message)?.map(annotation => (
               <a key={annotation.id} href={`#${annotation.file_id}`}>Link to {annotation.file_id} [{annotation.id}]</a>
             ))

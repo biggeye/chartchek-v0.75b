@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
 import { OpenAI } from "openai"
+import { documentStore } from '@/store/documentStore';
 import type { ThreadMessageRequest, ThreadMessageResponse, ApiResponse } from '@/types/api/routes'
 import type { ChatMessage } from '@/types/database'
 import type { FileAttachment, MessageFileAttachment } from '@/types/api/openai/tools'
@@ -11,6 +12,7 @@ const openai = new OpenAI({
 })
 
 export async function POST(request: NextRequest): Promise<Response> {
+
   try {
     const supabase = await createServer()
 
@@ -22,21 +24,27 @@ export async function POST(request: NextRequest): Promise<Response> {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-
+    console.log('File queue:', documentStore.getState().fileQueue);
     const formData = await request.formData()
+    console.log('Form data:', formData);
+    const fileQueue = documentStore.getState().fileQueue;
+    const attachments: FileAttachment[] = fileQueue.map(fileId => ({
+      file_id: fileId,
+      tools: [] // Add appropriate tools if needed
+    }));
     const requestData: ThreadMessageRequest = {
       user_id: user.id,
       thread_id: formData.get('thread_id') as string,
       role: formData.get('role') as MessageRole,
       content: formData.get('content') as string,
-      attachments: formData.get('attachments') ? JSON.parse(formData.get('attachments') as string) : undefined,
+      attachments: attachments,
       annotations: formData.get('annotations') ? JSON.parse(formData.get('annotations') as string) : undefined
     }
 
     if (!requestData.thread_id) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required field: thread_id', 
-        code: 'INVALID_REQUEST' 
+      return new Response(JSON.stringify({
+        error: 'Missing required field: thread_id',
+        code: 'INVALID_REQUEST'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -55,7 +63,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         })) || []
       }
     )
-
+    console.log('[ThreadMessage] Created message with: ', requestData);
     if (!threadMessage?.id) {
       throw new Error("Failed to create message with OpenAI")
     }
@@ -68,11 +76,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       thread_id: requestData.thread_id,
       message_id: threadMessage.id,
       role: requestData.role,
-      content: {type: 'text', 
-                text: {
-                  value: requestData.content,
-                  annotations: requestData.annotations
-                  }},
+      content: {
+        type: 'text',
+        text: {
+          value: requestData.content,
+          annotations: requestData.annotations
+        }
+      },
     }
 
     const { data: savedMessage, error: insertError } = await supabase
@@ -106,7 +116,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   } catch (error: any) {
     console.error('[/api/thread/message] Error:', error)
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error.message || 'Internal server error',
       code: error.code || 'UNKNOWN_ERROR'
     }), {

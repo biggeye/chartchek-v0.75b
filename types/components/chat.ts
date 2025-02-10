@@ -27,8 +27,9 @@ export interface EnhancedSubmitButtonProps extends Omit<ComponentProps<typeof Su
 }
 
 export interface FileUploadProps {
-  threadId: string
-  onFileUpload: (file: File, uploadPromise: Promise<Response>) => Promise<void>
+  threadId: string;
+  onFileUpload: (file: File) => void;
+  isAttachment: boolean;
 }
 
 export interface MessageListProps {

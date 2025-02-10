@@ -2,13 +2,13 @@ import { create } from 'zustand'
 import { createClient } from "@/utils/supabase/client"
 import { AssistantState, UIState } from '@/types/store'
 import { MessageRole, ChatMessageAnnotation } from '@/types/api/openai/messages'
+import type { UserAssistant } from '@/types/database'
 
 interface Match {
   snippet: string;
   start: number;
   end: number;
 }
-
 
 interface AssistantStore extends AssistantState, UIState {
   // State Actions
@@ -26,12 +26,15 @@ interface AssistantStore extends AssistantState, UIState {
   // Async Actions
   fetchAssistants: () => Promise<void>
   fetchThreads: () => Promise<void>
+  fetchThreadsCount: () => Promise<number>
+  fetchAssistantsCount: () => Promise<number>
   createThread: (assistantId?: string) => Promise<string | null>
   fetchThreadMessages: () => Promise<void>
-  fetchUserId: () => Promise<string | null>
+  fetchUserId: () => Promise<any>
   updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>
   deleteThread: (threadId: string) => Promise<any>
   parseAnnotations: (rawResponse: any) => ChatMessageAnnotation[]
+
 
   // UI Actions
   setError: (error: UIState['error']) => void
@@ -79,6 +82,35 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
 
   // Async Actions
+
+fetchAssistantsCount: async () => {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('user_assistants')
+    .select('*', { count: 'exact' })
+
+  if (error) throw error;
+  return data?.length ?? 0;
+},
+
+  fetchUserId: async () => {
+    const store = get()
+    try {
+      store.setLoading(true)
+      store.setError(null)
+      const supabase = createClient();
+      const { data: { user }, error } = await supabase.auth.getUser()
+
+      if (error) throw error
+
+      store.setUser(user)
+      return user?.id! ?? null;
+    } catch (error) {
+      
+    } finally {
+      store.setLoading(false)
+    }
+  },
   fetchAssistants: async () => {
     const store = get()
     try {
@@ -99,6 +131,16 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     } finally {
       store.setLoading(false)
     }
+  },
+
+  fetchThreadsCount: async (): Promise<number> => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('chat_threads')
+      .select('*', { count: 'exact' })
+  
+    if (error) throw error;
+    return data?.length ?? 0;
   },
 
   fetchThreads: async () => {
@@ -147,13 +189,27 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         throw new Error(errorData?.error || 'Failed to create thread')
       }
       const data = await response.json()
-      // Extract thread_id from the response (this should be the OpenAI thread ID)
-      const threadId = data.thread?.thread_id
-      if (!threadId) {
-        console.error('[Store:createThread] No thread ID in response:', data)
-        throw new Error('No thread ID in response')
+      const id = data.thread?.id;
+      const threadId = data.thread?.thread_id;
+      const userId = data.thread?.user_id;
+      const createdAt = data.thread?.created_at;
+      const updatedAt = data.thread?.updated_at;
+      const isActive = data.thread?.is_active;
+
+      if (threadId && userId && createdAt && updatedAt !== undefined && isActive !== undefined) {
+        set({
+          currentThread: {
+            id: id,
+            thread_id: threadId,
+            user_id: userId,
+            created_at: createdAt,
+            updated_at: updatedAt,
+            is_active: isActive,
+          },
+        });
+      } else {
+        console.error('Missing properties for setting currentThread:', data.thread);
       }
-      set({ currentThread: threadId })
       return threadId
     } catch (error) {
       console.error('[Store:createThread] Caught error:', error)
@@ -211,27 +267,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     }
   },
 
-  fetchUserId: async () => {
-    const store = get()
-    try {
-      store.setLoading(true)
-      store.setError(null)
-
-      const supabase = createClient()
-      const { data: { user }, error } = await supabase.auth.getUser()
-
-      if (error) throw error
-
-      store.setUser(user)
-      return user?.id || null
-    } catch (error) {
-      store.setError(error instanceof Error ? error.message : 'Failed to fetch user ID')
-      console.error('Error fetching user:', error)
-      return null
-    } finally {
-      store.setLoading(false)
-    }
-  },
 
   updateThreadTitle: async (threadId: string, newTitle: string) => {
     const client = createClient();
@@ -274,5 +309,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
 
   // Utils
+
+
   reset: () => set(initialState)
 }))

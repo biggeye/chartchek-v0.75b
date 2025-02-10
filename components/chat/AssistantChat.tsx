@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { MessageList } from './MessageList'
-import { FileUpload } from './FileUpload'
+import { FileUpload } from '../file-upload'
 import { EnhancedSubmitButton } from './EnhancedSubmitButton'
 import { useAssistantStore } from '@/store/assistantStore'
 import { useDocumentStore } from '@/store/documentStore'
 import { FormMessage } from '@/components/form-message'
 import { Message, MessageContent, TextContent, MessageRole } from '@/types/api/openai'
 import { UserAssistant } from '@/types/database'
+import { useStreaming } from '@/lib/useStreaming';
+import GetFileIcon from '@/components/get-file-icon';
 
 interface AssistantChatProps {
   currentAssistant: UserAssistant
@@ -21,6 +23,7 @@ export function AssistantChat({
   initialVectorStoreId
 }: AssistantChatProps) {
   const {
+    fetchThreadMessages,
     createThread,
     error: storeError,
     setError,
@@ -29,21 +32,23 @@ export function AssistantChat({
     addMessage
   } = useAssistantStore()
   const {
+    getFileQueue,
     fileQueue,
-    clearFileQueue
+    clearFileQueue,
+    isLoading: documentLoading,
+    documents
   } = useDocumentStore()
   const [message, setMessage] = useState('')
   const [threadId, setThreadId] = useState('')
   const [assistantId, setAssistantId] = useState(currentAssistant?.assistant_id || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setLocalError] = useState<string | undefined>(undefined)
-  const [streamingContent, setStreamingContent] = useState<MessageContent[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const initializingRef = useRef(false)
   const submittingRef = useRef(false)
-  const streamRequestRef = useRef<AbortController | null>(null)
-  const activeRunRef = useRef<string | null>(null)
+
+  const uploadDocument = useDocumentStore((state) => state.uploadDocument)
 
   useEffect(() => {
     if (currentAssistant?.assistant_id) {
@@ -88,278 +93,41 @@ export function AssistantChat({
     adjustTextareaHeight()
   }, [message, adjustTextareaHeight])
 
-  // Internal submission function (not event-dependent) to allow reuse for enter key.
-  const submitMessage = async () => {
-    const trimmedMessage = message.trim()
-    if (!trimmedMessage || isLoading || !threadId || submittingRef.current) return
+  const { streamingContent, handleStream, setStreamingContent } = useStreaming();
 
-    submittingRef.current = true
-    setIsLoading(true)
-    setLocalError(undefined)
-
-    // Cancel any existing stream request
-    if (streamRequestRef.current) {
-      streamRequestRef.current.abort()
-    }
-    streamRequestRef.current = new AbortController()
-
-    try {
-      let currentThreadId = threadId
-
-      // Add user message to store immediately
-      const userMessage: Message = {
-        id: `temp-user-${Date.now()}`,
-        role: 'user' as MessageRole,
-        content: [{
-          type: 'text',
-          text: {
-            value: trimmedMessage,
-            annotations: []
-          }
-        }],
-        thread_id: currentThreadId,
-        attachments: [],
-        created_at: Date.now(),
-        metadata: null
-      }
-      addMessageIfNotEmpty(userMessage)
-
-      // Send message to API
-      const formData = new FormData()
-      formData.append('thread_id', currentThreadId)
-      formData.append('content', trimmedMessage)
-      formData.append('role', 'user')
-
-      const messageRes = await fetch('/api/thread/message', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!messageRes.ok) {
-        const errData = await messageRes.json().catch(() => null)
-        console.error('[AssistantChat] Failed to send message:', errData)
-        throw new Error(errData?.error || 'Failed to send message')
-      }
-
-      const messageData = await messageRes.json()
-        // Start the run
-      if (currentThreadId && assistantId) {
-      
-        // Check if there's an active run
-        if (activeRunRef.current) {
-          console.log('[AssistantChat] Waiting for active run to complete:', activeRunRef.current)
-          return
-        }
-
-        const runResponse = await fetch('/api/thread/run/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            thread_id: currentThreadId,
-            assistant_id: assistantId
-          }),
-          signal: streamRequestRef.current.signal
-        })
-
-        if (!runResponse.ok) {
-          const errData = await runResponse.json().catch(() => null)
-          console.error('[AssistantChat] Failed to start run:', errData)
-          throw new Error(errData?.error || 'Failed to start run')
-        }
-
-        // Handle the stream response
-        const reader = runResponse.body?.getReader()
-        if (!reader) {
-          throw new Error('No response stream available')
-        }
-
-          let currentMessageId: string | null = null
-        let currentMessageContent = ''
-        let messageStarted = false
-        let annotations: any[] = []
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) {
-              activeRunRef.current = null
-              break
-            }
-
-            const text = new TextDecoder().decode(value)
-            const lines = text.split('\n').filter(line => line.trim() !== '')
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = JSON.parse(line.slice(6))
-  
-                if (data.type === 'textCreated') {
-                  messageStarted = true
-                  currentMessageContent = ''
-                  annotations = []
-                  // Create initial empty message
-                  const assistantMessage: Message = {
-                    id: currentMessageId || `temp-${Date.now()}`,
-                    role: 'assistant' as MessageRole,
-                    content: [{
-                      type: 'text',
-                      text: {
-                        value: '',
-                        annotations: []
-                      }
-                    }],
-                    thread_id: currentThreadId,
-                    attachments: [],
-                    created_at: Date.now(),
-                    metadata: null
-                  }
-                  addMessageIfNotEmpty(assistantMessage)
-                }
-                else if (data.type === 'textDelta' && messageStarted) {
-                  const delta = data.data?.delta?.value || ''
-                  const newAnnotations = data.data?.delta?.annotations || [];
-                    currentMessageContent += delta;
-                  annotations = [...annotations, ...newAnnotations];
-                   setStreamingContent((prev: MessageContent[]) => {
-                    const newContent: MessageContent[] = prev.length > 0
-                      ? [...prev.slice(0, -1), {
-                        type: 'text',
-                        text: {
-                          value: prev[prev.length - 1].text.value + delta,
-                          annotations: [...(prev[prev.length - 1].text.annotations || []), ...newAnnotations]
-                        }
-                      }]
-                      : [{
-                        type: 'text',
-                        text: {
-                          value: delta,
-                          annotations: newAnnotations
-                        }
-                      }];
-                    return newContent;
-                  });
-                }
-                else if (data.type === 'end' && messageStarted) {
-                  // Store the final message in the database
-                  const formData = new FormData()
-                  formData.append('thread_id', currentThreadId)
-                  formData.append('content', currentMessageContent)
-                  formData.append('annotations', JSON.stringify(annotations))
-                  formData.append('role', 'assistant')
-
-                  const storeRes = await fetch('/api/thread/message', {
-                    method: 'POST',
-                    body: formData
-                  })
-
-                  if (!storeRes.ok) {
-                    console.error('[AssistantChat] Failed to store assistant message:', await storeRes.text())
-                  } else {
-                    const storeData = await storeRes.json()
-                    console.log('[AssistantChat] Stored assistant message:', storeData)
-                    currentMessageId = storeData.message?.id
-
-                    // Update the message in the store with final content
-                    const finalMessage: Message = {
-                      id: currentMessageId || `temp-${Date.now()}`,
-                      role: 'assistant' as MessageRole,
-                      content: [{
-                        type: 'text',
-                        text: {
-                          value: currentMessageContent,
-                          annotations
-                        }
-                      }],
-                      thread_id: currentThreadId,
-                      attachments: [],
-                      created_at: Date.now(),
-                      metadata: null
-                    }
-                    addMessageIfNotEmpty(finalMessage)
-                  }
-                  // Clear streaming content after message is complete
-                  setStreamingContent([])
-                }
-                else if (data.type === 'error') {
-                  activeRunRef.current = null
-                  throw new Error(data.data)
-                }
-                else if (data.type === 'end') {
-                  activeRunRef.current = null
-                }
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock()
-        }
-      }
-    } catch (error) {
-      console.error('[AssistantChat] Error:', error)
-      setLocalError((error as Error).message)
-    } finally {
-      setIsLoading(false)
-      submittingRef.current = false
-    }
-  }
-
-  const handleSendMessage = async () => {
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!message.trim()) return;
-
+    setThreadId(threadId);
     setIsLoading(true);
+    setLocalError(undefined);
+    const formData = new FormData();
+    formData.append('content', message);
+    formData.append('thread_id', threadId);
+    formData.append('role', 'user');
+    formData.append('file_queue', JSON.stringify(getFileQueue()));
+    const sentMessage = await fetch('/api/thread/message', {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await sentMessage.json();
+    addMessage(result.message);
     try {
-      // Send message and files in queue
-      if (fileQueue.length > 0) {
-        // Logic to send files with the message
-        // Example: await sendFilesWithMessage(fileQueue, message);
-        clearFileQueue();
-      }
-      // Logic to send message
-      // Example: await sendMessage(message);
-      await submitMessage();
+      await handleStream();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[handleStream] Error starting stream:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Please try again.';
+      setLocalError(errorMessage);
     } finally {
+      fetchThreadMessages();
       setIsLoading(false);
     }
   };
 
-  // Form submit handler.
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedMessage = message.trim()
-    if (!trimmedMessage) return
-
-    const userMessage: Message = {
-      id: `temp-${Date.now()}`,
-      role: 'user' as MessageRole,
-      content: [{
-        type: 'text',
-        text: {
-          value: trimmedMessage,
-          annotations: []
-        }
-      }],
-      thread_id: threadId,
-      attachments: [],
-      created_at: Date.now(),
-      metadata: null
-    }
-
-    addMessageIfNotEmpty(userMessage)
-
-    await handleSendMessage();
-    // Clear the input field after sending the message
-    setMessage('');
-  }
-
-  // Textarea onKeyDown handler.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !submittingRef.current) {
       e.preventDefault()
-      void handleSendMessage()
+      void handleSubmit(e)
     }
   }
 
@@ -393,37 +161,50 @@ export function AssistantChat({
     };
   }, []); // Empty dependency array since this only needs to run once
 
+
+
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Messages */}
-      <MessageList
+       <MessageList
         messages={storeMessages}
         streamingContent={streamingContent}
       />
 
-      {/* Input Area */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {fileQueue.length > 0 && (
+        <div className="bg-yellow-100 text-yellow-800 bottom-0 p-2 rounded-md mb-2 flex items-center">
+          {fileQueue.map((fileId, index) => {
+            const document = documents.find(doc => doc.file_id === fileId);
+            const fileType = document?.file_type || '';
+            const UploadIcon = GetFileIcon(fileType);
+            return (
+              <div key={index} className="flex items-center">
+                <UploadIcon />
+                <span className="ml-2">{fileId}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4 bottom-4">
         <div className="flex gap-2 items-center">
           {threadId && (
             <FileUpload
+              isAttachment={true}
               threadId={threadId}
-              onFileUpload={async (file, uploadPromise) => {
+              onFileUpload={async (file) => {
+
                 setIsLoading(true);
                 setLocalError(undefined);
 
                 try {
                   console.log('[AssistantChat] File uploading:', file.name);
-                  const response = await uploadPromise;
+                  const fileId = await uploadDocument(file);
 
-                  if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
-                    throw new Error(
-                      errorData?.error ||
-                      `Upload failed: ${response.status} ${response.statusText}`
-                    );
+                  if (!fileId) {
+                    throw new Error('Upload failed: No file ID returned');
                   }
 
-                  console.log('[AssistantChat] File uploaded:', file.name);
+                  console.log('[AssistantChat] File uploaded with ID:', fileId);
                 } catch (error) {
                   console.error('[AssistantChat] File upload failed:', error);
                   const errorMessage = error instanceof Error ?
@@ -457,6 +238,13 @@ export function AssistantChat({
           />
         </div>
       </form>
+
+      {/* Loading Indicator */}
+      {documentLoading && (
+        <div className="flex justify-center items-center">
+          <span className="loader"></span> Processing files...
+        </div>
+      )}
 
       {/* File Upload Status Messages */}
       {(error) && (

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { thread_id, assistant_id } = await req.json();
+    const { assistant_id, thread_id } = await req.json();
     console.log('[API] Starting stream:', { thread_id, assistant_id });
 
     if (!thread_id || !assistant_id) {

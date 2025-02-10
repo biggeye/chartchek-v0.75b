@@ -32,75 +32,31 @@ export async function POST(req: Request) {
             file: file,
             purpose: "assistants",
         });
-        console.log('[FileUpload] OpenAI file upload successful:', { file_id: fileUpload.id })
 
-        if (fileUpload) {
-            try {
-                // Create a vector store for the uploaded file
-                console.log('[FileUpload] Creating vector store...')
-                const vectorStore = await openai.beta.vectorStores.create({
-                    name: `${file.name}_store`,
-                });
-                console.log('[FileUpload] Vector store created:', { store_id: vectorStore.id })
 
-                // Upload the file to the vector store
-                console.log('[FileUpload] Adding file to vector store...')
-                const newVectorStoreFile = await openai.beta.vectorStores.files.create(
-                    vectorStore.id,
-                    { file_id: fileUpload.id }
-                );
-                console.log('[FileUpload] File added to vector store:', {
-                    vector_store_id: newVectorStoreFile.vector_store_id,
-                    file_id: fileUpload.id
-                })
-    
- 
-                       // Store file info in Supabase
-                console.log('[FileUpload] Storing file info in Supabase...')
-                const { data, error } = await supabase
-                    .from('documents')
-                    .insert([{
-                        user_id: user.data.user?.id,
-                        filename: file.name,
-                        file_id: fileUpload.id,
-                        vector_store_id: newVectorStoreFile.vector_store_id
-                    }]);
+        const { data, error } = await supabase
+            .from('documents')
+            .insert([{
+                user_id: user.data.user?.id,
+                filename: file.name,
+                file_id: fileUpload.id,
+            }]);
 
-                if (error) {
-                    console.error('[FileUpload] Supabase insert error:', error)
-                    throw error;
-                }
-                console.log('[FileUpload] File info stored in Supabase successfully')
-
-                return new Response(JSON.stringify({
-                    file_id: fileUpload.id,
-                    vector_store_id: newVectorStoreFile.vector_store_id,
-                    filename: file.name
-                }), {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-            } catch (vectorError) {
-                console.error('[FileUpload] Vector store error:', vectorError);
-                console.log('[FileUpload] Returning partial success with file upload info')
-                // Still return the file upload info even if vector store fails
-                return new Response(JSON.stringify({
-                    file_id: fileUpload.id,
-                    filename: file.name,
-                    error: 'Vector store creation failed'
-                }), {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-            }
+        if (error) {
+            console.error('[FileUpload] Supabase insert error:', error)
+            throw error;
         }
 
-        console.error('[FileUpload] File upload failed: No response from OpenAI')
-        return new Response("File upload failed", { status: 500 });
+        return new Response(JSON.stringify({
+            file_id: fileUpload.id,
+            filename: file.name
+        }), {
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
     } catch (error) {
-        console.error('[FileUpload] Unhandled error:', error);
-        return new Response("Error uploading file", { status: 500 });
-    }
-}
+    console.error('[FileUpload] Unhandled error:', error);
+    return new Response("Error uploading file", { status: 500 });
+}}

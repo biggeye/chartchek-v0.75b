@@ -10,7 +10,8 @@ interface MessageContentProps {
 }
 
 export function MessageContent({ content, className, isStreaming }: MessageContentProps) {
-  const contentArray = Array.isArray(content) ? content : [content]
+
+  const contentArray = Array.isArray(content) ? content : [content];
 
   return (
     <div className={className}>

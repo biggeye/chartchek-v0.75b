@@ -8,11 +8,11 @@ export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 // Database Types
 export interface UserAssistant {
   id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  assistant_id: string
-  name: string
+  created_at?: string
+  updated_at?: string
+  user_id?: string
+  assistant_id?: string
+  name?: string
   description?: string
   instructions?: string
   model: string

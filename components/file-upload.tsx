@@ -8,9 +8,21 @@ import { cn } from '@/lib/utils'
 import type { FileUploadProps } from '@/types'
 import { useDocumentStore } from '@/store/documentStore';
 
-export function FileUpload({ threadId, onFileUpload }: FileUploadProps) {
+
+
+export function FileUpload({ threadId, onFileUpload, isAttachment }: FileUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { addToFileQueue } = useDocumentStore();
+  const { addToFileQueue, uploadDocument } = useDocumentStore();
+
+  const handleUpload = useCallback(async (file: File) => {
+    const fileId = await uploadDocument(file);
+    if (isAttachment) {
+      addToFileQueue(fileId, threadId);
+      return fileId;
+    } else {
+      return fileId;
+    }
+  }, [isAttachment]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -19,15 +31,13 @@ export function FileUpload({ threadId, onFileUpload }: FileUploadProps) {
     setIsLoading(true);
 
     try {
-      // Add file to queue instead of uploading immediately
-      addToFileQueue(file);
-      console.log('[FileUpload] File added to queue:', file.name);
+      handleUpload(file);
     } catch (error) {
       console.error('[FileUpload] Error adding file to queue:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [addToFileQueue]);
+  }, [addToFileQueue, handleUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

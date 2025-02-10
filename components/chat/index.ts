@@ -1,7 +1,7 @@
 export { AssistantChat } from './AssistantChat'
 export { AssistantSelector } from './AssistantSelector'
 export * from './EnhancedSubmitButton';
-export * from './FileUpload';
+export * from '../file-upload';
 export * from './MessageContent';
 export * from './MessageList';
 export * from './NewThreadButton';
