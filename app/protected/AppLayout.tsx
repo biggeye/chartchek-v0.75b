@@ -123,8 +123,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex h-16 shrink-0 items-center">
                   <img
                     alt="ChartChek"
-                    src="/chartChek.jpg"
-                    className="h-8 w-auto"
+                    src="/chartChek-banner-dark.png"
+                    className="h-12 top-5 w-auto"
                   />
                 </div>
                 <nav className="flex flex-1 flex-col">
@@ -160,8 +160,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex h-16 shrink-0 items-center justify-center">
             <img
               alt="ChartChek"
-              src="/logo.svg"
-              className="h-8 w-auto"
+              src="/chartChek-icon-dark.png"
+              className="h-12 w-auto"
             />
           </div>
           <nav className="mt-8">

@@ -10,7 +10,13 @@ export default async function Home() {
       <div className="flex flex-col items-center px-4 py-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-            <span className="text-primary">ChartChek</span>
+            <span className="text-primary">
+              <img
+                src="/chartChek-banner-light.png"
+                alt="ChartChek"
+                className="h-10 w-auto"
+              />
+            </span>
             <span className="block text-2xl sm:text-3xl mt-2 text-muted-foreground">
               AI-Powered Compliance Assistant
             </span>

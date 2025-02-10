@@ -1,6 +1,8 @@
 import { createServer } from "@/utils/supabase/server";
 import { OpenAI } from "openai";
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const supabase = await createServer();
   const openai = new OpenAI({
