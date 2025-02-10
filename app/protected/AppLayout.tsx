@@ -28,7 +28,7 @@ import { ChevronDownIcon, MagnifyingGlassIcon, UserCircleIcon, ChatBubbleLeftIco
 import { ThreadList } from '@/components/chat/ThreadList'
 import { AssistantSelector } from '@/components/chat/AssistantSelector'
 import { useAssistantStore } from '@/store/assistantStore';
-import UserStats from '@/components/templates/user-stats';
+import UserStats from '@/components/user-stats';
 
 import { signOutAction } from "@/app/actions";
 import { ThemeSwitcher } from "@/components/theme-switcher";
