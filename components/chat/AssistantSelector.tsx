@@ -15,7 +15,7 @@ export function AssistantSelector() {
         setCurrentAssistant 
     } = useAssistantStore()
 
-    const [selectedAssistantName, setSelectedAssistantName] = useState('');
+    const [selectedAssistantName, setSelectedAssistantName] = useState<UserAssistant | null>(null);
 
     useEffect(() => {
         // Fetch assistants when component mounts
@@ -26,7 +26,7 @@ export function AssistantSelector() {
         const selectedAssistant = assistants.find(a => a.assistant_id === assistantId);
         if (selectedAssistant) {
             setCurrentAssistant(selectedAssistant);
-            setSelectedAssistantName(selectedAssistant.name);
+
         }
     };
     
@@ -39,10 +39,10 @@ export function AssistantSelector() {
         <div className="relative">
             <DropdownMenu
                 buttonLabel="Select an assistant"
-                selectedLabel={selectedAssistantName}
+                selectedLabel={selectedAssistantName?.name}
                 items={assistants.map((assistant: UserAssistant) => ({
-                    label: assistant.name,
-                    onClick: () => handleAssistantChange(assistant.assistant_id)
+                    label: assistant.name || 'Unnamed assistant',
+                    onClick: () => handleAssistantChange(assistant.id)
                 }))}
                 disabled={isLoading}
             />
