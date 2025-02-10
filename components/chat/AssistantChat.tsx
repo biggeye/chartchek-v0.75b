@@ -97,30 +97,37 @@ export function AssistantChat({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!message.trim()) return;
-    setThreadId(threadId);
+    if (isLoading || !message.trim()) return;
+
     setIsLoading(true);
     setLocalError(undefined);
-    const formData = new FormData();
-    formData.append('content', message);
-    formData.append('thread_id', threadId);
-    formData.append('role', 'user');
-    formData.append('file_queue', JSON.stringify(getFileQueue()));
-    const sentMessage = await fetch('/api/thread/message', {
-      method: 'POST',
-      body: formData,
-    });
-    const result = await sentMessage.json();
-    addMessage(result.message);
+
     try {
-      await handleStream();
+      const formData = new FormData();
+      formData.append('content', message);
+      formData.append('thread_id', threadId);
+      formData.append('role', 'user');
+      formData.append('file_queue', JSON.stringify(getFileQueue()));
+      const sentMessage = await fetch('/api/thread/message', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await sentMessage.json();
+      addMessage(result.message);
+      try {
+        await handleStream();
+      } catch (error) {
+        console.error('[handleStream] Error starting stream:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Please try again.';
+        setLocalError(errorMessage);
+      } finally {
+        fetchThreadMessages();
+        setIsLoading(false);
+      }
+      setMessage('');
     } catch (error) {
-      console.error('[handleStream] Error starting stream:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Please try again.';
-      setLocalError(errorMessage);
-    } finally {
-      fetchThreadMessages();
-      setIsLoading(false);
+      console.error('[AssistantChat] Message send failed:', error);
+      setLocalError('Failed to send message. Please try again.');
     }
   };
 

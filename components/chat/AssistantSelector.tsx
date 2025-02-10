@@ -42,7 +42,13 @@ export function AssistantSelector() {
                 selectedLabel={selectedAssistantName?.name}
                 items={assistants.map((assistant: UserAssistant) => ({
                     label: assistant.name || 'Unnamed assistant',
-                    onClick: () => handleAssistantChange(assistant.id)
+                    onClick: () => {
+                        if (assistant.assistant_id) {
+                            handleAssistantChange(assistant.assistant_id);
+                        } else {
+                            console.warn('Assistant ID is undefined for:', assistant);
+                        }
+                    }
                 }))}
                 disabled={isLoading}
             />
