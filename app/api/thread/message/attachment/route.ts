@@ -1,12 +1,9 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { OpenAI } from "openai"
+import { openai as awaitOpenai  } from '@/utils/openai'
 import type { ThreadMessageAttachmentRequest, ThreadMessageAttachmentResponse, ApiResponse } from '@/types/api/routes'
 import type { Document } from '@/types/database'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 const ALLOWED_FILE_TYPES = [
   'text/plain',
@@ -22,17 +19,19 @@ const MAX_FILE_SIZE = 512 * 1024 * 1024 // 512MB
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
+
+    const openai = await awaitOpenai();
     const supabase = await createServer()
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Unauthorized',
         code: 'AUTH_REQUIRED'
-      }), { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
@@ -49,9 +48,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       return new Response(JSON.stringify({
         error: 'Missing required fields',
         code: 'INVALID_REQUEST'
-      }), { 
-        status: 400, 
-        headers: { 'Content-Type': 'application/json' } 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
@@ -60,9 +59,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       return new Response(JSON.stringify({
         error: 'Invalid file type. Allowed types: ' + ALLOWED_FILE_TYPES.join(', '),
         code: 'INVALID_FILE_TYPE'
-      }), { 
-        status: 400, 
-        headers: { 'Content-Type': 'application/json' } 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
@@ -71,9 +70,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       return new Response(JSON.stringify({
         error: `File too large. Maximum size: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
         code: 'FILE_TOO_LARGE'
-      }), { 
-        status: 400, 
-        headers: { 'Content-Type': 'application/json' } 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
@@ -89,9 +88,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       return new Response(JSON.stringify({
         error: 'Thread not found or unauthorized',
         code: 'NOT_FOUND'
-      }), { 
-        status: 404, 
-        headers: { 'Content-Type': 'application/json' } 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
       })
     }
 
@@ -158,9 +157,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       document: document as Document
     }
 
-    return new Response(JSON.stringify(response), { 
-      status: 200, 
-      headers: { 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
@@ -168,9 +167,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Unknown error",
       code: 'INTERNAL_ERROR'
-    }), { 
-      status: 500, 
-      headers: { 'Content-Type': 'application/json' } 
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 }

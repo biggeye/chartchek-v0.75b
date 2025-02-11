@@ -1,16 +1,13 @@
 import { createServer } from "@/utils/supabase/server";
-import { OpenAI } from "openai";
+import { openai as awaitOpenai } from '@/utils/openai'
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  
+  const openai = await awaitOpenai();
   const supabase = await createServer();
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    defaultHeaders: {
-      "OpenAI-Beta": "assistants=v2"
-    }
-  });
+
 
   // Authenticate user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -23,9 +20,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { assistant_id, thread_id } = await req.json();
+    const { thread_id } = await req.json();
+    const { data, error } = await supabase.from('chat_threads').select('assistant_id').eq('thread_id', thread_id).single();
+    if (error || !data) {
+      console.error('[API] Error fetching assistant_id:', error);
+      return new Response('Error fetching assistant_id', { status: 500 });
+    }
+    const assistant_id = data.assistant_id;
+    
     console.log('[API] Starting stream:', { thread_id, assistant_id });
-
+    
     if (!thread_id || !assistant_id) {
       console.error('[API] Missing required parameters:', { thread_id, assistant_id });
       return new Response(

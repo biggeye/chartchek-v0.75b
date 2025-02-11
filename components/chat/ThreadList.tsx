@@ -44,9 +44,6 @@ export function ThreadList() {
             }
         };
 
-    if (!currentAssistant) {
-        return <div className="text-gray-500">Please select an assistant to view threads.</div>;
-    }
 
     if (isLoading) {
         return <div className="flex items-center justify-center p-4">

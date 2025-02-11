@@ -124,7 +124,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <img
                     alt="ChartChek"
                     src="/chartChek-banner-dark.png"
-                    className="h-12 top-5 w-auto"
+                    className="h-12 top-8 w-auto"
                   />
                 </div>
                 <nav className="flex flex-1 flex-col">
@@ -154,14 +154,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </DialogPanel>
           </div>
         </Dialog>
-
         {/* Static sidebar for desktop */}
+        <div className="fixed top-1 left-1 lg:hidden">
+          <button type="button" onClick={() => setSidebarOpen(true)}>
+            <Bars3Icon aria-hidden="true" className="w-5 h-5 shrink-0" />
+            </button>
+        </div>
         <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4">
           <div className="flex h-16 shrink-0 items-center justify-center">
             <img
               alt="ChartChek"
               src="/chartChek-icon-dark.png"
-              className="h-12 w-auto"
+              className="h-12 py-1 w-auto"
             />
           </div>
           <nav className="mt-8">
@@ -171,7 +175,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <a
                     href={item.href}
                     className={classNames(
-                      item.current ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                      item.current ? 'text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white',
                       'group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold',
                     )}
                   >
@@ -186,61 +190,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <ThemeSwitcher />
           </div>
         </div>
-
         <div className="lg:pl-20 overflow-hidden">
-          <div className="sticky top-0 z-40 flex h-10 shrink-0 items-center justify-between gap-x-4 border-b border-gray-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
-            <div className="flex-1">
-              <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-gray-700 lg:hidden">
-                <span className="sr-only">Open sidebar</span>
-                <Bars3Icon aria-hidden="true" className="size-6" />
-              </button>
-              {headerContent}
-            </div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
-                <span className="sr-only">View notifications</span>
-                <BellIcon aria-hidden="true" className="size-6" />
-              </button>
-              <div aria-hidden="true" className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-900/10" />
-              <Menu as="div" className="relative">
-                <MenuButton className="-m-1.5 flex items-center p-1.5">
-                  <span className="sr-only">Open user menu</span>
-                  <UserCircleIcon
-                    className="size-8 text-gray-400"
-                    aria-hidden="true"
-                  />
-                  <span className="hidden lg:flex lg:items-center">
-                    <span aria-hidden="true" className="ml-4 text-sm/6 font-semibold text-gray-900"></span>
-                    <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
-                  </span>
-                </MenuButton>
-                <MenuItems
-                  transition
-                  className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 ring-1 shadow-lg ring-gray-900/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                >
-                  {userNavigation.map((item) => (
-                    <MenuItem key={item.name}>
-                      <button
-                        onClick={item.onClick || handleSignOut}
-                        className="block w-full text-left px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
-                      >
-                        {item.name}
-                      </button>
-                    </MenuItem>
-                  ))}
-                </MenuItems>
-              </Menu>
-            </div>
-          </div>
-
-          <main className="xl:pl-96 min-h-[calc(100vh-10rem)] overflow-hidden">
-
-            {children}
-
-          </main>
+        <main className="xl:pl-96 overflow-hidden">
+          {children}
+        </main>
         </div>
 
-        <aside className="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-gray-200 px-4 py-6 sm:px-6 lg:px-8 xl:block bg-white">
+        <aside className="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8 xl:block">
           {asideContent}
         </aside>
       </div>

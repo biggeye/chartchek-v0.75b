@@ -1,14 +1,11 @@
 import { NextRequest } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
-import { OpenAI } from 'openai'
+import { openai as awaitOpenAi } from '@/utils/openai'
 import type { ThreadCreateRequest, ThreadCreateResponse, ApiResponse } from '@/types/api/routes'
 import type { ChatThread, ChatMessage } from '@/types/database'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export async function POST(request: NextRequest): Promise<Response> {
+  const openai = await awaitOpenAi();
   try {
     const supabase = await createServer()
 
@@ -32,6 +29,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       metadata: formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined,
       initial_message: formData.get('initial_message') as string || undefined
     }
+
+    // Debugging: Log the openai instance to inspect its structure
+    console.log('OpenAI Instance:', openai);
 
     // Create thread with OpenAI
     const thread = await openai.beta.threads.create(requestData.initial_message ? {

@@ -13,31 +13,20 @@ import { UserAssistant } from '@/types/database'
 import { useStreaming } from '@/lib/useStreaming';
 import GetFileIcon from '@/components/get-file-icon';
 
-interface AssistantChatProps {
-  currentAssistant: UserAssistant
-  initialVectorStoreId?: string
-}
-
-export function AssistantChat({
-  currentAssistant,
-  initialVectorStoreId
-}: AssistantChatProps) {
+export function AssistantChat() {
   const {
+    currentAssistant,
+    setCurrentAssistant,
+    assistants,
     fetchThreadMessages,
     createThread,
     error: storeError,
     setError,
     messages: storeMessages,
     setMessages: setStoreMessages,
-    addMessage
+    addMessage,
   } = useAssistantStore()
-  const {
-    getFileQueue,
-    fileQueue,
-    clearFileQueue,
-    isLoading: documentLoading,
-    documents
-  } = useDocumentStore()
+  
   const [message, setMessage] = useState('')
   const [threadId, setThreadId] = useState('')
   const [assistantId, setAssistantId] = useState(currentAssistant?.assistant_id || '')
@@ -48,19 +37,24 @@ export function AssistantChat({
   const initializingRef = useRef(false)
   const submittingRef = useRef(false)
 
+  const {
+    getFileQueue,
+    fileQueue,
+    clearFileQueue,
+    isLoading: documentLoading,
+    documents
+  } = useDocumentStore()  
   const uploadDocument = useDocumentStore((state) => state.uploadDocument)
 
-  useEffect(() => {
-    if (currentAssistant?.assistant_id) {
-      setAssistantId(currentAssistant.assistant_id)
-    }
-  }, [currentAssistant])
-
-  // Create initial thread if needed
+   if (!assistantId) 
+   {
+    setAssistantId('asst_9RqcRDt3vKUEFiQeA0HfLC08')
+   };
+   // Create initial thread if needed
   useEffect(() => {
     const initThread = async () => {
       // Only create thread if we don't have one and have an assistant
-      if (!threadId && assistantId && !isLoading && !initializingRef.current) {
+      if (!threadId) {
         initializingRef.current = true
         console.log('[AssistantChat] Initializing thread for assistant:', assistantId)
         setIsLoading(true)
@@ -104,6 +98,7 @@ export function AssistantChat({
 
     try {
       const formData = new FormData();
+      formData.append('assistant_id', assistantId);
       formData.append('content', message);
       formData.append('thread_id', threadId);
       formData.append('role', 'user');
@@ -138,12 +133,6 @@ export function AssistantChat({
     }
   }
 
-  const addMessageIfNotEmpty = (msg: Message) => {
-    if (msg.content.some(content => content.text.value.trim() !== '')) {
-      addMessage(msg);
-    }
-  };
-
   const floatingAlertStyle = {
     position: 'fixed',
     top: '1rem',
@@ -171,14 +160,14 @@ export function AssistantChat({
 
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col justify-between h-full w-full">
        <MessageList
         messages={storeMessages}
         streamingContent={streamingContent}
       />
 
       {fileQueue.length > 0 && (
-        <div className="bg-yellow-100 text-yellow-800 bottom-0 p-2 rounded-md mb-2 flex items-center">
+        <div className="bg-yellow-100 text-yellow-800 h-3 bottom-0 p-2 rounded-md mb-1 flex items-center">
           {fileQueue.map((fileId, index) => {
             const document = documents.find(doc => doc.file_id === fileId);
             const fileType = document?.file_type || '';
@@ -192,8 +181,8 @@ export function AssistantChat({
           })}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4 bottom-4">
-        <div className="flex gap-2 items-center">
+      <form onSubmit={handleSubmit} className="bottom-0.5">
+        <div className="flex gap-2 p-0.5 items-center">
           {threadId && (
             <FileUpload
               isAttachment={true}
@@ -231,7 +220,7 @@ export function AssistantChat({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            className="h-[50px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
+            className="h-[40px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
             disabled={isLoading}
             resizable={false}
           />
@@ -246,14 +235,7 @@ export function AssistantChat({
         </div>
       </form>
 
-      {/* Loading Indicator */}
-      {documentLoading && (
-        <div className="flex justify-center items-center">
-          <span className="loader"></span> Processing files...
-        </div>
-      )}
-
-      {/* File Upload Status Messages */}
+         {/* File Upload Status Messages */}
       {(error) && (
         <div style={floatingAlertStyle}>
           <FormMessage

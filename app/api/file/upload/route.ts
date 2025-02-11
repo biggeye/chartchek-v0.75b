@@ -1,7 +1,9 @@
-import OpenAI from "openai";
+import { openai as awaitOpenai } from "@/utils/openai";
 import { createServer } from "@/utils/supabase/server";
 
 export async function POST(req: Request) {
+    const openai = await awaitOpenai();
+
     try {
         console.log('[FileUpload] Starting file upload process')
         const supabase = await createServer();
@@ -13,34 +15,50 @@ export async function POST(req: Request) {
         console.log('[FileUpload] User authenticated:', user.data.user?.id)
 
         const formData = await req.formData();
-        const file = formData.get('file') as File;
+        const files = formData.getAll('files') as File[];
         const threadId = formData.get('thread_id') as string;
 
-        if (!file) {
-            console.log('[FileUpload] Error: No file provided in form data')
-            return new Response("No file provided", { status: 400 });
+        if (files.length === 0) {
+            console.log('[FileUpload] Error: No files provided in form data')
+            return new Response("No files provided", { status: 400 });
         }
-        console.log('[FileUpload] File received:', { name: file.name, size: file.size, type: file.type })
+        console.log('[FileUpload] Files received:', files.map(file => ({ name: file.name, size: file.size, type: file.type })))
 
-        const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
-        });
+        // Upload files to OpenAI and collect file IDs
+        console.log('[FileUpload] Uploading files to OpenAI...')
+        const fileIds: string[] = [];
+        for (const file of files) {
+            const fileUpload = await openai.files.create({
+                file: file,
+                purpose: "assistants",
+            });
+            fileIds.push(fileUpload.id);
+        }
 
-        // Upload file to OpenAI
-        console.log('[FileUpload] Uploading file to OpenAI...')
-        const fileUpload = await openai.files.create({
-            file: file,
-            purpose: "assistants",
-        });
+        // Handle single file upload
+        if (fileIds.length === 1) {
+            return new Response(JSON.stringify({
+                file_id: fileIds[0],
+                vector_store_id: "vs_single_file_id_placeholder"
+            }), { status: 200 });
+        }
 
+        // Create a file batch
+        const myVectorStoreFileBatch = await openai.beta.vectorStores.fileBatches.create(
+            "vs_abc123",
+            {
+                file_ids: fileIds
+            }
+        );
+        console.log(myVectorStoreFileBatch);
 
         const { data, error } = await supabase
             .from('documents')
-            .insert([{
+            .insert(files.map((file, index) => ({
                 user_id: user.data.user?.id,
                 filename: file.name,
-                file_id: fileUpload.id,
-            }]);
+                file_id: fileIds[index],
+            })));
 
         if (error) {
             console.error('[FileUpload] Supabase insert error:', error)
@@ -48,15 +66,12 @@ export async function POST(req: Request) {
         }
 
         return new Response(JSON.stringify({
-            file_id: fileUpload.id,
-            filename: file.name
-        }), {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
+            file_ids: fileIds,
+            vector_store_batch_id: myVectorStoreFileBatch.id,
+        }), { status: 200 });
 
     } catch (error) {
-    console.error('[FileUpload] Unhandled error:', error);
-    return new Response("Error uploading file", { status: 500 });
-}}
+        console.error('[FileUpload] Error:', error);
+        return new Response("Internal Server Error", { status: 500 });
+    }
+}

@@ -38,10 +38,10 @@ export function AssistantSelector() {
     return (
         <div className="relative">
             <DropdownMenu
-                buttonLabel="Select an assistant"
+                buttonLabel="?"
                 selectedLabel={selectedAssistantName?.name}
                 items={assistants.map((assistant: UserAssistant) => ({
-                    label: assistant.name || 'Unnamed assistant',
+                    label: assistant.name || '?',
                     onClick: () => {
                         if (assistant.assistant_id) {
                             handleAssistantChange(assistant.assistant_id);

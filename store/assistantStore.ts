@@ -1,8 +1,6 @@
 import { create } from 'zustand'
 import { createClient } from "@/utils/supabase/client"
 import { AssistantState, UIState } from '@/types/store'
-import { MessageRole, ChatMessageAnnotation } from '@/types/api/openai/messages'
-import type { UserAssistant } from '@/types/database'
 
 interface Match {
   snippet: string;
@@ -22,7 +20,6 @@ interface AssistantStore extends AssistantState, UIState {
   setUserThreads: (threads: AssistantState['userThreads']) => void
   setUserFiles: (files: AssistantState['userFiles']) => void
   setAssistants: (assistants: AssistantState['assistants']) => void
-
   // Async Actions
   fetchAssistants: () => Promise<void>
   fetchThreads: () => Promise<void>
@@ -33,9 +30,6 @@ interface AssistantStore extends AssistantState, UIState {
   fetchUserId: () => Promise<any>
   updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>
   deleteThread: (threadId: string) => Promise<any>
-  parseAnnotations: (rawResponse: any) => ChatMessageAnnotation[]
-
-
   // UI Actions
   setError: (error: UIState['error']) => void
   setLoading: (isLoading: UIState['isLoading']) => void
@@ -82,8 +76,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
 
   // Async Actions
-
-fetchAssistantsCount: async () => {
+  fetchAssistantsCount: async () => {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('user_assistants')
@@ -91,7 +84,7 @@ fetchAssistantsCount: async () => {
 
   if (error) throw error;
   return data?.length ?? 0;
-},
+  },
 
   fetchUserId: async () => {
     const store = get()
@@ -111,6 +104,7 @@ fetchAssistantsCount: async () => {
       store.setLoading(false)
     }
   },
+
   fetchAssistants: async () => {
     const store = get()
     try {
@@ -267,7 +261,6 @@ fetchAssistantsCount: async () => {
     }
   },
 
-
   updateThreadTitle: async (threadId: string, newTitle: string) => {
     const client = createClient();
     try {
@@ -299,17 +292,8 @@ fetchAssistantsCount: async () => {
     }
   },
 
-  parseAnnotations(rawResponse: any): ChatMessageAnnotation[] {
-    if (!rawResponse.annotations) return [];
-    return rawResponse.annotations.map((annotation: ChatMessageAnnotation, index: number) => ({
-      ...annotation,
-      id: index + 1, // Assigning a number starting from 1
-      type: annotation.type || 'supertext', // Default type to 'supertext'
-    }));
-  },
+  
 
   // Utils
-
-
   reset: () => set(initialState)
 }))

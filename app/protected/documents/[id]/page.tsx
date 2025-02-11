@@ -6,16 +6,15 @@ import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useDocumentStore } from '@/store/documentStore';
 import Breadcrumb from '@/components/ui/breadcrumb';
+import { Document, ProcessingStatus } from '@/types/database';
 
 export default function DocumentDetail() {
   const { id } = useParams();
-  const { documents, fetchDocuments, isLoading, error } = useDocumentStore();
+  const { documents, fetchDocuments, isLoading, error, createVectorStore, setVectorStoreId } = useDocumentStore();
 
   useEffect(() => {
-    if (id) {
-      fetchDocuments();
-    }
-  }, [id, fetchDocuments]);
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -24,10 +23,26 @@ export default function DocumentDetail() {
 
   if (!document) return <div>Document not found</div>;
 
+  const fileId = document.file_id;
+  const vectorStoreId = document.vector_store_id;
+
+  console.log('vectorStoreId: ', vectorStoreId, 'fileId: ', fileId);
   const breadcrumbPages = [
     { name: 'Documents', href: '/protected/documents', current: false },
     { name: document.filename, href: `#`, current: true },
   ];
+
+  const handleCreateVector = async () => {
+    const vectorStoreId = await createVectorStore(fileId);
+  };
+
+  const createThreadWithVectorStore = async () => {
+    if (!vectorStoreId) {
+      await createVectorStore(fileId);
+      console.error('Missing vectorStoreId or fileId');
+      return;
+    }
+  };
 
   return (
     <div>
@@ -49,19 +64,22 @@ export default function DocumentDetail() {
           </h1>
         </div>
         <div className="flex items-center gap-x-4 sm:gap-x-6">
-          <button type="button" className="hidden text-sm/6 font-semibold text-gray-900 sm:block">
-            Copy URL
+          <button
+            type="button"
+            onClick={handleCreateVector}
+            className={`rounded-md px-3 py-2 text-sm font-semibold text-white shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 ${document.vector_store_id ? 'bg-green-600 hover:bg-green-500 focus-visible:outline-green-600' : 'bg-red-600 hover:bg-red-500 focus-visible:outline-red-600'}`}
+            disabled={!!document.vector_store_id}
+          >
+            {document.vector_store_id ? 'Vector' : 'Create'}
           </button>
-          <a href="#" className="hidden text-sm/6 font-semibold text-gray-900 sm:block">
-            Edit
-          </a>
-          <a
-            href="#"
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          <button
+            type="button"
+            onClick={() => createThreadWithVectorStore()}
+            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            disabled={!document.vector_store_id}
           >
             Send
-          </a>
-
+          </button>
           <Menu as="div" className="relative sm:hidden">
             <MenuButton className="-m-3 block p-3">
               <span className="sr-only">More</span>
@@ -86,6 +104,15 @@ export default function DocumentDetail() {
                   className="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
                 >
                   Edit
+                </button>
+              </MenuItem>
+              <MenuItem>
+                <button
+                  type="button"
+                  onClick={() => createThreadWithVectorStore()}
+                  className="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
+                >
+                  Create Thread
                 </button>
               </MenuItem>
             </MenuItems>

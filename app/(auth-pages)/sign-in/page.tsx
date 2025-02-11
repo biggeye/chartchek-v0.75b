@@ -12,8 +12,8 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <img
           alt="ChartChek"
-          src="https://tailwindui.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600"
-          className="mx-auto h-10 w-auto"
+          src="/chartChek-banner-light.png"
+          className="mx-auto w-auto"
         />
         <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
           Sign in to your account
@@ -34,7 +34,7 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
                   type="email"
                   required
                   autoComplete="email"
-                  className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-800 sm:text-sm/6"
                 />
               </div>
             </div>
@@ -50,7 +50,7 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
                   type="password"
                   required
                   autoComplete="current-password"
-                  className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-800 sm:text-sm/6"
                 />
               </div>
             </div>
@@ -63,7 +63,7 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
                       id="remember-me"
                       name="remember-me"
                       type="checkbox"
-                      className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 indeterminate:border-indigo-600 indeterminate:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
+                      className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-gray-800 checked:bg-gray-800 indeterminate:border-gray-800 indeterminate:bg-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
                     />
                     <svg
                       fill="none"
@@ -93,14 +93,14 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
               </div>
 
               <div className="text-sm/6">
-                <Link href="/forgot-password" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                <Link href="/forgot-password" className="font-semibold text-gray-800 hover:text-indigo-500">
                   Forgot password?
                 </Link>
               </div>
             </div>
 
             <div>
-              <SubmitButton pendingText="Signing In..." formAction={signInAction} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+              <SubmitButton pendingText="Signing In..." formAction={signInAction} className="flex w-full justify-center rounded-md bg-gray-800 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800">
                 Sign in
               </SubmitButton>
             </div>
@@ -162,7 +162,7 @@ export default async function SignInPage(props: { searchParams: Promise<Message>
 
         <p className="mt-10 text-center text-sm/6 text-gray-500">
           Not a member?{' '}
-          <Link href="/sign-up" className="font-semibold text-indigo-600 hover:text-indigo-500">
+          <Link href="/sign-up" className="font-semibold text-gray-800 hover:text-indigo-500">
             Sign up
           </Link>
         </p>

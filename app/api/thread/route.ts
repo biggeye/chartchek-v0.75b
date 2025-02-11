@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { OpenAI } from "openai"
+import { openai as awaitOpenai } from '@/utils/openai'
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
 import type { ChatThread } from '@/types/database'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 export async function GET(request: NextRequest): Promise<Response> {
+
+  const openai = await awaitOpenai();
+  
   try {
     const supabase = await createServer()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

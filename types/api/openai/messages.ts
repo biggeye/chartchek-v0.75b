@@ -37,7 +37,7 @@ export interface TextContent {
 }
 
 export interface MessageContent {
-  type: 'text'
+  type: 'text',
   text: TextContent
 }
 
@@ -46,7 +46,7 @@ export interface Message {
   object?: 'thread.message'
   thread_id: string
   role: MessageRole
-  content: MessageContent[]
+  content: MessageContent
   status?: MessageStatus
   assistant_id?: string
   run_id?: string

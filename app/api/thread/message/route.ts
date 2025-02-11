@@ -1,18 +1,15 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { OpenAI } from "openai"
+import { openai as awaitOpenai } from '@/utils/openai'
 import { documentStore } from '@/store/documentStore';
 import type { ThreadMessageRequest, ThreadMessageResponse, ApiResponse } from '@/types/api/routes'
 import type { ChatMessage } from '@/types/database'
 import type { FileAttachment, MessageFileAttachment } from '@/types/api/openai/tools'
 import type { MessageRole } from '@/types/api/openai/messages'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 export async function POST(request: NextRequest): Promise<Response> {
-
+  const openai = await awaitOpenai();
   try {
     const supabase = await createServer()
 

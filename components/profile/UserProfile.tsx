@@ -39,7 +39,7 @@ export default function UserProfile({
                     setData(prev => ({ ...prev, fullName: newName }))
                   }
                 }}
-                className="font-semibold text-indigo-600 hover:text-indigo-500"
+                className="font-semibold text-gray-800 hover:text-indigo-500"
               >
                 Update
               </button>
@@ -59,7 +59,7 @@ export default function UserProfile({
                     setData(prev => ({ ...prev, email: newEmail }))
                   }
                 }}
-                className="font-semibold text-indigo-600 hover:text-indigo-500"
+                className="font-semibold text-gray-800 hover:text-indigo-500"
               >
                 Update
               </button>
@@ -79,7 +79,7 @@ export default function UserProfile({
                     setData(prev => ({ ...prev, title: newTitle }))
                   }
                 }}
-                className="font-semibold text-indigo-600 hover:text-indigo-500"
+                className="font-semibold text-gray-800 hover:text-indigo-500"
               >
                 Update
               </button>
