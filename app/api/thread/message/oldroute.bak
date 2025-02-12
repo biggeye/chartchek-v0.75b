@@ -8,12 +8,12 @@ import type { FileAttachment, MessageFileAttachment } from '@/types/api/openai/t
 import type { MessageRole } from '@/types/api/openai/messages'
 
 
+
 export async function POST(request: NextRequest): Promise<Response> {
   const openai = await awaitOpenai();
+  const supabase = await createServer()
   try {
-    const supabase = await createServer()
 
-    // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }), {
@@ -21,9 +21,44 @@ export async function POST(request: NextRequest): Promise<Response> {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-    console.log('File queue:', documentStore.getState().fileQueue);
+
     const formData = await request.formData()
-    console.log('Form data:', formData);
+    if (formData.get('role') === 'assistant') {
+console.log("[API] formData.content: ", formData.get('content'))
+      const savedAssistantMessage = await supabase
+        .from('chat_messages')
+        .insert({
+          message_id: formData.get('message_id') as string,
+          user_id: user.id,
+          thread_id: formData.get('thread_id') as string,
+          role: formData.get('role') as MessageRole,
+          content: {
+            type: 'text',
+            text: {
+              value: formData.get('content') as string,
+              annotations: formData.get('annotations') ? JSON.parse(formData.get('annotations') as string) : undefined
+            }
+          },
+        })
+        .select()
+        .single();
+
+      if (savedAssistantMessage.error) {
+        throw savedAssistantMessage.error;
+      }
+
+      const { data: updatedThread, error: updateError } = await supabase
+        .from('chat_threads')
+        .update({ updated_at: savedAssistantMessage.data.created_at })
+        .eq('thread_id', savedAssistantMessage.data.thread_id);
+      if (updateError) throw updateError;
+
+      console.log('Saved assistant message:', savedAssistantMessage.data);
+      return new Response(JSON.stringify(savedAssistantMessage.data), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     const fileQueue = documentStore.getState().fileQueue;
     const attachments: FileAttachment[] = fileQueue.map(fileId => ({
       file_id: fileId,
@@ -37,7 +72,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       attachments: attachments,
       annotations: formData.get('annotations') ? JSON.parse(formData.get('annotations') as string) : undefined
     }
-
     if (!requestData.thread_id) {
       return new Response(JSON.stringify({
         error: 'Missing required field: thread_id',
@@ -47,7 +81,6 @@ export async function POST(request: NextRequest): Promise<Response> {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-
     // Add message to OpenAI thread
     const threadMessage = await openai.beta.threads.messages.create(
       requestData.thread_id,
@@ -64,11 +97,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!threadMessage?.id) {
       throw new Error("Failed to create message with OpenAI")
     }
-
-
-
     // Add message to database
     const chatMessage: Partial<ChatMessage> = {
+      
       user_id: user.id,
       thread_id: requestData.thread_id,
       message_id: threadMessage.id,
@@ -82,20 +113,20 @@ export async function POST(request: NextRequest): Promise<Response> {
       },
     }
 
-    const { data: savedMessage, error: insertError } = await supabase
+    const savedMessage = await supabase
       .from('chat_messages')
       .insert(chatMessage)
       .select()
-      .single()
+      .single();
 
-    if (insertError) {
-      throw insertError
+    if (savedMessage.error) {
+      throw savedMessage.error;
     }
 
     // Update the chat_threads table with the created_at timestamp
     const { error: updateError } = await supabase
       .from('chat_threads')
-      .update({ updated_at: savedMessage.created_at })
+      .update({ updated_at: savedMessage.data.created_at })
       .eq('thread_id', requestData.thread_id)
 
     if (updateError) {
@@ -103,7 +134,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const response: ApiResponse<ThreadMessageResponse> = {
-      message: savedMessage
+      message: savedMessage.data
     }
 
     return new Response(JSON.stringify(response), {

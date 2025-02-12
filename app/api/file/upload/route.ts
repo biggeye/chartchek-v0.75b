@@ -17,6 +17,7 @@ export async function POST(req: Request) {
         const formData = await req.formData();
         const files = formData.getAll('files') as File[];
         const threadId = formData.get('thread_id') as string;
+        // here we must iterate through file.type for each File[] and store for the supabase update
 
         if (files.length === 0) {
             console.log('[FileUpload] Error: No files provided in form data')
@@ -44,8 +45,9 @@ export async function POST(req: Request) {
         }
 
         // Create a file batch
+        const timestamp = new Date().toISOString();
         const myVectorStoreFileBatch = await openai.beta.vectorStores.fileBatches.create(
-            "vs_abc123",
+            `${user.data.user?.id}-${threadId}-${timestamp}`,
             {
                 file_ids: fileIds
             }
@@ -58,6 +60,8 @@ export async function POST(req: Request) {
                 user_id: user.data.user?.id,
                 filename: file.name,
                 file_id: fileIds[index],
+                file_type: file.type,
+                thread_id: threadId
             })));
 
         if (error) {

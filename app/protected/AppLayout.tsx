@@ -23,7 +23,7 @@ import {
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { ChevronDownIcon, MagnifyingGlassIcon, UserCircleIcon, ChatBubbleLeftIcon } from '@heroicons/react/20/solid'
+import { ShieldCheckIcon, CreditCardIcon, BuildingOffice2Icon, ChatBubbleLeftIcon } from '@heroicons/react/20/solid'
 
 import { ThreadList } from '@/components/chat/ThreadList'
 import { AssistantSelector } from '@/components/chat/AssistantSelector'
@@ -36,10 +36,10 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 const user = useAssistantStore.getState().user;
 
 const navigation = [
-  { name: 'Chat', href: '/protected/chat', icon: HomeIcon, current: true },
-  { name: 'Assistants', href: '/protected/assistants', icon: UsersIcon, current: false },
+  { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon, current: true },
+  { name: 'Accounts & Billing', href: '/protected/billing', icon: CreditCardIcon, current: false },
   { name: 'Documents', href: '/protected/documents', icon: DocumentDuplicateIcon, current: false },
-  { name: 'Facilities', href: '/protected/facilities', icon: ChartPieIcon, current: false },
+  { name: 'Facilities', href: '/protected/facilities', icon: BuildingOffice2Icon, current: false },
 ]
 const userNavigation = [
   { name: 'Your profile', href: '/protected/account' },
@@ -56,30 +56,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  let headerContent;
-  switch (pathname) {
-    case '/protected/chat':
-      headerContent = (
-        <div className="flex-grow flex justify-center items-center">
-          <AssistantSelector />
-          <button
-            onClick={() => setThreadListOpen(true)}
-            className="ml-2 text-gray-400 hover:text-gray-500 xl:hidden"
-          >
-            <ChatBubbleLeftIcon className="size-4" aria-hidden="true" />
-          </button>
-        </div>
-      );
-      break;
-    default:
-      headerContent = null; // or some default component
-  }
+
 
   let asideContent;
   switch (pathname) {
-    case '/protected/chat':
+    case '/protected/billing':
       asideContent = (
-        <ThreadList />
+        <ThreadList assistantId={'asst_7rzhAUWAamYufZJjZeKYkX1t'}/>
+      );
+      break;
+    case '/protected/compliance':
+      asideContent = (
+        <ThreadList assistantId={'asst_9RqcRDt3vKUEFiQeA0HfLC08'}/>
       );
       break;
     case '/protected':
@@ -158,7 +146,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="fixed top-1 left-1 lg:hidden">
           <button type="button" onClick={() => setSidebarOpen(true)}>
             <Bars3Icon aria-hidden="true" className="w-5 h-5 shrink-0" />
-            </button>
+          </button>
         </div>
         <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4">
           <div className="flex h-16 shrink-0 items-center justify-center">
@@ -191,9 +179,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div className="lg:pl-20 overflow-hidden">
-        <main className="xl:pl-96 overflow-hidden">
-          {children}
-        </main>
+          <main className="xl:pl-96 overflow-hidden">
+            {children}
+          </main>
         </div>
 
         <aside className="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8 xl:block">
@@ -201,17 +189,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
       </div>
 
-      <Dialog open={threadListOpen} onClose={() => setThreadListOpen(false)} className="relative z-50">
-        <DialogBackdrop className="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear" />
-        <DialogPanel className="fixed inset-0 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-4 w-full max-w-3xl">
-            <button onClick={() => setThreadListOpen(false)} className="absolute top-2 right-2">
-              <XMarkIcon className="size-6 text-gray-400" aria-hidden="true" />
-            </button>
-            <ThreadList />
-          </div>
-        </DialogPanel>
-      </Dialog>
+  
     </>
   )
 }

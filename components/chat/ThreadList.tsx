@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAssistantStore } from '@/store/assistantStore'
 import { TrashIcon } from '@heroicons/react/20/solid';
 
-export function ThreadList() {
+export function ThreadList({ assistantId }: { assistantId: string }) {
     const {
         userThreads,
         isLoading,
@@ -19,7 +19,7 @@ export function ThreadList() {
     } = useAssistantStore();
 
     useEffect(() => {
-       fetchThreads()
+       fetchThreads(assistantId)
         }, [fetchThreads]);
 
         const handleThreadChange = async (threadId: string) => {

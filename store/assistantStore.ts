@@ -22,7 +22,7 @@ interface AssistantStore extends AssistantState, UIState {
   setAssistants: (assistants: AssistantState['assistants']) => void
   // Async Actions
   fetchAssistants: () => Promise<void>
-  fetchThreads: () => Promise<void>
+  fetchThreads: (assistantId?: string) => Promise<void>
   fetchThreadsCount: () => Promise<number>
   fetchAssistantsCount: () => Promise<number>
   createThread: (assistantId?: string) => Promise<string | null>
@@ -137,7 +137,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     return data?.length ?? 0;
   },
 
-  fetchThreads: async () => {
+  fetchThreads: async (assistantId?: string) => {
     const store = get()
     try {
       store.setLoading(true)
@@ -147,6 +147,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       const { data: threads, error } = await supabase
         .from('chat_threads')
         .select('*')
+        .eq('assistant_id', assistantId)
         .order('created_at', { ascending: false });
 
        if (error) throw error

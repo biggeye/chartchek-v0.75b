@@ -13,7 +13,11 @@ import { UserAssistant } from '@/types/database'
 import { useStreaming } from '@/lib/useStreaming';
 import GetFileIcon from '@/components/get-file-icon';
 
-export function AssistantChat() {
+interface AssistantChatProps {
+    assistantId: string
+}
+
+export function AssistantChat({ assistantId }: AssistantChatProps) {
   const {
     currentAssistant,
     setCurrentAssistant,
@@ -29,7 +33,6 @@ export function AssistantChat() {
   
   const [message, setMessage] = useState('')
   const [threadId, setThreadId] = useState('')
-  const [assistantId, setAssistantId] = useState(currentAssistant?.assistant_id || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setLocalError] = useState<string | undefined>(undefined)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -42,14 +45,11 @@ export function AssistantChat() {
     fileQueue,
     clearFileQueue,
     isLoading: documentLoading,
-    documents
+    documents,
+    addToFileQueue
   } = useDocumentStore()  
   const uploadDocument = useDocumentStore((state) => state.uploadDocument)
 
-   if (!assistantId) 
-   {
-    setAssistantId('asst_9RqcRDt3vKUEFiQeA0HfLC08')
-   };
    // Create initial thread if needed
   useEffect(() => {
     const initThread = async () => {
@@ -61,8 +61,7 @@ export function AssistantChat() {
         try {
           const newThreadId = await createThread(assistantId)
           if (newThreadId) {
-            console.log('[AssistantChat] Created initial thread:', newThreadId)
-            setThreadId(newThreadId)
+           setThreadId(newThreadId)
           } else {
             console.error('[AssistantChat] Failed to create initial thread')
             setLocalError('Failed to create initial thread')
@@ -109,8 +108,10 @@ export function AssistantChat() {
       });
       const result = await sentMessage.json();
       addMessage(result.message);
+
       try {
         await handleStream();
+
       } catch (error) {
         console.error('[handleStream] Error starting stream:', error);
         const errorMessage = error instanceof Error ? error.message : 'Please try again.';
@@ -201,6 +202,7 @@ export function AssistantChat() {
                   }
 
                   console.log('[AssistantChat] File uploaded with ID:', fileId);
+                  addToFileQueue(fileId, threadId);
                 } catch (error) {
                   console.error('[AssistantChat] File upload failed:', error);
                   const errorMessage = error instanceof Error ?
