@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
-import { openai } from '@/utils/openai'
+import { openai as awaitOpenai } from '@/utils/openai'
 import type { AssistantUpdateRequest, AssistantUpdateResponse, ApiResponse } from '@/types/api/routes'
 import type { UserAssistant } from '@/types/database'
 import { Tool } from '@/types/api/openai'
@@ -9,7 +9,7 @@ import { Tool } from '@/types/api/openai'
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const supabase = await createServer()
-
+    const openai = await awaitOpenai()
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
