@@ -12,13 +12,17 @@ import { Message, MessageContent, TextContent, MessageRole } from '@/types/api/o
 import { UserAssistant } from '@/types/database'
 import { useStreaming } from '@/lib/useStreaming';
 import GetFileIcon from '@/components/get-file-icon';
-
+import type { ChatThread } from '@/types/database';
 interface AssistantChatProps {
     assistantId: string
 }
 
 export function AssistantChat({ assistantId }: AssistantChatProps) {
   const {
+    setCurrentThread,
+    setCurrentThreadId,
+    currentThreadId,
+    currentThread,
     currentAssistant,
     setCurrentAssistant,
     assistants,
@@ -30,9 +34,9 @@ export function AssistantChat({ assistantId }: AssistantChatProps) {
     setMessages: setStoreMessages,
     addMessage,
   } = useAssistantStore()
-  
+  const threadId = currentThread?.thread_id
   const [message, setMessage] = useState('')
-  const [threadId, setThreadId] = useState('')
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setLocalError] = useState<string | undefined>(undefined)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -51,30 +55,6 @@ export function AssistantChat({ assistantId }: AssistantChatProps) {
   const uploadDocument = useDocumentStore((state) => state.uploadDocument)
 
    // Create initial thread if needed
-  useEffect(() => {
-    const initThread = async () => {
-      // Only create thread if we don't have one and have an assistant
-      if (!threadId) {
-        initializingRef.current = true
-        console.log('[AssistantChat] Initializing thread for assistant:', assistantId)
-        setIsLoading(true)
-        try {
-          const newThreadId = await createThread(assistantId)
-          if (newThreadId) {
-           setThreadId(newThreadId)
-          } else {
-            console.error('[AssistantChat] Failed to create initial thread')
-            setLocalError('Failed to create initial thread')
-          }
-        } finally {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    initThread()
-  }, [assistantId])
-
   const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -91,7 +71,11 @@ export function AssistantChat({ assistantId }: AssistantChatProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isLoading || !message.trim()) return;
-
+    if (!threadId) {
+      const newThread = await createThread(assistantId);
+      const newThreadId = newThread?.thread_id
+      setCurrentThreadId(newThreadId)
+    }
     setIsLoading(true);
     setLocalError(undefined);
 
@@ -99,7 +83,7 @@ export function AssistantChat({ assistantId }: AssistantChatProps) {
       const formData = new FormData();
       formData.append('assistant_id', assistantId);
       formData.append('content', message);
-      formData.append('thread_id', threadId);
+      formData.append('thread_id', currentThreadId);
       formData.append('role', 'user');
       formData.append('file_queue', JSON.stringify(getFileQueue()));
       const sentMessage = await fetch('/api/thread/message', {

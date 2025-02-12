@@ -1,11 +1,12 @@
 import { User } from '@supabase/supabase-js'
 import { Assistant, Message, Run, Thread } from '../api/openai'
-import { UserAssistant, ChatThread, Document } from '../database'
+import { UserAssistant, Document, ChatThread } from '../database'
 
 // Base State Interface
 export interface AssistantState {
   user: User | null
   currentThread: ChatThread | null
+  currentThreadId: string | null
   currentAssistant: UserAssistant | null
   messages: Message[]
   runs: Run[]

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createClient } from "@/utils/supabase/client"
 import { AssistantState, UIState } from '@/types/store'
+import { ChatThread } from '@/types/database'
 
 interface Match {
   snippet: string;
@@ -12,6 +13,7 @@ interface AssistantStore extends AssistantState, UIState {
   // State Actions
   setUser: (user: AssistantState['user']) => void
   setCurrentThread: (thread: AssistantState['currentThread']) => void
+  setCurrentThreadId: (threadId: AssistantState['currentThreadId']) => void
   setCurrentAssistant: (currentAssistant: AssistantState['currentAssistant']) => void
   setMessages: (messages: AssistantState['messages']) => void
   addMessage: (message: AssistantState['messages'][0]) => void
@@ -25,7 +27,7 @@ interface AssistantStore extends AssistantState, UIState {
   fetchThreads: (assistantId?: string) => Promise<void>
   fetchThreadsCount: () => Promise<number>
   fetchAssistantsCount: () => Promise<number>
-  createThread: (assistantId?: string) => Promise<string | null>
+  createThread: (assistantId?: string) => Promise<ChatThread | null>
   fetchThreadMessages: () => Promise<void>
   fetchUserId: () => Promise<any>
   updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>
@@ -39,6 +41,7 @@ interface AssistantStore extends AssistantState, UIState {
 const initialState: AssistantState & UIState = {
   user: null,
   currentThread: null,
+  currentThreadId: null,
   currentAssistant: null,
   messages: [],
   runs: [],
@@ -54,7 +57,14 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
   // State Actions
   setUser: (user) => set({ user }),
-  setCurrentThread: (currentThread) => set({ currentThread }),
+  setCurrentThread: (thread) => {
+    if (thread) {
+      set({ currentThread: thread });
+    }
+  },
+  setCurrentThreadId: (threadId) => {
+    set({ currentThreadId: threadId });
+  },
   setCurrentAssistant: (currentAssistant) => set({ currentAssistant }),
   setMessages: (messages) => {
     console.log('Setting messages in store:', messages); // Add this line
@@ -164,13 +174,14 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   createThread: async (assistantId?: string) => {
     console.log('[Store:createThread] Starting with assistantId:', assistantId)
     try {
+      const timestamp = new Date().toISOString()
       set({ isLoading: true, error: null })
       const formData = new FormData()
 
       if (assistantId) {
         formData.append('assistant_id', assistantId)
       }
-      formData.append('title', 'New Chat')
+      formData.append('title', timestamp)
       const response = await fetch('/api/thread/create', {
         method: 'POST',
         body: formData
@@ -180,39 +191,19 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           console.error('[Store:createThread] Failed to parse error response')
           return null
         })
-        console.error('[Store:createThread] Error response:', errorData)
-        throw new Error(errorData?.error || 'Failed to create thread')
+        throw new Error(errorData?.message || 'Failed to create thread')
       }
-      const data = await response.json()
-      const id = data.thread?.id;
-      const threadId = data.thread?.thread_id;
-      const userId = data.thread?.user_id;
-      const createdAt = data.thread?.created_at;
-      const updatedAt = data.thread?.updated_at;
-      const isActive = data.thread?.is_active;
-
-      if (threadId && userId && createdAt && updatedAt !== undefined && isActive !== undefined) {
-        set({
-          currentThread: {
-            id: id,
-            thread_id: threadId,
-            user_id: userId,
-            created_at: createdAt,
-            updated_at: updatedAt,
-            is_active: isActive,
-          },
-        });
-      } else {
-        console.error('Missing properties for setting currentThread:', data.thread);
-      }
+      
+      const threadId = await response.json()
+      console.log('[Store:createThread] Created thread:', threadId)
       return threadId
     } catch (error) {
-      console.error('[Store:createThread] Caught error:', error)
-      set({ error: (error as Error).message })
+      console.error('[Store:createThread] Error creating thread:', error)
+      set({ error: error instanceof Error ? error.message : 'Failed to create thread' })
       return null
     } finally {
       set({ isLoading: false })
-     }
+    }
   },
 
   fetchThreadMessages: async () => {

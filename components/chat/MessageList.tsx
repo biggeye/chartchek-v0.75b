@@ -74,13 +74,13 @@ function renderAnnotatedContent(text: string, annotations: ChatMessageAnnotation
   ];
 }
 
-export function MessageList({ messages = [], streamingContent = [] }: MessageListProps) {
-console.log('Rendering MessageList with messages:', messages, 'and streamingContent:', streamingContent);
-  const bottomRef = useRef<HTMLDivElement>(null)
+export const MessageList = React.memo(({ messages = [], streamingContent = [] }: MessageListProps) => {
+
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent])
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingContent]);
 
   return (
     <ScrollArea className="h-[calc(100vh-5rem)] w-full">
@@ -116,8 +116,8 @@ console.log('Rendering MessageList with messages:', messages, 'and streamingCont
             <MessageContentComponent content={streamingContent} isStreaming />
           </div>
         )}
-               <div ref={bottomRef} />
+        <div ref={bottomRef} />
       </div>
     </ScrollArea>
-  )
-}
+  );
+});

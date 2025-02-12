@@ -42,7 +42,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     } : undefined)
 
     console.log('[API] Created thread:', thread.id)
-
+    const threadId = thread.id
+    if (!requestData.initial_message) {
+    return new Response(JSON.stringify({ thread_id: threadId}))
+    }
     // Store thread in database
     const chatThread: Omit<ChatThread, 'id' | 'created_at' | 'updated_at'> = {
       user_id: user.id,
