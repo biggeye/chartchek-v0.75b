@@ -213,14 +213,16 @@ export function Chat({ assistantId }: AssistantChatProps) {
             disabled={isLoading}
             resizable={false}
           />
-          <EnhancedSubmitButton
-            message={message}
-            isLoading={isLoading}
-            isStreaming={isLoading}
-            error={error || undefined}
-            assistantId={assistantId}
-            threadId={currentThreadId}
-          />
+      <EnhancedSubmitButton
+  message={message}
+  isLoading={isLoading}
+  isStreaming={isLoading}
+  error={error || undefined}
+  assistantId={assistantId}
+  threadId={currentThreadId}
+  onSubmit={handleSubmit} // Assuming handleSubmit is the function to handle the submit action
+  className="submit-button-class" // Replace with the desired class name
+/>
         </div>
       </form>
 

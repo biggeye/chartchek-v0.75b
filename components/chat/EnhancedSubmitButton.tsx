@@ -3,19 +3,31 @@
 import { SubmitButton } from '@/components/submit-button'
 import { Loader2, SendHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { EnhancedSubmitButtonProps } from '@/types'
+
+// Temporary type definition for EnhancedSubmitButtonProps
+interface EnhancedSubmitButtonProps {
+  message: string;
+  onSubmit: any;
+  isLoading: boolean;
+  disabled?: boolean;
+  isStreaming: boolean;
+  error: any;
+  assistantId: any;
+  threadId: any;
+  className: string;
+}
 
 export function EnhancedSubmitButton({ 
   message, 
+  onSubmit, 
   isLoading, 
+  disabled = false,
   isStreaming,
   error,
   assistantId,
   threadId,
   className,
-  ...props
 }: EnhancedSubmitButtonProps) {
-
 
   // Determine button state
   const isDisabled = isLoading || !message.trim()
@@ -61,7 +73,6 @@ export function EnhancedSubmitButton({
         },
         className
       )}
-      {...props}
     >
       {getButtonContent()}
     </SubmitButton>
