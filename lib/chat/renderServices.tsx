@@ -1,23 +1,25 @@
-import React, { ReactNode, ReactElement, JSXElementConstructor } from 'react';
+import React, { ReactNode } from 'react';
+import type { ChatMessageAnnotation } from '@/types/store';
 
-interface ChatMessageAnnotation {
-  text: string;
-  type: string;
-  index: number;
-  end_index: number;
-  start_index: number;
-  file_citation: {
-    quote: string;
-    file_id: string;
-  };
-}
+export const renderContent = (
+  content: string,
+  annotations: ChatMessageAnnotation[]
+) => {
+  return annotations.reduce((processedContent, ann) => {
+    const pattern = new RegExp(`【${ann.start_index}:${ann.end_index}†[^】]+】`, 'g');
+    const replacement = ann.file_citation 
+      ? `[${ann.file_citation.file_id}]` 
+      : 'Unreferenced';
+    return processedContent.replace(pattern, replacement);
+  }, content);
+};
 
-export async function renderContent(text: string, annotations: ChatMessageAnnotation[] = []): Promise<ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | Awaited<ReactNode>> {
-  const formattedText: ReactNode[] = [];
+export async function renderContentAsync(text: string, annotations: ChatMessageAnnotation[] = []): Promise<ReactNode> {
+  const processedContent = renderContent(text, annotations);
 
   // Split text into paragraphs
-  const paragraphs = text.split(/\r\n\r\n/);
-  paragraphs.forEach((paragraph, index) => {
+  const paragraphs = processedContent.split(/\r\n\r\n/);
+  const formattedText: ReactNode[] = paragraphs.map((paragraph, index) => {
     const formattedParagraph: ReactNode[] = [];
     let lastBoldIndex = 0;
     let boldMatch: RegExpExecArray | null;
@@ -29,26 +31,8 @@ export async function renderContent(text: string, annotations: ChatMessageAnnota
       lastBoldIndex = boldPattern.lastIndex;
     }
     formattedParagraph.push(paragraph.slice(lastBoldIndex));
-    formattedText.push(<p key={`paragraph-${index}`}>{formattedParagraph}</p>);
+    return <p key={`paragraph-${index}`}>{formattedParagraph}</p>;
   });
-
-  // Process annotations
-  if (annotations.length > 0) {
-    const regex = /【(\d+):(\d+)†([^】]+)】/g;
-    let lastIndex = 0;
-    let refIndex = 1;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(text)) !== null) {
-      formattedText.push(text.slice(lastIndex, match.index));
-      formattedText.push(<sup key={`footnote-${refIndex}`}>{refIndex}</sup>);
-      lastIndex = regex.lastIndex;
-      refIndex++;
-    }
-    formattedText.push(text.slice(lastIndex));
-  } else {
-    formattedText.push(text);
-  }
 
   // Footnotes
   const footnotes: ReactNode[] = [];

@@ -1,7 +1,7 @@
 import { Tool } from '../api/openai'
 import { ToolResources } from '@/types/api/openai/tools'
-import { ChatMessageAnnotation, MessageRole, MessageContent } from '@/types/api/openai/messages'
-
+import { MessageRole } from '@/types/api/openai/messages'
+import { ChatMessageAnnotation } from '../store'
 // Shared Types
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -20,6 +20,16 @@ export interface UserAssistant {
   tool_resources?: ToolResources
   metadata?: Record<string, any>
   is_active?: boolean
+}
+
+export interface TextContent {
+  value: string
+  annotations?: ChatMessageAnnotation[]
+}
+
+export interface MessageContent {
+  type: 'text',
+  text: TextContent
 }
 
 export interface ChatMessage {
@@ -69,4 +79,4 @@ export interface Document {
   embedding_status?: ProcessingStatus
 }
 
-
+// Removed duplicate ChatMessageAnnotation interface

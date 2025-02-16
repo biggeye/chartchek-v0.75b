@@ -1,54 +1,100 @@
-import { User } from '@supabase/supabase-js'
-import { Assistant, Message, Run, Thread } from '../api/openai'
-import { UserAssistant, Document, ChatThread } from '../database'
-
-// Base State Interface
-export interface AssistantState {
-  user: User | null
-  currentThread: ChatThread | null
-  currentThreadId: string | null
-  currentAssistant: UserAssistant | null
-  messages: Message[]
-  runs: Run[]
-  userThreads: ChatThread[]
-  userFiles: Document[]
-  assistants: UserAssistant[]
+export interface Thread {
+  thread_id: string
+  thread_title: string
+  updated_at: string
 }
 
+export interface Message {
+  id: string;
+  created_at: number;
+  thread_id: string;
+  role: 'user' | 'assistant';
+  content: {
+    type: 'text';
+    text: {
+      value: string;
+      annotations: ChatMessageAnnotation[];
+    };
+  };
+  [key: string]: any;
+}
+
+export interface ChatMessageAnnotation {
+  id?: string;
+  message_id?: string;
+  type: 'file' | 'quote' | 'file_citation';
+  text?: string;
+  file_id?: string;
+  quote?: string;
+  start_index?: number;
+  end_index?: number;
+  created_at?: string;
+  file_citation?: {
+    file_id: string;
+    quote?: string;
+  };
+}
+
+// User Auth Interface
+interface UserState {
+
+  userId: string | null
+  userThreads: Thread[]
+  userAssistants: string[]
+}
+// Base State Interface
+interface ChatState {
+  currentThreadId: string
+  currentAssistantId: string
+  currentMessage: string | null
+  currentConversation: Message[] | []
+  currentFileQueue: string[] | null
+}
 // UI State Interface
-export interface UIState {
+interface UIState {
   isLoading: boolean
   error: string | null
 }
-
-// Store Actions Interface
-export interface StoreActions {
-  setUser: (user: AssistantState['user']) => void
-  setCurrentThread: (thread: AssistantState['currentThread']) => void
-  setCurrentAssistant: (assistant: AssistantState['currentAssistant']) => void
-  setMessages: (messages: AssistantState['messages']) => void
-  addMessage: (message: Message) => void
-  setRuns: (runs: AssistantState['runs']) => void
-  addRun: (run: Run) => void
-  setUserThreads: (threads: AssistantState['userThreads']) => void
-  setUserFiles: (files: AssistantState['userFiles']) => void
-  setAssistants: (assistants: AssistantState['assistants']) => void
-}
-
 // Async Actions Interface
-export interface AsyncActions {
-  fetchAssistants: () => Promise<void>
-  fetchThreads: () => Promise<void>
-  createThread: (assistantId?: string) => Promise<string | null>
-  fetchThreadMessages: () => Promise<void>
+interface AsyncActions {
+  // create
+  createThread: (assistantId?: string) => Promise<string | null>;  // Create a thread with assistantId and store response
+  // read
+  fetchUserId: () => Promise<UserState['userId']>;  // Fetch userId from Supabase auth provider
+  fetchUserAssistants: () => Promise<UserState['userAssistants']>;  // Fetch assistants from PostgreSQL using userId
+  fetchUserThreads: (assistantId: string) => Promise<Thread[]>;  // Fetch threads using assistantId
+  fetchThreadMessages: (threadId: ChatState['currentThreadId']) => Promise<ChatState['currentConversation']>;  // Fetch messages using threadId
+  // update
+  setUserThreads: (userThreads: Thread[]) => void;
+  setThreadTitle: (title: string) => void;
+  // delete
+  deleteThread: (threadId: string) => Promise<void>;
+}
+// UI Actions Interface
+interface UIActions {
+  setError: (error: string | null) => void;
+  setLoading: (isLoading: boolean) => void;
+  reset: () => void;
 }
 
-// UI Actions Interface
-export interface UIActions {
-  setError: (error: string | null) => void
-  setLoading: (isLoading: boolean) => void
+// Client State Interface
+interface ClientState extends UserState, ChatState, UIState {
+  // State Actions
+  setCurrentThreadId: (threadId: ChatState['currentThreadId']) => void;  // Set current thread ID
+  setCurrentConversation: (messages: ChatState['currentConversation']) => void;  // Set current conversation
+  setCurrentAssistantId: (currentAssistantId: ChatState['currentAssistantId']) => void;  // Set current assistant ID
+  setCurrentMessage: (message: ChatState['currentMessage']) => void;  // Set current message
+  setIsLoading: (isLoading: UIState['isLoading']) => void;
+  setError: (error: UIState['error']) => void;
+
+  // UI Actions
   reset: () => void
 }
-
 // Complete Store Type
-export type AssistantStore = AssistantState & UIState & StoreActions & AsyncActions & UIActions
+export type ClientStoreType =
+  UserState &
+  ChatState &
+  UIState &
+  ClientState &
+  AsyncActions &
+  UIActions;

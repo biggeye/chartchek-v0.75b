@@ -2,48 +2,108 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAssistantStore } from '@/store/assistantStore'
+import { useClientStore } from '@/store/clientStore'
 import { TrashIcon } from '@heroicons/react/20/solid';
+import { Thread } from '@/types/store'
 
-export function ThreadList({ assistantId }: { assistantId: string }) {
+type ThreadListProps = {
+  assistantId: string;
+};
+
+export function ThreadList({ assistantId }: ThreadListProps) {
     const {
+        deleteThread,
+        currentAssistantId,
+        currentConversation,
+        currentThreadId,
         userThreads,
-        isLoading,
-        fetchThreads,
-        currentThread,
-        setCurrentThread,
+        fetchUserThreads,
         fetchThreadMessages,
-        currentAssistant,
-        updateThreadTitle,
-        deleteThread
-    } = useAssistantStore();
+        setCurrentThreadId,
+        setCurrentConversation,
+        setThreadTitle,
+        isLoading,
+        error,
+        setError,
+        setUserThreads
+    } = useClientStore();
+
+    
 
     useEffect(() => {
-       fetchThreads(assistantId)
-        }, [fetchThreads]);
+        if (currentAssistantId) {
+            fetchUserThreads(currentAssistantId)
+                .then((threads) => {
+                    setUserThreads(threads);
+                    console.log('[ThreadList] Threads loaded:', threads);
+                })
+                .catch((error) => {
+                    console.error('[ThreadList] Error loading threads:', error);
+                    setError('Failed to load threads');
+                });
+        }
+    }, [currentAssistantId, fetchUserThreads, setUserThreads, setError]);
 
-        const handleThreadChange = async (threadId: string) => {
-            const selectedThread = userThreads.find(t => t.thread_id === threadId);
-            if (selectedThread) {
-                await setCurrentThread(selectedThread);
-                await fetchThreadMessages();
+    useEffect(() => {
+        const loadThreads = () => {
+          if (userThreads.length === 0) {
+            if (currentAssistantId) {
+              fetchUserThreads(currentAssistantId)
+                .then((threads) => {
+                    setUserThreads(threads);
+                    console.log('[ThreadList] Threads loaded:', threads);
+                })
+                .catch((error) => {
+                    console.error('[ThreadList] Error loading threads:', error);
+                    setError('Failed to load threads');
+                });
             }
+          }
         };
+        
+        loadThreads();
+      }, [fetchUserThreads, setError, userThreads.length, currentAssistantId, setUserThreads]);
 
-        const renameThread = async (threadId: string) => {
-            const newTitle = prompt('Enter new title:');
-            if (newTitle) {
-                await updateThreadTitle(threadId, newTitle);
+// Ensure setCurrentConversation is called with the correct type
+const handleThreadChange = (threadId: string) => {
+    console.log('[ThreadList] Selected Thread ID:', threadId);
+    setCurrentThreadId(threadId);
+    fetchThreadMessages(threadId)
+        .then((messages) => {
+            setCurrentConversation(messages);
+            console.log('[ThreadList] Messages loaded for thread:', threadId);
+        })
+        .catch((error) => {
+            console.error('[ThreadList] Error loading messages for thread:', error);
+            setError('Failed to load messages');
+        });
+};
+
+    const renameThread = (threadId: string) => {
+        console.log('[ThreadList] Renaming thread with ID:', threadId);
+        const newTitle = prompt('Enter new title:');
+        if (newTitle) {
+           setThreadTitle(newTitle);
+        }
+    };
+
+    const handleDeleteThread = (threadId: string) => {
+        console.log('[ThreadList] Deleting thread with ID:', threadId);
+        if (confirm('Are you sure you want to delete this thread?')) {
+            deleteThread(threadId);
+            if (currentAssistantId) {
+              fetchUserThreads(currentAssistantId)
+                .then((threads) => {
+                    setUserThreads(threads);
+                    console.log('[ThreadList] Threads loaded:', threads);
+                })
+                .catch((error) => {
+                    console.error('[ThreadList] Error loading threads:', error);
+                    setError('Failed to load threads');
+                });
             }
-        };
-
-        const handleDeleteThread = async (threadId: string) => {
-            if (confirm('Are you sure you want to delete this thread?')) {
-                await deleteThread(threadId);
-                fetchThreads(); // Refresh the thread list after deletion
-            }
-        };
-
+        }
+    };
 
     if (isLoading) {
         return <div className="flex items-center justify-center p-4">
@@ -56,18 +116,18 @@ export function ThreadList({ assistantId }: { assistantId: string }) {
             <h3 className="text-sm font-medium text-gray-700">Chat History</h3>
             
             <ul className="max-h-full overflow-y-auto divide-y divide-gray-200">
-                {userThreads.map((thread) => (
+                {userThreads.map((thread: Thread) => (
                     <li 
                         key={thread.thread_id}
                         onClick={() => handleThreadChange(thread.thread_id)}
-                        className="p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out"
+                        className={`thread-item ${currentThreadId === thread.thread_id ? 'bg-accent' : ''} p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out`}
                     >
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-900 truncate cursor-pointer" onClick={() => renameThread(thread.thread_id)}>
-                                {thread.title || "Untitled Thread"} {/* Display thread title */}
+                                {thread.thread_title || "Untitled Thread"} {/* Display thread title */}
                             </span>
                             <span className="text-xs text-gray-500">
-                                {thread.last_message_at ? new Date(thread.last_message_at).toLocaleDateString() : "No messages"} {/* Display last message date */}
+                                {thread.updated_at ? new Date(thread.updated_at).toLocaleDateString() : "No messages"} {/* Display last message date */}
                             </span>
                             <button onClick={() => handleDeleteThread(thread.thread_id)} className="text-gray-500 hover:text-red-500">
                                 <TrashIcon className="h-5 w-5" aria-hidden="true" />
@@ -76,6 +136,7 @@ export function ThreadList({ assistantId }: { assistantId: string }) {
                     </li>
                 ))}
             </ul>
+            {useClientStore.getState().error && <div className="text-red-500">{useClientStore.getState().error}</div>}
         </div>
     );
 }

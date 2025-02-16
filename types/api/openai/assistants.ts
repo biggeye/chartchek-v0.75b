@@ -1,6 +1,6 @@
 import { Tool, ToolResources } from './tools'
 
-export interface Assistant {
+export interface OpenAIAssistant {
   id: string
   object: 'assistant'
   created_at: number
@@ -13,7 +13,7 @@ export interface Assistant {
   metadata?: Record<string, any>
 }
 
-export interface Thread {
+export interface OpenAIThread {
   id: string
   object: 'thread'
   created_at: number

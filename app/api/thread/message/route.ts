@@ -1,44 +1,50 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
 import { openai as awaitOpenai } from '@/utils/openai'
-import { documentStore } from '@/store/documentStore';
+
 import type { ThreadMessageRequest, ThreadMessageResponse, ApiResponse } from '@/types/api/routes'
-import type { ChatMessage } from '@/types/database'
 import type { FileAttachment, MessageFileAttachment } from '@/types/api/openai/tools'
 import type { MessageRole } from '@/types/api/openai/messages'
+import type { ChatMessage } from '@/types/database'
 
 
 export async function POST(request: NextRequest): Promise<Response> {
+  console.log('[/thread/message/route] POST request received');
   const openai = await awaitOpenai();
   try {
     const supabase = await createServer()
 
-    // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
+      console.error('[/thread/message/route] Error:', authError || 'Unauthorized access');
       return new Response(JSON.stringify({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       })
     }
-    console.log('File queue:', documentStore.getState().fileQueue);
     const formData = await request.formData()
-    console.log('Form data:', formData);
-    const fileQueue = documentStore.getState().fileQueue;
-    const attachments: FileAttachment[] = fileQueue.map(fileId => ({
+    const fileQueue = formData.get('file_queue');
+    const attachments = fileQueue && (fileQueue as string).trim() !== '' ? (fileQueue as string).split(',').map(fileId => ({
       file_id: fileId,
-      tools: [] // Add appropriate tools if needed
-    }));
-    const requestData: ThreadMessageRequest = {
+    })) : undefined;
+    const threadId = formData.get('thread_id') as string;
+    const role = formData.get('role') as MessageRole;
+    const content = formData.get('content') as string;
+    const annotations = formData.get('annotations') as string;
+
+    console.log('[API] Form data extracted:', { threadId, role, content, annotations });
+
+    const requestData = {
       user_id: user.id,
-      thread_id: formData.get('thread_id') as string,
-      role: formData.get('role') as MessageRole,
-      content: formData.get('content') as string,
+      thread_id: threadId,
+      role: role,
+      content: content,
       attachments: attachments,
-      annotations: formData.get('annotations') ? JSON.parse(formData.get('annotations') as string) : undefined
+      annotations: annotations
     }
 
     if (!requestData.thread_id) {
+      console.error('[API] Missing required field: thread_id');
       return new Response(JSON.stringify({
         error: 'Missing required field: thread_id',
         code: 'INVALID_REQUEST'
@@ -54,13 +60,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       {
         role: requestData.role === 'assistant' ? 'user' : requestData.role,
         content: requestData.content,
-        attachments: requestData.attachments?.map((attachment: FileAttachment): MessageFileAttachment => ({
-          type: 'file',
-          file_id: attachment.file_id
-        })) || []
+        
+     //     tools: attachment.tools
+ 
       }
     )
-    console.log('[ThreadMessage] Created message with: ', requestData);
+    console.log('[/thread/message/route] Created message with: ', requestData);
     if (!threadMessage?.id) {
       throw new Error("Failed to create message with OpenAI")
     }
@@ -68,13 +73,12 @@ export async function POST(request: NextRequest): Promise<Response> {
 
 
     // Add message to database
-    const chatMessage: Partial<ChatMessage> = {
+    const chatMessage = {
       user_id: user.id,
       thread_id: requestData.thread_id,
       message_id: threadMessage.id,
       role: requestData.role,
       content: {
-        type: 'text',
         text: {
           value: requestData.content,
           annotations: requestData.annotations

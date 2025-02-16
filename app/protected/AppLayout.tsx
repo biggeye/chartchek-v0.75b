@@ -27,13 +27,13 @@ import { ShieldCheckIcon, CreditCardIcon, BuildingOffice2Icon, ChatBubbleLeftIco
 
 import { ThreadList } from '@/components/chat/ThreadList'
 import { AssistantSelector } from '@/components/chat/AssistantSelector'
-import { useAssistantStore } from '@/store/assistantStore';
+import { useClientStore } from '@/store/clientStore';
 import UserStats from '@/components/user-stats';
 
 import { signOutAction } from "@/app/actions";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
-const user = useAssistantStore.getState().user;
+const user = useClientStore.getState().userId;
 
 const navigation = [
   { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon, current: true },

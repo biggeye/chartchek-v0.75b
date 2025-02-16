@@ -1,84 +1,72 @@
 'use client'
 
+import { createClient } from '@/utils/supabase/client'
 import { useEffect, useRef } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { MessageContent as MessageContentComponent } from './MessageContent'
-import { Message, MessageContent, ChatMessageAnnotation } from '@/types/api/openai/messages'
+import { OpenAIMessage } from '@/types/api/openai/messages'
+import { ChatMessageAnnotation } from '@/types/store';
+import { MessageContent } from '@/types/database'
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useAssistantStore } from '@/store/assistantStore';
+import { useClientStore } from '@/store/clientStore';
+import { renderContent } from '@/lib/chat/renderServices';
+import { Message } from '@/types/store';
 
 interface MessageListProps {
-  messages?: Message[]
+  messages: OpenAIMessage[]
   streamingContent?: MessageContent[]
 }
 
-// New helper function to render annotated content
-function renderAnnotatedContent(text: string, annotations: ChatMessageAnnotation[]): React.ReactNode[] {
-  const footnotes: React.ReactNode[] = [];
-  const regex = /【(\d+):(\d+)†([^】]+)】/g;
-  let lastIndex = 0;
-  let refIndex = 1;
-  let match: RegExpExecArray | null;
-  let cleanedText = '';
+export const MessageList = React.memo(({ messages, streamingContent }: MessageListProps) => {
+  const supabase = createClient();
+  const { currentConversation, currentThreadId, setCurrentConversation } = useClientStore()
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  while ((match = regex.exec(text)) !== null) {
-    // Append text before this match to cleanedText
-    cleanedText += text.slice(lastIndex, match.index);
+  // Real-time subscription
+  useEffect(() => {
+    if (!currentThreadId) return
 
-    // Capture the preceding up to 35 characters and form a tooltip snippet
-    const snippetStart = Math.max(match.index - 35, 0);
-    const snippet = text.slice(snippetStart, match.index);
-    const tooltipSnippet = '...' + snippet;
+    const channel = supabase
+      .channel('realtime-chat')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `thread_id=eq.${currentThreadId}`
+      }, (payload) => {
+        setCurrentConversation([...currentConversation, payload.new as Message])
+      })
+      .subscribe()
 
-    // Combine the text after '†' (match[3]) with the tooltip snippet
-    const combinedTooltip = `${match[3]} ${tooltipSnippet}`;
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentThreadId, currentConversation])
 
-    // Create a footnote element that only displays the reference number, with extra info in the tooltip
-    footnotes.push(
-      <div key={`foot-${refIndex}`} style={{ display: 'inline-block', marginRight: '4px', textAlign: 'center' }}>
-        <sup style={{ cursor: 'pointer' }} title={combinedTooltip}>{refIndex}</sup>
-      </div>
-    );
-    refIndex++;
-    lastIndex = regex.lastIndex;
-  }
-  // Append the remaining text after the last match
-  cleanedText += text.slice(lastIndex);
-
-  // Additional formatting for **[any given text]** patterns
-  const boldPattern = /(?:\d+\.)?\s*\*\*(.*?)\*\*:?/g;
-  let boldMatch: RegExpExecArray | null;
-  let formattedText: React.ReactNode[] = [];
-  let lastBoldIndex = 0;
-
-  while ((boldMatch = boldPattern.exec(cleanedText)) !== null) {
-    // Append text before the bold pattern
-    formattedText.push(cleanedText.slice(lastBoldIndex, boldMatch.index));
-
-    // Bold the text and start a new paragraph
-    formattedText.push(<p key={`bold-${boldMatch.index}`}><strong>{boldMatch[1]}</strong></p>);
-
-    // Start a new paragraph immediately after
-    formattedText.push(<p key={`para-after-bold-${boldMatch.index}`}></p>);
-
-    lastBoldIndex = boldPattern.lastIndex;
-  }
-  // Append any remaining text after the last bold match
-  formattedText.push(cleanedText.slice(lastBoldIndex));
-
-  return [
-    <span key="main-text">{formattedText}</span>,
-    <div key="footnotes" className="annotation-footnotes">{footnotes}</div>
-  ];
-}
-
-export const MessageList = React.memo(({ messages = [], streamingContent = [] }: MessageListProps) => {
-
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Initial fetch
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (currentThreadId) {
+        const messages = await useClientStore.getState().fetchThreadMessages(currentThreadId)
+        setCurrentConversation(messages)
+      }
+    }
+    fetchMessages()
+  }, [currentThreadId])
+  useEffect(() => {
+    if (messages.length > 0) {
+      console.log('Messages received:', {
+        count: messages.length,
+        latest: messages[messages.length - 1],
+        streaming: Boolean(streamingContent)
+      });
+    }
+  }, [messages, streamingContent]);
 
   useEffect(() => {
+    console.log('[MessageList] Streaming content updated:', streamingContent);
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
@@ -97,14 +85,31 @@ export const MessageList = React.memo(({ messages = [], streamingContent = [] }:
               {message.role === 'user' ? 'You' : 'Assistant'}
             </div>
             {message.content && Array.isArray(message.content) && message.content[0] && message.content[0].text ? (
-              message.content[0].text.annotations ? (
-                renderAnnotatedContent(message.content[0].text.value, message.content[0].text.annotations)
-              ) : (
-                renderAnnotatedContent(message.content[0].text.value, [])
+              console.log('Annotations for message:', message.id, message.content[0].text.annotations),
+              renderContent(
+                message.content[0].text.value,
+                message.content[0].text.annotations || []
               )
             ) : message.content && !Array.isArray(message.content) && message.content.text ? (
-              renderAnnotatedContent(message.content.text.value, [])
+              console.log('Annotations for message:', message.id, message.content.text.annotations),
+              renderContent(
+                message.content.text.value,
+                message.content.text.annotations || []
+              )
             ) : null}
+            {message.content && message.content.text && message.content.text.annotations && (
+              <div className="annotation-markers">
+                {message.content.text.annotations.map((ann) => (
+                  <sup 
+                    key={`${message.id}-ann-${ann.start_index}-${ann.end_index}`}
+                    className="annotation-marker"
+                    title={ann.file_citation ? `${ann.type}: ${ann.file_citation.file_id}` : 'No citation available'}
+                  >
+                    [{ann.start_index}-{ann.end_index}]
+                  </sup>
+                ))}
+              </div>
+            )}
           </div>
         ))}
 

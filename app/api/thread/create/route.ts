@@ -21,17 +21,16 @@ export async function POST(request: NextRequest): Promise<Response> {
       })
     }
 
-    const formData = await request.formData()
+    const json = await request.json();
     const requestData: ThreadCreateRequest = {
       user_id: user.id,
-      assistant_id: formData.get('assistant_id') as string || undefined,
-      title: formData.get('title') as string || undefined,
-      metadata: formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined,
-      initial_message: formData.get('initial_message') as string || undefined
-    }
+      assistant_id: json.assistantId,
+      title: json.title,
+      metadata: json.metadata,
+      initial_message: json.initial_message
+    };
 
     // Debugging: Log the openai instance to inspect its structure
-    console.log('OpenAI Instance:', openai);
 
     // Create thread with OpenAI
     const thread = await openai.beta.threads.create(requestData.initial_message ? {

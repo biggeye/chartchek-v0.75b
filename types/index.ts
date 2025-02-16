@@ -4,12 +4,6 @@ export * from './api/openai'
 // API types
 export * from './api/routes'
 
-// Component types
-export * from './components/chat'
-
-// Store types
-export * from './store/index'
-
 // Re-export commonly used types for convenience
 export type {
   UserAssistant,

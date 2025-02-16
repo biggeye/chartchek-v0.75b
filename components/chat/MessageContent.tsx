@@ -9,6 +9,22 @@ interface MessageContentProps {
   isStreaming?: boolean
 }
 
+interface Annotation {
+  type: string
+  file_id?: string
+  text?: string
+}
+
+interface TextContent {
+  value: string
+  annotations?: Annotation[]
+}
+
+interface MessageContentItem {
+  type: 'text'
+  text: TextContent
+}
+
 export function MessageContent({ content, className, isStreaming }: MessageContentProps) {
 
   const contentArray = Array.isArray(content) ? content : [content];
@@ -17,7 +33,20 @@ export function MessageContent({ content, className, isStreaming }: MessageConte
     <div className={className}>
       {contentArray.map((item, id) => {
         if (item.type === 'text') {
-          return <span key={id}>{item.text.value}</span>; // Access the value correctly
+          return (
+            <div key={id} className="prose dark:prose-invert">
+              {item.text.value}
+              {item.text.annotations && item.text.annotations.length > 0 && (
+                <div className="annotation-footnotes mt-2">
+                  {item.text.annotations.map((ann, index) => (
+                    <div key={`${id}-ann-${index}`} className="text-xs text-muted-foreground">
+                      [{index+1}] {ann.type}: {ann.file_id || ann.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
         }
         // Handle other content types if necessary
         return null;
