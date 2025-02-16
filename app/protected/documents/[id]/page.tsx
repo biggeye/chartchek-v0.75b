@@ -1,12 +1,13 @@
 'use client'
 
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { PaperClipIcon } from '@heroicons/react/20/solid';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useDocumentStore } from '@/store/documentStore';
 import Breadcrumb from '@/components/ui/breadcrumb';
 import { Document, ProcessingStatus } from '@/types/database';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 
 export default function DocumentDetail() {
   const { id } = useParams();
@@ -46,7 +47,36 @@ export default function DocumentDetail() {
 
   return (
     <div>
-      <Breadcrumb pages={breadcrumbPages} />
+      <div className="px-4 sm:px-0">
+        <h3 className="text-base/7 font-semibold text-gray-900">{document.filename}</h3>
+        <p className="mt-1 max-w-2xl text-sm/6 text-gray-500">Details and metadata of the document.</p>
+      </div>
+      <div className="mt-6">
+        <dl className="grid grid-cols-1 sm:grid-cols-2">
+          <div className="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+            <dt className="text-sm/6 font-medium text-gray-900">Category</dt>
+            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{document.category || 'No category'}</dd>
+          </div>
+          <div className="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+            <dt className="text-sm/6 font-medium text-gray-900">File Type</dt>
+            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{document.file_type}</dd>
+          </div>
+          <div className="border-t border-gray-100 px-4 py-6 sm:col-span-2 sm:px-0">
+            <dt className="text-sm/6 font-medium text-gray-900">Description</dt>
+            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">
+              {document.description || 'No description available.'}
+            </dd>
+          </div>
+          <div className="border-t border-gray-100 px-4 py-6 sm:col-span-2 sm:px-0">
+            <dt className="text-sm/6 font-medium text-gray-900">Attachments</dt>
+            <dd className="mt-2 text-sm text-gray-900">
+              <ul role="list" className="divide-y divide-gray-100 rounded-md border border-gray-200">
+                
+              </ul>
+            </dd>
+          </div>
+        </dl>
+      </div>
       <div className="mx-auto flex items-center justify-between gap-x-8 lg:mx-0">
         <div className="flex items-center gap-x-6">
           <img

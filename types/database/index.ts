@@ -60,6 +60,7 @@ export interface ChatThread {
 }
 
 export interface Document {
+  description: string
   id: string
   created_at: string
   updated_at: string

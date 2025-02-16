@@ -22,7 +22,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
 
   // Actions
   setCurrentThreadId: (threadId: string) => {
-    console.log('[ClientStore] Setting Current Thread ID:', threadId);
     set({ currentThreadId: threadId })
   },
   setCurrentConversation: (messages: Message[]) => set({ currentConversation: messages }),
@@ -46,7 +45,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
 
   // Async Actions
   createThread: async (assistantId?: string): Promise<string | null> => {
-    console.log('[ClientStore] Creating thread for Assistant ID:', assistantId);
     set({ isLoading: true, error: null });
     try {
       const newThreadId = await createThreadInAPI(assistantId);
@@ -62,7 +60,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
   },
   fetchUserId: async (): Promise<string | null> => {
-    console.log('[ClientStore] Fetching user ID');
     try {
       const userId = await fetchUserIdFromSupabase();
       set({ userId });
@@ -73,7 +70,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
   },
   fetchUserAssistants: async (): Promise<string[]> => {
-    console.log('[ClientStore] Fetching user assistants');
     try {
       const userAssistants = await fetchUserAssistantsFromSupabase(get().userId);
       set({ userAssistants });
@@ -84,7 +80,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
   },
   fetchUserThreads: async (assistantId: string): Promise<Thread[]> => {
-    console.log('[ClientStore] Fetching threads for Assistant ID:', assistantId);
     set({ isLoading: true });
     try {
       const { data, error } = await supabase
@@ -143,13 +138,11 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Message fetch failed';
       set({ error: errorMsg });
-      console.error('[Store] Message Fetch Error:', errorMsg);
       return [];
     }
   },
   setThreadTitle: (title: string) => {
     const threadId = get().currentThreadId;
-    console.log('[ClientStore] Setting title for Thread ID:', threadId);
     supabase
       .from('chat_threads')
       .upsert({ title: title })
@@ -164,7 +157,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     set({ userThreads: threads });
   },
   deleteThread: async (threadId: string): Promise<void> => {
-    console.log('[ClientStore] Deleting Thread ID:', threadId);
     try {
       const { error } = await supabase
         .from('chat_threads')

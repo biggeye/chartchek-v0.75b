@@ -2,15 +2,7 @@ import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
 import { Tool, ToolResources } from '@/types/api/openai/tools';
 import { ProcessingStatus } from '@/types/database';
-
-interface Document {
-  id: string;
-  user_id: string;
-  filename: string;
-  file_type?: string;
-  file_id: string;
-  vector_store_id?: string;
-}
+import { Document } from '@/types/database';
 
 interface DocumentStoreState {
   documents: Document[];
@@ -38,6 +30,7 @@ interface DocumentStore extends DocumentStoreState {
   clearFileQueue: () => void;
   getFileQueue: () => string[];
   createNewThread: (attachments: ThreadAttachment[]) => Promise<void>;
+  updateDocument: (documentId: string, updates: Partial<Document>) => Promise<Document>;
 }
 
 const initialState: DocumentStoreState = {
@@ -46,6 +39,8 @@ const initialState: DocumentStoreState = {
   error: null,
   fileQueue: [],
 };
+
+const supabase = createClient();
 
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
   ...initialState,
@@ -69,7 +64,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       store.setLoading(true);
       store.setError(null);
 
-      const supabase = createClient();
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*');
@@ -169,6 +163,29 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       console.log('[ThreadCreation] New thread created:', result);
     } catch (error) {
       console.error('[ThreadCreation] Error creating new thread:', error);
+    }
+  },
+
+  updateDocument: async (documentId: string, updates: Partial<Document>) => {
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .update(updates)
+        .eq('id', documentId)
+        .select();
+
+      if (error) throw error;
+      
+      set((state) => ({
+        documents: state.documents.map(doc => 
+          doc.id === documentId ? { ...doc, ...data[0] } : doc
+        )
+      }));
+      
+      return data[0];
+    } catch (error) {
+      console.error('Update failed:', error);
+      throw error;
     }
   },
 

@@ -57,16 +57,10 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
   }, [currentThreadId])
   useEffect(() => {
     if (messages.length > 0) {
-      console.log('Messages received:', {
-        count: messages.length,
-        latest: messages[messages.length - 1],
-        streaming: Boolean(streamingContent)
-      });
     }
   }, [messages, streamingContent]);
 
   useEffect(() => {
-    console.log('[MessageList] Streaming content updated:', streamingContent);
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
@@ -85,13 +79,11 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
               {message.role === 'user' ? 'You' : 'Assistant'}
             </div>
             {message.content && Array.isArray(message.content) && message.content[0] && message.content[0].text ? (
-              console.log('Annotations for message:', message.id, message.content[0].text.annotations),
               renderContent(
                 message.content[0].text.value,
                 message.content[0].text.annotations || []
               )
             ) : message.content && !Array.isArray(message.content) && message.content.text ? (
-              console.log('Annotations for message:', message.id, message.content.text.annotations),
               renderContent(
                 message.content.text.value,
                 message.content.text.annotations || []

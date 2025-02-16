@@ -35,10 +35,8 @@ export function ThreadList({ assistantId }: ThreadListProps) {
             fetchUserThreads(currentAssistantId)
                 .then((threads) => {
                     setUserThreads(threads);
-                    console.log('[ThreadList] Threads loaded:', threads);
                 })
                 .catch((error) => {
-                    console.error('[ThreadList] Error loading threads:', error);
                     setError('Failed to load threads');
                 });
         }
@@ -51,10 +49,8 @@ export function ThreadList({ assistantId }: ThreadListProps) {
               fetchUserThreads(currentAssistantId)
                 .then((threads) => {
                     setUserThreads(threads);
-                    console.log('[ThreadList] Threads loaded:', threads);
                 })
                 .catch((error) => {
-                    console.error('[ThreadList] Error loading threads:', error);
                     setError('Failed to load threads');
                 });
             }
@@ -66,21 +62,17 @@ export function ThreadList({ assistantId }: ThreadListProps) {
 
 // Ensure setCurrentConversation is called with the correct type
 const handleThreadChange = (threadId: string) => {
-    console.log('[ThreadList] Selected Thread ID:', threadId);
     setCurrentThreadId(threadId);
     fetchThreadMessages(threadId)
         .then((messages) => {
             setCurrentConversation(messages);
-            console.log('[ThreadList] Messages loaded for thread:', threadId);
         })
         .catch((error) => {
-            console.error('[ThreadList] Error loading messages for thread:', error);
             setError('Failed to load messages');
         });
 };
 
     const renameThread = (threadId: string) => {
-        console.log('[ThreadList] Renaming thread with ID:', threadId);
         const newTitle = prompt('Enter new title:');
         if (newTitle) {
            setThreadTitle(newTitle);
@@ -88,17 +80,14 @@ const handleThreadChange = (threadId: string) => {
     };
 
     const handleDeleteThread = (threadId: string) => {
-        console.log('[ThreadList] Deleting thread with ID:', threadId);
         if (confirm('Are you sure you want to delete this thread?')) {
             deleteThread(threadId);
             if (currentAssistantId) {
               fetchUserThreads(currentAssistantId)
                 .then((threads) => {
                     setUserThreads(threads);
-                    console.log('[ThreadList] Threads loaded:', threads);
                 })
                 .catch((error) => {
-                    console.error('[ThreadList] Error loading threads:', error);
                     setError('Failed to load threads');
                 });
             }

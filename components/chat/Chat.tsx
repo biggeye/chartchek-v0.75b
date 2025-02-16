@@ -62,13 +62,10 @@ export function Chat({ assistantId }: AssistantChatProps) {
   }, [message, adjustTextareaHeight])
 
   useEffect(() => {
-    console.log('[Chat] Current Thread ID:', currentThreadId);
-    console.log('[Chat] Current Assistant ID:', assistantId);
   }, [currentThreadId, assistantId]);
 
   useEffect(() => {
     setCurrentAssistantId(assistantId);
-    console.log('[Chat] Initialized with Assistant ID:', assistantId);
     adjustTextareaHeight();
   }, [assistantId, setCurrentAssistantId, adjustTextareaHeight]);
 
@@ -79,7 +76,6 @@ export function Chat({ assistantId }: AssistantChatProps) {
       const newThread: string | null = await createThread(assistantId);
       if (!newThread) return setError('Failed to create thread')
       setCurrentThreadId(newThread)
-      console.log('[Chat] API call success for thread creation with ID:', newThread);
       return
     }
 
@@ -105,7 +101,6 @@ export function Chat({ assistantId }: AssistantChatProps) {
         await handleStream();
 
       } catch (error) {
-        console.error('[handleStream] Error starting stream:', error);
         const errorMessage = error instanceof Error ? error.message : 'Please try again.';
         setLocalError(errorMessage);
       } finally {
@@ -114,7 +109,6 @@ export function Chat({ assistantId }: AssistantChatProps) {
       }
       setMessage('');
     } catch (error) {
-      console.error('[AssistantChat] Message send failed:', error);
       setLocalError('Failed to send message. Please try again.');
     }
   };
@@ -178,7 +172,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
           })}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="bottom-0.5">
+      <form onSubmit={handleSubmit} className="sticky bottom-0.25">
         <div className="flex gap-2 p-0.5 items-center">
           {currentThreadId && (
             <FileUpload
@@ -190,17 +184,14 @@ export function Chat({ assistantId }: AssistantChatProps) {
                 setLocalError(undefined);
 
                 try {
-                  console.log('[AssistantChat] File uploading:', file.name);
                   const fileId = await uploadDocument(file);
 
                   if (!fileId) {
                     throw new Error('Upload failed: No file ID returned');
                   }
 
-                  console.log('[AssistantChat] File uploaded with ID:', fileId);
                   addToFileQueue(fileId, currentThreadId);
                 } catch (error) {
-                  console.error('[AssistantChat] File upload failed:', error);
                   const errorMessage = error instanceof Error ?
                     error.message :
                     'Failed to upload file. Please try again.';
