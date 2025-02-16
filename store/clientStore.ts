@@ -104,42 +104,42 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
   },
   fetchThreadMessages: async (threadId: string): Promise<Message[]> => {
-    console.log('[Store] Fetching messages for Thread ID:', threadId);
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select(`
-          message_id,
-          created_at,
-          thread_id,
-          role,
-          content
-        `)
-        .eq('thread_id', threadId)
-        .order('created_at', { ascending: true });
+        .select('*')
+        .eq('thread_id', threadId);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      return data.map(msg => ({
-        id: msg.message_id,
-        created_at: new Date(msg.created_at).getTime(),
-        thread_id: msg.thread_id,
-        role: msg.role,
-        content: {
-          type: 'text',
-          text: {
-            value: msg.content.text.value,
-            annotations: msg.content.text.annotations?.map((ann: ChatMessageAnnotation, index: number) => ({
-              text: ann.text,
-              type: ann.type,
-              ...(ann.file_id && { file_id: ann.file_id }),
-              ...(ann.quote && { quote: ann.quote }),
-              start_index: ann.start_index,
-              end_index: ann.end_index
-            })) || []
+      // Ensure annotations are arrays and content.type is 'text'
+      const messages = data.map((msg) => {
+        return {
+          id: msg.message_id,
+          created_at: new Date(msg.created_at).getTime(),
+          thread_id: msg.thread_id,
+          role: msg.role,
+          content: {
+            type: 'text' as const,
+            text: {
+              value: msg.content.text.value,
+              annotations: Array.isArray(msg.content.text.annotations)
+                ? msg.content.text.annotations.map((ann: ChatMessageAnnotation, index: number) => ({
+                  text: ann.text,
+                  type: ann.type,
+                  ...(ann.file_id && { file_id: ann.file_id }),
+                  ...(ann.quote && { quote: ann.quote }),
+                  start_index: ann.start_index,
+                  end_index: ann.end_index
+                })) : []
+            }
           }
-        }
-      }));
+        };
+      });
+
+      return messages;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Message fetch failed';
       set({ error: errorMsg });

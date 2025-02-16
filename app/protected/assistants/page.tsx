@@ -1,7 +1,7 @@
 'use client'
 
 import { PlusIcon } from '@heroicons/react/20/solid';
-import { assistantRoster } from '../../../lib/assistant/roster';
+import { assistantRoster } from '@/lib/assistant/roster';
 
 interface Assistant {
   name: string;

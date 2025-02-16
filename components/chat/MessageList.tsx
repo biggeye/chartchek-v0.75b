@@ -97,7 +97,7 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
                 message.content.text.annotations || []
               )
             ) : null}
-            {message.content && message.content.text && message.content.text.annotations && (
+            {message.content && message.content.text && Array.isArray(message.content.text.annotations) && (
               <div className="annotation-markers">
                 {message.content.text.annotations.map((ann) => (
                   <sup 

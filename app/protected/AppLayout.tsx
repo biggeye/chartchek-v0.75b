@@ -26,7 +26,6 @@ import {
 import { ShieldCheckIcon, CreditCardIcon, BuildingOffice2Icon, ChatBubbleLeftIcon } from '@heroicons/react/20/solid'
 
 import { ThreadList } from '@/components/chat/ThreadList'
-import { AssistantSelector } from '@/components/chat/AssistantSelector'
 import { useClientStore } from '@/store/clientStore';
 import UserStats from '@/components/user-stats';
 

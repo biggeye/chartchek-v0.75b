@@ -1,6 +1,7 @@
 // streamingService.ts
 
 import type { MessageContent } from '@/types/api/openai'
+import { useClientStore } from '@/store/clientStore';
 
 // Define your (stub) types – replace these with your actual types.
 type Thread = any
@@ -50,6 +51,9 @@ export function processStreamEvent(
   setStreamingContent: React.Dispatch<React.SetStateAction<MessageContent[]>>,
   accumulateText: { currentText: string; annotations: any[] } // for accumulating text (if needed)
 ): void {
+  const currentThreadId = useClientStore((state) => state.currentThreadId);
+  const currentAssistantId = useClientStore((state) => state.currentAssistantId);
+
   switch (event.type) {
 
     // Thread events
@@ -192,8 +196,9 @@ export function processStreamEvent(
 
 // Handlers for thread events
 function handleThreadCreated(thread: Thread): void {
-  console.log('[Event] thread.created:', thread)
-  // Add additional bookkeeping or UI updates here.
+  console.log('[StreamingService] Thread created:', thread);
+  // Example: Update current thread ID in clientStore
+  useClientStore.getState().setCurrentThreadId(thread.id);
 }
 
 // Handlers for run events

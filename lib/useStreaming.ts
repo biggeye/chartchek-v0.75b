@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Message, MessageContent, MessageRole } from '@/types/api/openai'
-import { useAssistantStore } from '@/store/assistantStore'
+import type { MessageContent, MessageRole } from '@/types/api/openai'
+import { useClientStore } from '@/store/clientStore'
+import { Message } from '@/types/store'
 
 interface UseStreamingReturn {
   streamingContent: MessageContent[]
@@ -9,9 +10,9 @@ interface UseStreamingReturn {
 }
 
 export const useStreaming = (): UseStreamingReturn => {
-  const assistantId = useAssistantStore((state) => state.currentAssistant?.assistant_id)
+  const assistantId = useClientStore((state) => state.currentAssistantId)
   // Note: your currentThread in the store should be set by your component (as you did with setThreadId)
-  const threadId = useAssistantStore((state) => state.currentThread?.thread_id)
+  const threadId = useClientStore((state) => state.currentThreadId)
   const [streamingContent, setStreamingContent] = useState<MessageContent[]>([])
   const activeRunRef = useRef<string | null>(null)
   const abortCtrlRef = useRef<AbortController | null>(null)

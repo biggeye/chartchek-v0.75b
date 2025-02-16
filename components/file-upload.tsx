@@ -5,12 +5,11 @@ import { Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDropzone } from 'react-dropzone'
 import { cn } from '@/lib/utils'
-import type { FileUploadProps } from '@/types'
 import { useDocumentStore } from '@/store/documentStore';
 
 
 
-export function FileUpload({ threadId, onFileUpload, isAttachment }: FileUploadProps) {
+export function FileUpload({ threadId, onFileUpload, isAttachment }: any) {
   const [isLoading, setIsLoading] = useState(false);
   const { addToFileQueue, uploadDocument } = useDocumentStore();
 
