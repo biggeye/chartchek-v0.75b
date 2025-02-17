@@ -13,6 +13,7 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
   userAssistants: [],
   userThreads: [],
   currentThreadId: '',
+  currentThreadTitle: '',
   currentAssistantId: '',
   currentMessage: null,
   currentConversation: [],
@@ -24,9 +25,11 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
   setCurrentThreadId: (threadId: string) => {
     set({ currentThreadId: threadId })
   },
+  setCurrentThreadTitle: (title: string) => set({ currentThreadTitle: title }),
   setCurrentConversation: (messages: Message[]) => set({ currentConversation: messages }),
   setCurrentAssistantId: (assistantId: string) => set({ currentAssistantId: assistantId }),
   setCurrentMessage: (message: string | null) => set({ currentMessage: message }),
+  setUserThreads: (threads: Thread[]) => set({ userThreads: threads }),
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   setError: (error: string | null) => set({ error }),
   setLoading: (isLoading: boolean) => set({ isLoading }),
@@ -50,12 +53,14 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       const newThreadId = await createThreadInAPI(assistantId);
       if (newThreadId) {
         set({ currentThreadId: newThreadId });
+        get().fetchThreadMessages(newThreadId);
       }
       return newThreadId;
     } catch (error) {
       set({ error: error instanceof Error ? error.message : String(error) });
       return null;
     } finally {
+ 
       set({ isLoading: false });
     }
   },
@@ -104,7 +109,8 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
         .from('chat_messages')
         .select('*')
         .eq('thread_id', threadId);
-
+      const threadTitle = await supabase.from('chat_threads').select('title').eq('thread_id', threadId).single();
+      set({ currentThreadTitle: threadTitle?.data?.title });
       if (error) {
         throw error;
       }
@@ -141,22 +147,25 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       return [];
     }
   },
-  setThreadTitle: (title: string) => {
-    const threadId = get().currentThreadId;
+  setThreadTitle: (thread_id: string, title: string) => {
+    const assistantId = get().currentAssistantId;
+    console.log(`Attempting to update thread with ID: ${thread_id} to new title: ${title}`);
     supabase
       .from('chat_threads')
-      .upsert({ title: title })
-      .eq('thread_id', threadId)
+      .update({ title: title })
+      .eq('thread_id', thread_id)
       .then(({ error }) => {
         if (error) {
+          console.error(`Error updating thread title: ${error.message}`);
           set({ error: error.message });
+        } else {
+          console.log(`Successfully updated thread title to: ${title}`);
         }
       });
-  },
-  setUserThreads: (threads: Thread[]) => {
-    set({ userThreads: threads });
+      get().fetchUserThreads(assistantId);
   },
   deleteThread: async (threadId: string): Promise<void> => {
+    const assistantId = get().currentAssistantId;
     try {
       const { error } = await supabase
         .from('chat_threads')
@@ -166,6 +175,7 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     } catch (error) {
       set({ error: error instanceof Error ? error.message : String(error) });
     }
+    get().fetchUserThreads(assistantId);
   },
 }))
 

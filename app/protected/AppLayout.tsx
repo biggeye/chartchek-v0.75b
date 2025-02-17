@@ -28,6 +28,8 @@ import { ShieldCheckIcon, CreditCardIcon, BuildingOffice2Icon, ChatBubbleLeftIco
 import { ThreadList } from '@/components/chat/ThreadList'
 import { useClientStore } from '@/store/clientStore';
 import UserStats from '@/components/user-stats';
+import Modal from '@/components/modal';
+import DropdownMenu from '@/components/dropdown-menu';
 
 import { signOutAction } from "@/app/actions";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -37,9 +39,10 @@ const user = useClientStore.getState().userId;
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [threadListOpen, setThreadListOpen] = useState(false);
+  const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
+  const currentThreadTitle = useClientStore.getState().currentThreadTitle;
   const navigation = [
     { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon },
     { name: 'Accounts & Billing', href: '/protected/billing', icon: CreditCardIcon },
@@ -51,8 +54,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }));
 
   const userNavigation = [
-    { name: 'Your profile', href: '/protected/account' },
-    { name: 'Sign out', onClick: async () => await signOutAction() },
+    { label: 'Chat History', onClick:  () => setThreadListModalOpen(true) },
+    { label: 'Your profile', onClick: () => router.push('/protected/account') },
+    { label: 'Sign out', onClick: async () => await signOutAction() },
   ]
 
   function classNames(...classes: string[]) {
@@ -85,22 +89,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/sign-in');
   };
 
+  const openThreadListModal = () => {
+    setThreadListModalOpen(true);
+  };
+
+  const closeThreadListModal = () => {
+    setThreadListModalOpen(false);
+  };
+
   return (
     <>
       <div>
         <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
           <DialogBackdrop
             transition
-            className="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear data-closed:opacity-0"
+            className="fixed inset-0 bg-gray-900/80 transition-opacity duration-3000 ease-linear data-closed:opacity-0"
           />
 
           <div className="fixed inset-0 flex">
             <DialogPanel
               transition
-              className="relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-closed:-translate-x-full"
+              className="relative mr-16 flex w-full max-w-xs flex-1 transform transition-transformation duration-3000 ease-in-out data-closed:-translate-x-full"
             >
               <TransitionChild>
-                <div className="absolute top-0 left-full flex w-16 justify-center pt-5 duration-300 ease-in-out data-closed:opacity-0">
+                <div className="absolute top-0 left-full flex w-16 justify-center transition-transformation pt-5 duration-3000 ease-in-out data-closed:opacity-0">
                   <button type="button" onClick={() => setSidebarOpen(false)} className="-m-2.5 p-2.5">
                     <span className="sr-only">Close sidebar</span>
                     <XMarkIcon aria-hidden="true" className="size-6 text-white" />
@@ -146,10 +158,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </Dialog>
         {/* Static sidebar for desktop */}
-        <div className="fixed top-1 left-1 lg:hidden">
+        <div className="fixed top-1 left-1 lg:hidden w-full flex justify-between px-2">
           <button type="button" onClick={() => setSidebarOpen(true)}>
-            <Bars3Icon aria-hidden="true" className="w-5 h-5 shrink-0" />
+            <Bars3Icon aria-hidden="true" className="w-5 h-5" />
           </button>
+          <div className="text-xs py-0.5">
+          {currentThreadTitle && currentThreadTitle}
+          </div>
+          <DropdownMenu items={userNavigation}>
+              <ChatBubbleLeftIcon aria-hidden="true" className="w-5 h-5" />
+          </DropdownMenu>
         </div>
         <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4">
           <div className="flex flex-col justify-between h-full">
@@ -191,9 +209,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
 
-        <aside className="fixed top-16 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8 xl:block">
+        <aside className="fixed top-5 bottom-0 left-20 hidden w-96 overflow-y-auto border-r border-white bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8 xl:block">
           {asideContent}
         </aside>
+
+        <Modal
+          isOpen={isThreadListModalOpen}
+          onClose={closeThreadListModal}
+          title="Thread List"
+          content={<ThreadList assistantId={'asst_7rzhAUWAamYufZJjZeKYkX1t'} />}
+          actions={
+            <button onClick={closeThreadListModal} className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+              Close
+            </button>
+          }
+        />
       </div>
 
   

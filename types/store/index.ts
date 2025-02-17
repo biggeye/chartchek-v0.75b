@@ -1,6 +1,6 @@
 export interface Thread {
   thread_id: string
-  thread_title: string
+  title: string
   updated_at: string
 }
 
@@ -45,6 +45,7 @@ interface UserState {
 // Base State Interface
 interface ChatState {
   currentThreadId: string
+  currentThreadTitle: string
   currentAssistantId: string
   currentMessage: string | null
   currentConversation: Message[] | []
@@ -66,7 +67,7 @@ interface AsyncActions {
   fetchThreadMessages: (threadId: ChatState['currentThreadId']) => Promise<ChatState['currentConversation']>;  // Fetch messages using threadId
   // update
   setUserThreads: (userThreads: Thread[]) => void;
-  setThreadTitle: (title: string) => void;
+  setThreadTitle: (thread_id: string, title: string) => void;
   // delete
   deleteThread: (threadId: string) => Promise<void>;
 }

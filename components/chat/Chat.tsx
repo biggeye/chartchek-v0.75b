@@ -151,7 +151,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
   }, [isLoading]);
 
   return (
-    <div className="flex flex-col justify-between h-full w-full">
+    <div className="flex flex-col justify-between h-full w-full py-5">
       <MessageList
         messages={currentConversation || []}
         streamingContent={streamingContent}
@@ -172,7 +172,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
           })}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="sticky bottom-0.25">
+      <form onSubmit={handleSubmit} className="sticky bottom-0.25 px-3 pt-7">
         <div className="flex gap-2 p-0.5 items-center">
           {currentThreadId && (
             <FileUpload
@@ -209,20 +209,22 @@ export function Chat({ assistantId }: AssistantChatProps) {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            className="h-[40px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
+            className="transition-opacity transition-transform h-[40px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
             disabled={isLoading}
             resizable={false}
           />
-      <EnhancedSubmitButton
-  message={message}
-  isLoading={isLoading}
-  isStreaming={isLoading}
-  error={error || undefined}
-  assistantId={assistantId}
-  threadId={currentThreadId}
-  onSubmit={handleSubmit} // Assuming handleSubmit is the function to handle the submit action
-  className="submit-button-class" // Replace with the desired class name
-/>
+          <div ref={bottomRef} className="flex items-center justify-between transition-opacity">
+            <EnhancedSubmitButton
+              message={message}
+              isLoading={isLoading}
+              isStreaming={isLoading}
+              error={error || undefined}
+              assistantId={assistantId}
+              threadId={currentThreadId}
+              onSubmit={handleSubmit} // Assuming handleSubmit is the function to handle the submit action
+              className="transition-transform submit-button-class" // Replace with the desired class name
+            />
+          </div>
         </div>
       </form>
 

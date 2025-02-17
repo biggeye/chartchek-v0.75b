@@ -84,4 +84,20 @@
   .text-pretty {
     text-wrap: pretty;
   }
+
+  .transition-opacity {
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .transition-transform {
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .transition-color {
+    transition: color 0.3s ease-in-out;
+  }
+
+  .transition-bg {
+    transition: background-color 0.3s ease-in-out;
+  }
 }
