@@ -50,7 +50,23 @@ The primary goal of this project is to serve as a **Joint Commission/DHCS compli
 - Implements thread management for persistent conversations
 - Supports file attachments and tool calls
 
+## Architectural Patterns
 
+### Source of Truth Hierarchy
+1. **Supabase Table Schema** - Direct database representation
+2. **Type Definitions** (`/types/store/index.ts` → `/types/database/index.ts`) - TypeScript interfaces
+3. **Zustand State Store** (`/store/clientStore.ts`) - Client-side state management
+
+### Database Schema Highlights
+| Component               | Key Features                          |
+|-------------------------|---------------------------------------|
+| `chat_threads`          | Thread status tracking, vector stores |
+| `chat_messages`         | JSONB content storage, file attachments |
+| `chat_message_annotations` | Citation tracking, text references |
+
+### Ongoing Migrations
+- Moving from `assistantStore.ts` → `clientStore.ts`
+- Replacing `AssistantChat.tsx` with new `Chat.tsx` component
 
 (FUTURE) TODO:
 ### File Upload Management - attaching to threads
