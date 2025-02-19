@@ -254,9 +254,6 @@ To ensure that all actions involving patient data (PHI) are secure and fully tra
 </ul>
 </li>
 </ul>
-<hr>
-<p>This specification is intended to provide clear guidance for development while also demonstrating the value of the system for behavioral health stakeholders. It sets the stage for a robust, scalable solution that not only meets current compliance needs but also adapts to future challenges and opportunities.</p>
-<p>Happy coding and continued success in advancing behavioral health compliance!</p>
 <blockquote>
 <p>Written with <a href="https://stackedit.io/">StackEdit</a>.</p>
 </blockquote>
