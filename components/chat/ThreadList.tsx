@@ -62,27 +62,16 @@ export function ThreadList({ assistantId }: ThreadListProps) {
         const newTitle = prompt('Enter new title:');
         if (newTitle) {
             setThreadTitle(threadId, newTitle);
-            fetchUserThreads(assistantId);
+            fetchUserThreads(currentAssistantId);
         }
     };
 
     const handleDeleteThread = (threadId: string) => {
-        if (confirm('Are you sure you want to delete this thread?')) {
-            deleteThread(threadId);
-            if (assistantId) {
-                fetchUserThreads(assistantId)
-                    .then((threads) => {
-                        setUserThreads(threads);
-                    })
-                    .catch((error) => {
-                        setError('Failed to load threads');
-                    });
-            }
-        }
+         deleteThread(threadId);
     };
 
     const handleAddThread = () => {
-        createThread();
+        createThread(currentAssistantId);
     };
 
     const handleRefreshThreads = () => {

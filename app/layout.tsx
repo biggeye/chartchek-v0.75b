@@ -20,8 +20,8 @@ const geistSans = Geist({
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={geistSans.className}>
+    <html lang="en" suppressHydrationWarning className="scrollbar">
+      <body className={geistSans.className + " scrollbar"}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

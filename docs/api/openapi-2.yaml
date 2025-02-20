@@ -1,0 +1,243 @@
+openapi: 3.0.0
+info:
+  title: ChartChek API
+  version: 1.0.0
+paths:
+  /assistants:
+    post:
+      summary: Create a new assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                instructions:
+                  type: string
+                tools:
+                  type: array
+                  items:
+                    type: string
+                model:
+                  type: string
+                description:
+                  type: string
+                metadata:
+                  type: object
+                tool_resources:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Assistant created successfully
+        '400':
+          description: Missing required fields
+        '401':
+          description: Unauthorized
+  /assistants/{assistantId}/modify:
+    post:
+      summary: Modify an assistant
+      parameters:
+        - name: assistantId
+          in: path
+          required: true
+          description: ID of the assistant to modify
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tools:
+                  type: array
+                  items:
+                    type: string
+                name:
+                  type: string
+                description:
+                  type: string
+                instructions:
+                  type: string
+                model:
+                  type: string
+                metadata:
+                  type: object
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Assistant modified successfully
+        '400':
+          description: Missing required field: assistant_id
+        '401':
+          description: Unauthorized
+  /files:
+    post:
+      summary: Upload files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                thread_id:
+                  type: string
+      responses:
+        '200':
+          description: Files uploaded successfully
+        '400':
+          description: No files provided
+        '401':
+          description: Unauthorized
+  /files/{fileId}/modify:
+    post:
+      summary: Modify a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: ID of the file to modify
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: File modified successfully
+        '400':
+          description: Missing required field: fileId
+        '401':
+          description: Unauthorized
+  /files/{fileId}/delete:
+    delete:
+      summary: Delete a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: ID of the file to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted successfully
+        '400':
+          description: Missing required field: fileId
+        '401':
+          description: Unauthorized
+  /threads:
+    get:
+      summary: List threads
+      responses:
+        '200':
+          description: Threads listed successfully
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /threads/{threadId}/modify:
+    post:
+      summary: Modify a thread
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          description: ID of the thread to modify
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Thread modified successfully
+        '400':
+          description: Missing required field: threadId
+        '401':
+          description: Unauthorized
+  /threads/{threadId}/delete:
+    delete:
+      summary: Delete a thread
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          description: ID of the thread to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thread deleted successfully
+        '400':
+          description: Missing required field: threadId
+        '401':
+          description: Unauthorized
+  /threads/{threadId}/messages/{messageId}/delete:
+    delete:
+      summary: Delete a message in a thread
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          description: ID of the thread containing the message
+          schema:
+            type: string
+        - name: messageId
+          in: path
+          required: true
+          description: ID of the message to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message deleted successfully
+        '400':
+          description: Missing required field: messageId or threadId
+        '401':
+          description: Unauthorized
+  /vector:
+    post:
+      summary: Create vector store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileId:
+                  type: string
+      responses:
+        '200':
+          description: Vector store created successfully
+        '500':
+          description: Internal server error

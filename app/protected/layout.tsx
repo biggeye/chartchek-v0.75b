@@ -10,11 +10,13 @@ export default async function ProtectedLayout({
 }) {
   const supabase = await createServer();
   const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    redirect("/login");
+  if (error || !user) redirect("/login");
+  
+  // Add validation for existing user ID
+  if (!user.id) {
+      console.error('Authenticated user missing ID:', user);
+      redirect("/login");
   }
-
   return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
         <AppLayout>

@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef } from 'react'
+'use client'
+
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { MessageContent, MessageRole } from '@/types/api/openai'
 import { useClientStore } from '@/store/clientStore'
 import { Message } from '@/types/store'
@@ -10,13 +12,26 @@ interface UseStreamingReturn {
 }
 
 export const useStreaming = (): UseStreamingReturn => {
+  const addAssistantMessageToThread = useClientStore((state) => state.addAssistantMessageToThread)
   const assistantId = useClientStore((state) => state.currentAssistantId)
   // Note: your currentThread in the store should be set by your component (as you did with setThreadId)
   const threadId = useClientStore((state) => state.currentThreadId)
+  const fetchUserId = useClientStore((state) => state.fetchUserId)
   const [streamingContent, setStreamingContent] = useState<MessageContent[]>([])
   const activeRunRef = useRef<string | null>(null)
   const abortCtrlRef = useRef<AbortController | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  // Inside your component or hook
+  useEffect(() => {
+    const getUserId = async () => {
+      const id = await fetchUserId();
+      setUserId(id); // Assuming you have a setUserId state setter
+    };
 
+    getUserId();
+  }, [fetchUserId]);
+
+  // Ensure userId is used after it's set
   // For accumulating the full message text and any annotations
   const accumulated = useRef<{ currentText: string; annotations: any[] }>({
     currentText: '',
@@ -38,8 +53,18 @@ export const useStreaming = (): UseStreamingReturn => {
     accumulated.currentText = ''
     accumulated.annotations = []
 
+    console.log('[handleStream] Starting stream with threadId:', threadId, 'and assistantId:', assistantId)
+
+    // Add explicit null checks and error boundaries
+    if (!threadId || !userId) {
+      console.error('Missing conversation context', { threadId, userId });
+      throw new Error('Conversation context required');
+    }
+
+
+
     try {
-      const runResponse = await fetch('/api/thread/run/stream', {
+      const runResponse = await fetch(`/api/threads/${threadId}/run/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -131,36 +156,37 @@ export const useStreaming = (): UseStreamingReturn => {
               // When the stream ends, store the assistant message.
               else if (data.type === 'end' && messageStarted) {
                 // Prepare the data to store the assistant's final message.
-                const formData = new FormData()
-                formData.append('thread_id', threadId!)
-                formData.append('content', accumulated.currentText)
-                formData.append('annotations', JSON.stringify(accumulated.annotations))
-                formData.append('role', 'assistant')
-                const storeRes = await fetch('/api/thread/message', {
-                  method: 'POST',
-                  body: formData,
-                })
+                if (!threadId || !userId) {
+                  throw new Error('Missing conversation context');
+                }
+                try {
+                  const storeRes = await addAssistantMessageToThread(threadId, userId, accumulated.currentText);
+                  if (!storeRes) {
+                    console.error('[AssistantChat] Failed to store assistant message:',);
+                  } else {
+                    console.log('[AssistantChat] Assistant message stored successfully');
+                    const storeData = await storeRes;
+                    console.log('[AssistantChat] Stored assistant message:', storeData)
 
-                if (!storeRes.ok) {
-                  console.error('[AssistantChat] Failed to store assistant message:', await storeRes.text())
-                } else {
-                  const storeData = await storeRes.json()
-                  console.log('[AssistantChat] Stored assistant message:', storeData)
-                  currentMessageId = storeData.message?.id
-                  // Option: you can update your message store with the final message now.
-                  // For example:
-                  // addMessageIfNotEmpty({
-                  //   id: currentMessageId || `temp-${Date.now()}`,
-                  //   role: 'assistant' as MessageRole,
-                  //   content: [{
-                  //     type: 'text',
-                  //     text: { value: accumulated.currentText, annotations: accumulated.annotations }
-                  //   }],
-                  //   thread_id: threadId,
-                  //   attachments: [],
-                  //   created_at: Date.now(),
-                  //   metadata: null
-                  // })
+                    // Option: you can update your message store with the final message now.
+                    // For example:
+                    // addMessageIfNotEmpty({
+                    //   id: currentMessageId || `temp-${Date.now()}`,
+                    //   role: 'assistant' as MessageRole,
+                    //   content: [{
+                    //     type: 'text',
+                    //     text: { value: accumulated.currentText, annotations: accumulated.annotations }
+                    //   }],
+                    //   thread_id: threadId,
+                    //   attachments: [],
+                    //   created_at: Date.now(),
+                    //   metadata: null
+                    // })
+                  }
+
+                } catch (error) {
+                  console.error('Message storage failed:', error);
+                  throw new Error('Failed to save conversation progress');
                 }
                 // Clear the streaming content once the message is complete.
                 setStreamingContent([])
@@ -186,7 +212,7 @@ export const useStreaming = (): UseStreamingReturn => {
     } finally {
       abortCtrlRef.current = null
     }
-  }, [assistantId, threadId, setStreamingContent, accumulated])
+  }, [assistantId, threadId, setStreamingContent, accumulated, userId])
 
   return {
     streamingContent,

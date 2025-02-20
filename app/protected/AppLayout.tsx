@@ -55,7 +55,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const userNavigation = [
     { label: 'Chat History', onClick:  () => setThreadListModalOpen(true) },
-    { label: 'Your profile', onClick: () => router.push('/protected/account') },
+    { label: 'Your profile', onClick: () => router.push(`/protected/account/${user}`)},
     { label: 'Sign out', onClick: async () => await signOutAction() },
   ]
 

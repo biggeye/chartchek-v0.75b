@@ -1,7 +1,16 @@
 export interface Thread {
-  thread_id: string
-  title: string
-  updated_at: string
+  id?: string;
+  user_id?: string;
+  assistant_id?: string;
+  status?: string;
+  created_at?: string;
+  updated_at: string;
+  metadata?: string;
+  thread_id: string;
+  title: string;
+  last_message_at?: string;
+  is_active?: boolean;
+  vector_store_id?: string;
 }
 
 export interface Message {
@@ -18,6 +27,8 @@ export interface Message {
   };
   [key: string]: any;
 }
+
+
 
 export interface ChatMessageAnnotation {
   id?: string;
@@ -59,7 +70,9 @@ interface UIState {
 // Async Actions Interface
 interface AsyncActions {
   // create
-  createThread: (assistantId?: string) => Promise<string | null>;  // Create a thread with assistantId and store response
+  createThread: (assistantId: string) => Promise<string | null>;  // Create a thread with assistantId and store response
+  sendMessage: (threadId: string, formData: FormData) => Promise<Response>;
+  addAssistantMessageToThread: (threadId: string, userId: string, content: string) => Promise<string>;
   // read
   fetchUserId: () => Promise<UserState['userId']>;  // Fetch userId from Supabase auth provider
   fetchUserAssistants: () => Promise<UserState['userAssistants']>;  // Fetch assistants from PostgreSQL using userId

@@ -65,7 +65,7 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
   }, [messages, streamingContent]);
 
   return (
-    <ScrollArea className="h-[calc(100vh-8.5rem)] w-full">
+    <ScrollArea className="h-[calc(100vh-9rem)] w-full mt-4.5">
       <div className="flex flex-col gap-4 p-4">
         {messages.map((message) => (
           <div

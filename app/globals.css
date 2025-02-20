@@ -100,4 +100,21 @@
   .transition-bg {
     transition: background-color 0.3s ease-in-out;
   }
+
+  .scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215.4 16.3% 46.9%) transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50;
+  }
 }

@@ -18,12 +18,14 @@ interface AssistantChatProps {
 export function Chat({ assistantId }: AssistantChatProps) {
 
   const {
+    currentAssistantId,
     createThread,
-    currentThreadId,
+    setCurrentMessage,
     currentConversation,
     fetchThreadMessages,
     setCurrentThreadId,
     setCurrentAssistantId,
+    sendMessage,
     error: storeError,
     setError
   } = useClientStore();
@@ -48,7 +50,8 @@ export function Chat({ assistantId }: AssistantChatProps) {
     addToFileQueue
   } = useDocumentStore()
   const uploadDocument = useDocumentStore((state) => state.uploadDocument)
-
+  // Get currentThreadId from the store
+  const currentThreadId = useClientStore((state) => state.currentThreadId);
   // Create initial thread if needed
   const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -72,11 +75,15 @@ export function Chat({ assistantId }: AssistantChatProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isLoading || !message.trim()) return;
+
     if (!currentThreadId) {
       const newThread: string | null = await createThread(assistantId);
-      if (!newThread) return setError('Failed to create thread')
-      setCurrentThreadId(newThread)
-      return
+
+      if (!newThread) {
+        setError('Failed to create thread');
+        return;
+      }
+      setCurrentThreadId(newThread);
     }
 
     setIsLoading(true);
@@ -84,18 +91,21 @@ export function Chat({ assistantId }: AssistantChatProps) {
 
     try {
       const formData = new FormData();
-      const threadId = currentThreadId;
+      const threadId = currentThreadId.toString();
+      setCurrentMessage(message);
       formData.append('assistant_id', assistantId);
       formData.append('content', message);
       formData.append('thread_id', threadId);
       formData.append('role', 'user');
       formData.append('file_queue', JSON.stringify(getFileQueue()));
-
-      const sentMessage = await fetch('/api/thread/message', {
-        method: 'POST',
-        body: formData,
-      });
+      
+      const sentMessage = await sendMessage(threadId, formData);
       const result = await sentMessage.json();
+
+      if (!result) {
+        setError('Message not sent.');
+        return;
+      }
 
       try {
         await handleStream();
@@ -144,11 +154,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
     };
   }, []); // Empty dependency array since this only needs to run once
 
-  useEffect(() => {
-  }, [message]);
-
-  useEffect(() => {
-  }, [isLoading]);
+ 
 
   return (
     <div className="flex flex-col justify-between h-full w-full py-5">
@@ -156,7 +162,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
         messages={currentConversation || []}
         streamingContent={streamingContent}
       />
-
+{/*}
       {fileQueue.length > 0 && (
         <div className="bg-yellow-100 text-yellow-800 h-3 bottom-0 p-2 rounded-md mb-1 flex items-center">
           {fileQueue.map((fileId, index) => {
@@ -172,10 +178,11 @@ export function Chat({ assistantId }: AssistantChatProps) {
           })}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="sticky bottom-0.25 px-3 pt-7">
+*/}
+      <form onSubmit={handleSubmit} className="sticky bottom-0.25 px-3 pt-5">
         <div className="flex gap-2 p-0.5 items-center">
-          {currentThreadId && (
-            <FileUpload
+      {/*     {currentThreadId && (
+           <FileUpload
               isAttachment={true}
               threadId={currentThreadId}
               onFileUpload={async (file: File) => {
@@ -203,13 +210,13 @@ export function Chat({ assistantId }: AssistantChatProps) {
               }}
             />
           )}
-          <Textarea
+        */}  <Textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            className="transition-opacity transition-transform h-[40px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
+            className="h-[40px] max-h-[200px] flex-1 !resize-none overflow-hidden focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus:ring-0 focus-visible:ring-offset-0"
             disabled={isLoading}
             resizable={false}
           />
