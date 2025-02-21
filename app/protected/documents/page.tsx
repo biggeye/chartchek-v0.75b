@@ -2,38 +2,17 @@
 
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
 
 export default function DocumentsPage() {
   const { documents, isLoading, error, fetchDocuments } = useDocumentStore();
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      // Implement the upload logic here
-      uploadDocument(file);
-    }
-  };
-
-  const uploadDocument = async (file: File) => {
-    try {
-      // Implement the file upload logic here, e.g., using Supabase or another service
-      // Example: await supabase.storage.from('documents').upload(file.name, file);
-
-      // Refresh the document list after successful upload
-      fetchDocuments();
-    } catch (uploadError) {
-      console.error('Error uploading document:', uploadError);
-    }
-  };
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -46,21 +25,7 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <input
-            type="file"
-            id="file-upload"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          <button
-            type="button"
-            className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            onClick={() => document.getElementById('file-upload')?.click()}
-            type="button"
-            className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            Add document
-          </button>
+          {/* Remove the file input and button logic */}
         </div>
       </div>
       <ScrollArea className="-mx-4 mt-8 sm:-mx-0">
