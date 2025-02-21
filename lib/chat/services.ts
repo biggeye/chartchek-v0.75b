@@ -19,21 +19,6 @@ interface EobSummaryParams {
     time_period: string;
 }
 
-export async function addChatMessageToSupabase(chatMessage: any, supabase: any) {
-  const { data: savedMessage, error: insertError } = await supabase
-    .from('chat_messages')
-    .insert(chatMessage)
-    .select()
-    .single()
-
-  if (insertError) {
-    throw insertError
-  }
-  return savedMessage;
-}
-
-
-
 
 export async function processAssistantResponse(response: ApiResponse<any>) {
     // Check if a function call was included in the response

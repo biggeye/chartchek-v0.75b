@@ -3,6 +3,7 @@
 import { SubmitButton } from '@/components/submit-button'
 import { Loader2, SendHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 
 // Temporary type definition for EnhancedSubmitButtonProps
 interface EnhancedSubmitButtonProps {
@@ -11,7 +12,7 @@ interface EnhancedSubmitButtonProps {
   isLoading: boolean;
   disabled?: boolean;
   isStreaming: boolean;
-  error: any;
+  error: string | null;
   assistantId: any;
   threadId: any;
   className: string;
@@ -29,14 +30,22 @@ export function EnhancedSubmitButton({
   className,
 }: EnhancedSubmitButtonProps) {
 
+  const [errorState, setErrorState] = useState<string | null>(error);
+
   // Determine button state
-  const isDisabled = isLoading || !message.trim()
+  const isDisabled = disabled || isLoading || !message.trim() || Boolean(errorState);
   const isProcessing = isLoading || isStreaming
+
+  useEffect(() => {
+    if (errorState && message.trim()) {
+      setErrorState(null);
+    }
+  }, [message, errorState]);
 
   // Get button content based on state
   const getButtonContent = () => {
-    if (error) {
-      return 'Error'
+    if (Boolean(errorState)) {
+      return 'Error';
     }
     if (isProcessing) {
       return (
@@ -44,22 +53,22 @@ export function EnhancedSubmitButton({
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
           {isStreaming ? 'Processing' : 'Sending'}
         </>
-      )
+      );
     }
     return (
       <>
         <SendHorizontal className="h-4 w-4 mr-2" />
         Send
       </>
-    )
-  }
+    );
+  };
 
   // Get button variant based on state
   const getButtonVariant = () => {
-    if (error) return 'destructive'
-    if (isProcessing) return 'secondary'
-    return 'default'
-  }
+    if (Boolean(errorState)) return 'destructive';
+    if (isProcessing) return 'secondary';
+    return 'default';
+  };
 
   return (
     <SubmitButton

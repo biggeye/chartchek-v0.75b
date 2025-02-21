@@ -35,7 +35,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
   const [message, setMessage] = useState('')
 
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setLocalError] = useState<string | undefined>(undefined)
+  const [error, setLocalError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const initializingRef = useRef(false)
@@ -87,7 +87,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
     }
 
     setIsLoading(true);
-    setLocalError(undefined);
+    setLocalError(null);
 
     try {
       const formData = new FormData();
@@ -188,7 +188,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
               onFileUpload={async (file: File) => {
 
                 setIsLoading(true);
-                setLocalError(undefined);
+                setLocalError(null);
 
                 try {
                   const fileId = await uploadDocument(file);
@@ -225,7 +225,7 @@ export function Chat({ assistantId }: AssistantChatProps) {
               message={message}
               isLoading={isLoading}
               isStreaming={isLoading}
-              error={error || undefined}
+              error={error || null}
               assistantId={assistantId}
               threadId={currentThreadId}
               onSubmit={handleSubmit} // Assuming handleSubmit is the function to handle the submit action

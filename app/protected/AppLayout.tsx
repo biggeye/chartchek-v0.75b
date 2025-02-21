@@ -27,7 +27,7 @@ import { ShieldCheckIcon, CreditCardIcon, BuildingOffice2Icon, ChatBubbleLeftIco
 
 import { ThreadList } from '@/components/chat/ThreadList'
 import { useClientStore } from '@/store/clientStore';
-import UserStats from '@/components/user-stats';
+ import UserStats from '@/components/user-stats';
 import Modal from '@/components/modal';
 import DropdownMenu from '@/components/dropdown-menu';
 
@@ -97,6 +97,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setThreadListModalOpen(false);
   };
 
+  const ZustandStateMonitor = () => {
+    const { currentThreadId, currentAssistantId } = useClientStore();
+
+    // Ensure rendering only on the client side
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return (
+      <div className="zustand-state-monitor">
+        <div>Current Thread ID: {currentThreadId}</div>
+        <div>Current Assistant ID: {currentAssistantId}</div>
+        <div>Current Thread Title: {currentThreadTitle}</div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div>
@@ -163,7 +180,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Bars3Icon aria-hidden="true" className="w-5 h-5" />
           </button>
           <div className="text-xs py-0.5">
-          {currentThreadTitle && currentThreadTitle}
+    
+     
           </div>
           <DropdownMenu items={userNavigation}>
               <ChatBubbleLeftIcon aria-hidden="true" className="w-5 h-5" />

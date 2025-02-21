@@ -111,22 +111,6 @@ export const useStreaming = (): UseStreamingReturn => {
                 messageStarted = true
                 accumulated.currentText = ''
                 accumulated.annotations = []
-                // Option: create an initial empty message entry
-                // You could call your addMessageIfNotEmpty helper from AssistantChat or
-                // update your message store with a temporary message.
-                // For example:
-                // addMessageIfNotEmpty({
-                //   id: currentMessageId || `temp-${Date.now()}`,
-                //   role: 'assistant' as MessageRole,
-                //   content: [{
-                //     type: 'text',
-                //     text: { value: '', annotations: [] }
-                //   }],
-                //   thread_id: threadId,
-                //   attachments: [],
-                //   created_at: Date.now(),
-                //   metadata: null
-                // })
               }
               // Append incremental content to the streaming message.
               else if (data.type === 'textDelta' && messageStarted) {

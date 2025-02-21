@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { fetchDocumentsCount } from '@/store/documentStore';
 import { useClientStore } from '@/store/clientStore';

@@ -36,16 +36,19 @@ export function ThreadList({ assistantId }: ThreadListProps) {
     };
 
     useEffect(() => {
-        if (currentAssistantId && userThreads.length === 0) {
-            fetchUserThreads(currentAssistantId)
-                .then((threads) => {
-                    setUserThreads(threads);
-                })
-                .catch((error) => {
-                    setError('Failed to load threads');
-                });
-        }
-    }, [currentAssistantId, fetchUserThreads, setUserThreads, setError, userThreads.length]);
+        let isMounted = true;
+        const fetchData = async () => {
+            try {
+                const threads = await fetchUserThreads(currentAssistantId);
+                if (isMounted) setUserThreads(threads);
+            } catch (err) {
+                if (isMounted) setError('Failed to load threads');
+            }
+        };
+        
+        if (currentAssistantId) fetchData();
+        return () => { isMounted = false; };
+    }, [currentAssistantId]);
 
     const handleThreadChange = (threadId: string) => {
         setCurrentThreadId(threadId);
@@ -85,6 +88,8 @@ export function ThreadList({ assistantId }: ThreadListProps) {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
     }
+    if (error) return <div className="p-4 text-red-500">Error loading threads: {error}</div>;
+    if (!isLoading && userThreads.length === 0) return <div className="p-4 text-gray-500">No conversations found</div>;
     return (
         <div className="thread-list-container">
             <div className="thread-list-actions">

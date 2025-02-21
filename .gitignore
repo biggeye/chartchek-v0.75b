@@ -46,3 +46,7 @@ next-env.d.ts
 .vs/slnx.sqlite
 .vs/ProjectSettings.json
 .vs/chartchek-v0.75b/v17/DocumentLayout.json
+.aider*
+
+#backups
+*.bak
