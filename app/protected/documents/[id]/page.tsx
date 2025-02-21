@@ -10,61 +10,54 @@ import { Document, ProcessingStatus } from '@/types/database';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 
 export default function DocumentDetail() {
-  const { id } = useParams();
-  const { documents, fetchDocuments, isLoading, error, createVectorStore, setVectorStoreId } = useDocumentStore();
+  const params = useParams();
+  const { documents, fetchDocuments } = useDocumentStore();
 
   useEffect(() => {
     fetchDocuments();
-  }, [fetchDocuments]);
+    // Removed unused store methods
+  }, []);
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
-  const document = documents.find((doc) => doc.id === id);
+  const document = documents.find(doc => doc.document_id === params.id);
 
   if (!document) return <div>Document not found</div>;
 
-  const fileId = document.file_id;
-  const vectorStoreId = document.vector_store_id;
+  const { document_id, fileName, fileType, metadata } = document;
+  const category = metadata?.[0]?.category;
+  const notes = metadata?.[0]?.notes;
+  const tags = metadata?.[0]?.tags;
 
-  console.log('vectorStoreId: ', vectorStoreId, 'fileId: ', fileId);
   const breadcrumbPages = [
     { name: 'Documents', href: '/protected/documents', current: false },
-    { name: document.filename, href: `#`, current: true },
+    { name: fileName, href: `#`, current: true },
   ];
 
   const handleCreateVector = async () => {
-    const vectorStoreId = await createVectorStore(fileId);
+    // Removed unused store methods
   };
 
-  const createThreadWithVectorStore = async () => {
-    if (!vectorStoreId) {
-      await createVectorStore(fileId);
-      console.error('Missing vectorStoreId or fileId');
-      return;
-    }
-  };
+
 
   return (
     <div>
       <div className="px-4 sm:px-0">
-        <h3 className="text-base/7 font-semibold text-gray-900">{document.filename}</h3>
+        <h3 className="text-base/7 font-semibold text-gray-900">{fileName}</h3>
         <p className="mt-1 max-w-2xl text-sm/6 text-gray-500">Details and metadata of the document.</p>
       </div>
       <div className="mt-6">
         <dl className="grid grid-cols-1 sm:grid-cols-2">
           <div className="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
             <dt className="text-sm/6 font-medium text-gray-900">Category</dt>
-            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{document.category || 'No category'}</dd>
+            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{category || 'No category'}</dd>
           </div>
           <div className="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
             <dt className="text-sm/6 font-medium text-gray-900">File Type</dt>
-            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{document.file_type}</dd>
+            <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">{fileType}</dd>
           </div>
           <div className="border-t border-gray-100 px-4 py-6 sm:col-span-2 sm:px-0">
             <dt className="text-sm/6 font-medium text-gray-900">Description</dt>
             <dd className="mt-1 text-sm/6 text-gray-700 sm:mt-2">
-              {document.description || 'No description available.'}
+              {notes || 'No description available.'}
             </dd>
           </div>
           <div className="border-t border-gray-100 px-4 py-6 sm:col-span-2 sm:px-0">
@@ -86,30 +79,16 @@ export default function DocumentDetail() {
           />
           <h1>
             <div className="text-sm/6 text-gray-500">
-              Document <span className="text-gray-700">#{document.id}</span>
+              Document <span className="text-gray-700">#{document_id}</span>
             </div>
-            <div className="mt-1 text-base font-semibold text-gray-900">{document.filename}</div>
-            <div className="mt-1 text-sm text-gray-600">Type: {document.file_type}</div>
-            {document.vector_store_id && <div className="badge">In Vector Store</div>}
+            <div className="mt-1 text-base font-semibold text-gray-900">{fileName}</div>
+            <div className="mt-1 text-sm text-gray-600">Type: {fileType}</div>
+           
           </h1>
         </div>
         <div className="flex items-center gap-x-4 sm:gap-x-6">
-          <button
-            type="button"
-            onClick={handleCreateVector}
-            className={`rounded-md px-3 py-2 text-sm font-semibold text-white shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 ${document.vector_store_id ? 'bg-green-600 hover:bg-green-500 focus-visible:outline-green-600' : 'bg-red-600 hover:bg-red-500 focus-visible:outline-red-600'}`}
-            disabled={!!document.vector_store_id}
-          >
-            {document.vector_store_id ? 'Vector' : 'Create'}
-          </button>
-          <button
-            type="button"
-            onClick={() => createThreadWithVectorStore()}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-            disabled={!document.vector_store_id}
-          >
-            Send
-          </button>
+         
+         
           <Menu as="div" className="relative sm:hidden">
             <MenuButton className="-m-3 block p-3">
               <span className="sr-only">More</span>
@@ -136,15 +115,7 @@ export default function DocumentDetail() {
                   Edit
                 </button>
               </MenuItem>
-              <MenuItem>
-                <button
-                  type="button"
-                  onClick={() => createThreadWithVectorStore()}
-                  className="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden"
-                >
-                  Create Thread
-                </button>
-              </MenuItem>
+
             </MenuItems>
           </Menu>
         </div>

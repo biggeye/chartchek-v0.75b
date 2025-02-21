@@ -60,24 +60,15 @@ export interface ChatThread {
 }
 
 export interface Document {
-  description: string
-  id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  filename: string
-  file_type?: string
-  facility?: string
-  category?: string
-  file_id: string
-  size_bytes?: number
-  vector_store_id?: string
-  processing_status: ProcessingStatus
-  storage_path?: string
-  mime_type?: string
-  metadata?: Record<string, any>
-  assistant_id?: string
-  embedding_status?: ProcessingStatus
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  userId: string;
+  processingStatus: ProcessingStatus;
 }
 
 // Removed duplicate ChatMessageAnnotation interface
