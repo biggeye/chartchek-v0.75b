@@ -1,46 +1,20 @@
-// use the following logic to complete the API route here:
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-/*
-Delete vector store file
-Beta
-delete
- 
-https://api.openai.com/v1/vector_stores/{vector_store_id}/files/{file_id}
-Delete a vector store file. This will remove the file from the vector store but the file itself will not be deleted. To delete the file, use the delete file endpoint.
+export async function DELETE(request: NextRequest) {
+  const { vector_store_id, file_id } = request.query;
 
-Path parameters
-vector_store_id
-string
+  if (!vector_store_id || !file_id) {
+    return NextResponse.json({ error: 'Missing vector_store_id or file_id' }, { status: 400 });
+  }
 
-Required
-The ID of the vector store that the file belongs to.
+  const openai = new OpenAI();
 
-file_id
-string
-
-Required
-The ID of the file to delete.
-
-Returns
-Deletion status
-
-Example request
-import OpenAI from "openai";
-const openai = new OpenAI();
-
-async function main() {
-  const deletedVectorStoreFile = await openai.beta.vectorStores.files.del(
-    "vs_abc123",
-    "file-abc123"
-  );
-  console.log(deletedVectorStoreFile);
+  try {
+    const deletedVectorStoreFile = await openai.beta.vectorStores.files.del(vector_store_id, file_id);
+    return NextResponse.json(deletedVectorStoreFile, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting vector store file:', error);
+    return NextResponse.json({ error: 'Failed to delete vector store file' }, { status: 500 });
+  }
 }
-
-main();
-Response
-{
-  id: "file-abc123",
-  object: "vector_store.file.deleted",
-  deleted: true
-}
-*/  // AI!
