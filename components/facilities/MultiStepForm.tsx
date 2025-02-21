@@ -16,7 +16,15 @@ export default function MultiStepForm() {
     regulatoryInfo: '',
   });
 
-  const handleNext = () => setStep((prev) => prev + 1);
+  const handleNext = () => {
+    if (step === 1 && facilityDetails.name) {
+      setStep(3); // Skip to step 3 if name is already filled
+    } else if (step === 2 && facilityDetails.type) {
+      setStep(4); // Skip to step 4 if type is already filled
+    } else {
+      setStep((prev) => prev + 1);
+    }
+  };
   const handleBack = () => setStep((prev) => prev - 1);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -24,7 +32,18 @@ export default function MultiStepForm() {
     setFacilityDetails((prev) => ({ ...prev, [name]: value }));
   };
 
-  return (
+  // Check if we can skip steps initially
+  React.useEffect(() => {
+    if (facilityDetails.name) {
+      setStep(2);
+    }
+    if (facilityDetails.type) {
+      setStep(3);
+    }
+    if (facilityDetails.capacity) {
+      setStep(4);
+    }
+  }, [facilityDetails]);
     <div>
       {step === 1 && (
         <div>
