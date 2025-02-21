@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn, Text } from '@/components/ui'
 import { renderContent } from '@/lib/chat/renderServices';
 import { MessageContent as MessageContentType } from '@/types/api/openai/messages'
 
@@ -36,7 +36,9 @@ export function MessageContent({ content, className, isStreaming }: MessageConte
         if (item.type === 'text') {
           return (
             <div key={id} className="prose dark:prose-invert">
-              {renderContent(item.text.value, item.text.annotations || [])}
+              <Text>
+                {renderContent(item.text.value, item.text.annotations || [])}
+              </Text>
               {item.text.annotations && item.text.annotations.length > 0 && (
                 <div className="annotation-footnotes mt-2">
                   {item.text.annotations.map((ann, index) => (

@@ -1,6 +1,6 @@
 'use client'
 
-import { SubmitButton } from '@/components/submit-button'
+import { Button, Alert } from '@/components/ui'
 import { Loader2, SendHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
@@ -42,7 +42,13 @@ export function EnhancedSubmitButton({
     }
   }, [message, errorState]);
 
-  // Get button content based on state
+  // Display error alert if there's an error
+  const renderErrorAlert = () => {
+    if (Boolean(errorState)) {
+      return <Alert variant="error">{errorState}</Alert>;
+    }
+    return null;
+  };
   const getButtonContent = () => {
     if (Boolean(errorState)) {
       return 'Error';
@@ -71,7 +77,8 @@ export function EnhancedSubmitButton({
   };
 
   return (
-    <SubmitButton
+    {renderErrorAlert()}
+    <Button
       disabled={isDisabled}
       variant={getButtonVariant()}
       className={cn(
@@ -84,6 +91,6 @@ export function EnhancedSubmitButton({
       )}
     >
       {getButtonContent()}
-    </SubmitButton>
+    </Button>
   )
 }
