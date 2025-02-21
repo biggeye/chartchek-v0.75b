@@ -1,9 +1,13 @@
 'use client'
 
-export default function AssistantsPage() {
+import MultiStepForm from '../../components/facilities/MultiStepForm';
+
+export default function FacilitiesPage() {
     return (
         <div>
-            Facilities
+            <h1>Facilities</h1>
+            <MultiStepForm />
         </div>
     )
+}
 }
