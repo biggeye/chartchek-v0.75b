@@ -21,10 +21,7 @@ const getPersistedThreadId = () => {
     return '';
   }
 };
-
 // Update store initialization
-
-
 const LOCAL_STORAGE_THREAD_ID_KEY = 'currentThreadId';
 
 const getInitialThreadId = () => {
@@ -52,16 +49,25 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.setItem(LOCAL_STORAGE_THREAD_ID_KEY, threadId);
     }
-  },
-  setCurrentThreadTitle: (title: string) => set({ currentThreadTitle: title }),
-  setCurrentConversation: (messages: Message[]) => set({ currentConversation: messages }),
-  setCurrentAssistantId: (assistantId: string) => set({ currentAssistantId: assistantId }),
-  setCurrentMessage: (message: string | null) => set({ currentMessage: message }),
-  setUserThreads: (threads: Thread[]) => set({ userThreads: threads }),
-  setIsLoading: (isLoading: boolean) => set({ isLoading }),
-  setError: (error: string | null) => set({ error }),
-  setLoading: (isLoading: boolean) => set({ isLoading }),
-  reset: () => set({
+},
+  setCurrentThreadTitle: (title: string) => 
+    set({ currentThreadTitle: title }),
+  setCurrentConversation: (messages: Message[]) => 
+    set({ currentConversation: messages }),
+  setCurrentAssistantId: (assistantId: string) => 
+    set({ currentAssistantId: assistantId }),
+  setCurrentMessage: (message: string | null) => 
+    set({ currentMessage: message }),
+  setUserThreads: (threads: Thread[]) => 
+    set({ userThreads: threads }),
+  setIsLoading: (isLoading: boolean) => 
+    set({ isLoading }),
+  setError: (error: string | null) => 
+    set({ error }),
+  setLoading: (isLoading: boolean) => 
+    set({ isLoading }),
+  reset: () => 
+    set({
     userId: null,
     userAssistants: [],
     userThreads: [],
@@ -75,34 +81,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
   }),
 
   // Async Actions
-  createThread: async (assistantId: string): Promise<string | null> => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await fetch('/api/threads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ assistant_id: assistantId }),
-      });
-      if (!response.ok) throw new Error('Failed to create thread');
-
-      const responseData = await response.json();
-
-      const newThreadId = responseData.threadId;
-      if (!newThreadId) throw new Error('Thread ID is missing in the response');
-      const userId: any = await fetchUserIdFromSupabase();
-      await addThreadToSupabase(newThreadId, assistantId, userId);
-      set({ currentThreadId: newThreadId });
-      return newThreadId;
-    } catch (error) {
-      console.error('[Store: createThread] Error:', error);
-      set({ error: error instanceof Error ? error.message : String(error) });
-      return null;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
   fetchUserId: async (): Promise<string> => {
     try {
       const userId = await fetchUserIdFromSupabase();
@@ -114,8 +92,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       return '';
     }
   },
-
-
   fetchUserAssistants: async (): Promise<string[]> => {
     const userId = get().userId;
     // Validate UUID before query
@@ -129,6 +105,31 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       console.error('[Store: fetchUserAssistants] Error:', error);
       set({ error: error instanceof Error ? error.message : String(error) });
       return [];
+    }
+  },
+  createThread: async (assistantId: string): Promise<string | null> => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await fetch('/api/threads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assistant_id: assistantId }),
+      });
+      if (!response.ok) throw new Error('Failed to create thread');
+      const responseData = await response.json();
+      const newThreadId = responseData.threadId;
+      const userId: any = await fetchUserIdFromSupabase();
+      await addThreadToSupabase(newThreadId, assistantId, userId);
+      set({ currentThreadId: newThreadId });
+      return newThreadId;
+    } catch (error) {
+      console.error('[Store: createThread] Error:', error);
+      set({ error: error instanceof Error ? error.message : String(error) });
+      return null;
+    } finally {
+      set({ isLoading: false });
     }
   },
   fetchUserThreads: async (assistantId: string): Promise<Thread[]> => {
@@ -237,8 +238,7 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       if (!content) {
         throw new Error('Content is required');
       }
-      await addUserMessageToSupabase(threadId, userId, content);
-      const response = await fetch(`/api/threads/${threadId}/messages`, {
+        const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'POST',
         body: formData,
       });
@@ -246,8 +246,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
         console.error('[sendMessage] Failed to send message');
         throw new Error('Failed to send message');
       }
-      
-
       return response;
     } catch (error) {
       console.error('[sendMessage] Error:', error);
@@ -264,7 +262,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       if (!threadId || !userId || !content) {
         throw new Error('Invalid input parameters');
       }
-
       const data = await addAssistantMessageToSupabase(threadId, userId, content);
       if (!data) {
         console.error('[addAssistantMessageToThread] Error: No data returned', { threadId, userId, content });
@@ -291,7 +288,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   retrieveVectorStore: async (vectorStoreId: string): Promise<any | null> => {
     set({ isLoading: true, error: null });
     try {
@@ -306,7 +302,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   modifyVectorStore: async (vectorStoreId: string, updates: any): Promise<any | null> => {
     set({ isLoading: true, error: null });
     try {
@@ -325,7 +320,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   deleteVectorStore: async (vectorStoreId: string): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
@@ -340,7 +334,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
 }))
 
 const supabase = createClient();
-
 // Helper functions for async operations
 async function fetchUserIdFromSupabase(): Promise<string> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -367,7 +360,6 @@ async function addThreadToSupabase(threadId: string, assistantId: string, userId
     throw new Error(data.error.message);
   }
 }
-// In deleteThreadFromSupabase
 async function deleteThreadFromSupabase(threadId: string): Promise<void> {
   const { error } = await supabase
     .from('chat_threads')
@@ -391,19 +383,6 @@ async function updateThreadInSupabase(threadId: string): Promise<void> {
 }
 async function addAssistantMessageToSupabase(threadId: string, userId: string, content: string): Promise<string> {
   const { data, error } = await supabase.from('chat_messages').insert([{ user_id: userId, message_id: new Date().toISOString(), thread_id: threadId, content, role: 'assistant' }]);
-  if (error) {
-    console.error('[addAssistantMessageToSupabase] Error:', error.message);
-    throw new Error(error.message);
-  }
-  return data || '';
-}
-async function addUserMessageToSupabase(threadId: string, userId: string, content: string): Promise<string> {
-  
-  const newcontent = { "text": {
-    "value": content,
-    "annotations": null
-  }}
-  const { data, error } = await supabase.from('chat_messages').insert([{ user_id: userId, message_id: new Date().toISOString(), thread_id: threadId, content, role: 'user' }]);
   if (error) {
     console.error('[addAssistantMessageToSupabase] Error:', error.message);
     throw new Error(error.message);
