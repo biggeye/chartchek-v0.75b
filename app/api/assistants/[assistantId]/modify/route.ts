@@ -10,7 +10,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const supabase = await createServer()
     const openai = await awaitOpenai()
-    // Verify user is authenticated
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }), {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-
+// get assistant_id from url params (assistantId)  AI!
     const formData = await request.formData()
     const requestData: AssistantUpdateRequest = {
       assistant_id: formData.get('assistant_id') as string,

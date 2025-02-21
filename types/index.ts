@@ -27,7 +27,7 @@ export type {
 import * as OpenAITypes from './api/openai'
 import * as RouteTypes from './api/routes'
 import * as DatabaseTypes from './database'
-import * as StoreTypes from './store/index'
+import * as StoreTypes from './store/client/index'
 
 export const API = {
   OpenAI: OpenAITypes,

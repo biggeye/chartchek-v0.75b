@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import type { ChatMessageAnnotation } from '@/types/store';
+import type { ChatMessageAnnotation } from '@/types/store/client';
 
 interface ProcessedContent {
   content: string;

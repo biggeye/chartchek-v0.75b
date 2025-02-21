@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 export async function DELETE(request: NextRequest) {
-  const { vector_store_id, file_id } = request.query;
+  const { searchParams } = new URL(request.url);
+  const vector_store_id = searchParams.get('vector_store_id');
+  const file_id = searchParams.get('file_id');
 
   if (!vector_store_id || !file_id) {
     return NextResponse.json({ error: 'Missing vector_store_id or file_id' }, { status: 400 });

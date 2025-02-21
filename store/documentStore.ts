@@ -1,39 +1,6 @@
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
-
-interface DocumentStoreState {
-  documents: Document[];
-  isLoading: boolean;
-  error: string | null;
-  fileQueue: string[];
-}
-
-interface DocumentMetadata {
-  notes: string;
-  tags: string[];
-  category: string;
-}
-
-interface Document {
-  document_id: string;
-  facility_id?: string;
-  fileName?: string;
-  fileType?: string;
-  fileSize: number;
-  filePath: string;
-  bucket: string;
-  createdAt?: string;
-  updatedAt?: string;
-  userId?: string;
-  processingStatus?: string;
-  metadata?: DocumentMetadata[];
-}
-
-interface DocumentStore extends DocumentStoreState {
-  setLoading: (isLoading: boolean) => void;
-  setError: (error: string | null) => void;
-  fetchDocuments: () => any;
-}
+import { DocumentStoreState, DocumentMetadata, Document, DocumentStore } from '@/types/store/document';
 
 const initialState: DocumentStoreState = {
   documents: [],

@@ -7,7 +7,7 @@ import type {
   Message,
   Thread,
   ChatMessageAnnotation
-} from '@/types/store';
+} from '@/types/store/client';
 import { isValidUUID } from '@/utils/validation';
 // Add environment check utility
 const isBrowser = typeof window !== 'undefined';

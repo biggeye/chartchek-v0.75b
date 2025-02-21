@@ -6,13 +6,13 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { MessageContent as MessageContentComponent } from './MessageContent'
 import { OpenAIMessage } from '@/types/api/openai/messages'
-import { ChatMessageAnnotation } from '@/types/store';
+import { ChatMessageAnnotation } from '@/types/store/client';
 import { MessageContent } from '@/types/database'
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useClientStore } from '@/store/clientStore';
 import { renderContent } from '@/lib/chat/renderServices';
-import { Message } from '@/types/store';
+import { Message } from '@/types/store/client';
 
 interface MessageListProps {
   messages: OpenAIMessage[]

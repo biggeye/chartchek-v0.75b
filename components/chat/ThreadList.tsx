@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useClientStore } from '@/store/clientStore'
 import { TrashIcon, PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid';
-import { Thread } from '@/types/store'
+import { Thread } from '@/types/store/client'
 
 type ThreadListProps = {
     assistantId: string;

@@ -1,6 +1,6 @@
 export type MessageRole = 'user' | 'assistant'
 export type MessageStatus = 'streaming' | 'in_progress' | 'completed' | 'incomplete'
-import { ChatMessageAnnotation } from "@/types/store";
+import { ChatMessageAnnotation } from "@/types/store/client";
 // OpenAI Tool Types
 export interface Match {
   snippet: string;

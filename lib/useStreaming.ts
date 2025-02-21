@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { MessageContent, MessageRole } from '@/types/api/openai'
 import { useClientStore } from '@/store/clientStore'
-import { Message } from '@/types/store'
+import { Message } from '@/types/store/client'
 
 interface UseStreamingReturn {
   streamingContent: MessageContent[]

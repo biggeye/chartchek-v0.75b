@@ -1,7 +1,7 @@
 import { Tool } from '../api/openai'
 import { ToolResources } from '@/types/api/openai/tools'
 import { MessageRole } from '@/types/api/openai/messages'
-import { ChatMessageAnnotation } from '../store'
+import { ChatMessageAnnotation } from '../store/client'
 // Shared Types
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
