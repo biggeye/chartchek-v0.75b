@@ -55,6 +55,7 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
     }
     fetchMessages()
   }, [currentThreadId])
+
   useEffect(() => {
     if (messages.length > 0) {
     }
@@ -65,7 +66,7 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
   }, [messages, streamingContent]);
 
   return (
-    <ScrollArea className="h-[calc(100vh-9rem)] w-full mt-4.5">
+    <ScrollArea className="h-[calc(100vh-5rem)] w-full mt-4.5 top-6">
       <div className="flex flex-col gap-4 p-4">
         {messages.map((message) => (
           <div

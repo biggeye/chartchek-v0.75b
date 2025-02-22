@@ -72,7 +72,7 @@ interface AsyncActions {
   // create
   createThread: (assistantId: string) => Promise<string | null>;  // Create a thread with assistantId and store response
   sendMessage: (threadId: string, formData: FormData) => Promise<Response>;
-  addAssistantMessageToThread: (threadId: string, userId: string, content: string) => Promise<string>;
+  addAssistantMessageToThread: (threadId: string, userId: string, content: any) => Promise<string>;
   // read
   fetchUserId: () => Promise<UserState['userId']>;  // Fetch userId from Supabase auth provider
   fetchUserAssistants: () => Promise<UserState['userAssistants']>;  // Fetch assistants from PostgreSQL using userId

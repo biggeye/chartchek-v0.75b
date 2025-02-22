@@ -144,13 +144,18 @@ export const useStreaming = (): UseStreamingReturn => {
                   throw new Error('Missing conversation context');
                 }
                 try {
-                  const storeRes = await addAssistantMessageToThread(threadId, userId, accumulated.currentText);
+                  const content = {
+                    type: 'text',
+                    text: { value: accumulated.currentText, annotations: accumulated.annotations }
+                  }
+                  console.log('[useStreaming] Storing assistant message:', content)
+                  const storeRes = await addAssistantMessageToThread(threadId, userId, content);
                   if (!storeRes) {
-                    console.error('[AssistantChat] Failed to store assistant message:',);
+                    console.error('[useStreaming] Failed to store assistant message:',);
                   } else {
-                    console.log('[AssistantChat] Assistant message stored successfully');
+                    console.log('[useStreaming] Assistant message stored successfully');
                     const storeData = await storeRes;
-                    console.log('[AssistantChat] Stored assistant message:', storeData)
+                    console.log('[useStreaming] Stored assistant message:', storeData)
 
                     // Option: you can update your message store with the final message now.
                     // For example:
@@ -191,7 +196,7 @@ export const useStreaming = (): UseStreamingReturn => {
         reader.releaseLock()
       }
     } catch (error: any) {
-      console.error('[AssistantChat] Error:', error)
+      console.error('[useStreaming] Error:', error)
       // Option: bubble up the error by setting an error state in your component.
     } finally {
       abortCtrlRef.current = null

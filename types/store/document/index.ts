@@ -1,10 +1,11 @@
 import { Leaf } from "lucide-react"
 
+
 interface DocumentStoreState {
     documents: Document[];
     isLoading: boolean;
     error: string | null;
-    fileQueue: string[];
+    fileQueue: Document[];
   }
   
   interface DocumentMetadata {
@@ -18,9 +19,9 @@ interface DocumentStoreState {
     facility_id?: string;
     fileName?: string;
     fileType?: string;
-    fileSize: number;
-    filePath: string;
-    bucket: string;
+    fileSize?: number;
+    filePath?: string;
+    bucket?: string;
     createdAt?: string;
     updatedAt?: string;
     userId?: string;
@@ -32,6 +33,8 @@ interface DocumentStoreState {
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     fetchDocuments: () => any;
+    addToFileQueue: (file: Document) => void;
+    removeFromFileQueue: (file: Document) => void;
   }
 
 interface VectorStore {
@@ -92,5 +95,5 @@ export type {
     DocumentStore,
     VectorStore,
     VectorStoreFile,
-    VectorStoreFileBatch
+    VectorStoreFileBatch,
 };

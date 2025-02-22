@@ -17,7 +17,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   setDocuments: (documents: Document[]) => set({ documents }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-
+  addToFileQueue: (file: Document) => set((state) => ({
+    fileQueue: [...state.fileQueue, file]
+  })),
+  removeFromFileQueue: (file: Document) => set((state) => ({
+    fileQueue: state.fileQueue.filter((item) => item.document_id !== file.document_id)
+  })),
 
   fetchDocuments: async () => {
     const store = get();
@@ -54,8 +59,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       store.setLoading(false);
     }
   },
-
-
 
   getFileQueue: () => {
     return get().fileQueue;

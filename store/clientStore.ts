@@ -371,7 +371,7 @@ async function deleteThreadFromSupabase(threadId: string): Promise<void> {
     throw error;
   }
 }
-async function updateThreadInSupabase(threadId: string): Promise<void> {
+export async function updateThreadInSupabase(threadId: string): Promise<void> {
   const { error } = await supabase
     .from('chat_threads')
     .update({ updated_at: new Date() })
@@ -381,11 +381,12 @@ async function updateThreadInSupabase(threadId: string): Promise<void> {
     throw error as Error;
   }
 }
-async function addAssistantMessageToSupabase(threadId: string, userId: string, content: string): Promise<string> {
+async function addAssistantMessageToSupabase(threadId: string, userId: string, content: any): Promise<string> {
   const { data, error } = await supabase.from('chat_messages').insert([{ user_id: userId, message_id: new Date().toISOString(), thread_id: threadId, content, role: 'assistant' }]);
   if (error) {
     console.error('[addAssistantMessageToSupabase] Error:', error.message);
-    throw new Error(error.message);
+    throw error;
   }
-  return data || '';
+  // Return a simple success message or the inserted data
+  return data ? 'Message added successfully' : 'No data returned';
 }
