@@ -21,8 +21,13 @@ interface ProcessedContent {
 */
 const processAnnotations = (
   content: string,
-  annotations: ChatMessageAnnotation[]
+  annotations: ChatMessageAnnotation[] = []
 ): ProcessedContent => {
+  if (!content) return { content: '', footnotes: [], pageReferences: [] };
+  if (!annotations || !Array.isArray(annotations) || annotations.length === 0) {
+    return { content, footnotes: [], pageReferences: [] };
+  }
+
   let footnotes: { index: number; annotation: ChatMessageAnnotation }[] = [];
   let pageReferences: { index: number; pageRange: string }[] = [];
   let footnoteCounter = 1;
@@ -159,6 +164,8 @@ interface ChatbotContentProps {
   annotations?: ChatMessageAnnotation[];
 }
 export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotations = [] }) => {
+  if (!content) return null;
+
   // Process the markers in the content.
   const { content: processedText, footnotes, pageReferences } = processAnnotations(content, annotations);
   // Apply further formatting.
@@ -195,7 +202,7 @@ export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotat
 
   return (
     <>
-      <div onClick={onContentClick} dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      <div onClick={onContentClick} dangerouslySetInnerHTML={{ __html: formattedContent || content }} />
       
       {/* Render the footnotes modals (hidden by default) */}
       <div className="footnotes">

@@ -71,7 +71,7 @@ interface UIState {
 interface AsyncActions {
   // create
   createThread: (assistantId: string) => Promise<string | null>;  // Create a thread with assistantId and store response
-  sendMessage: (threadId: string, formData: FormData) => Promise<Response>;
+  sendMessage: (threadId: string, currentMessage: string, attachments: any[]) => Promise<void>;
   addAssistantMessageToThread: (threadId: string, userId: string, content: any) => Promise<string>;
   // read
   fetchUserId: () => Promise<UserState['userId']>;  // Fetch userId from Supabase auth provider

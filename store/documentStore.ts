@@ -59,7 +59,38 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       store.setLoading(false);
     }
   },
-
+  uploadFileToOpenAI: async (file: Document): Promise<string> => {
+    try {
+      if (!file.filePath?.trim()) {
+        throw new Error('Invalid document: missing file path');
+      }
+  
+      const { data: urlData } = await supabase.storage
+        .from('documents')
+        .getPublicUrl(file.filePath);
+  
+      if (!urlData?.publicUrl) throw new Error('Failed to generate file URL');
+  
+      const uploadResponse = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: [{ url: urlData.publicUrl, purpose: 'assistants' }] })
+      });
+  
+      const { file_ids } = await uploadResponse.json();
+  
+      const { error } = await supabase.from('documents').update({
+        openai_file_id: file_ids[0],
+        updated_at: new Date().toISOString()
+      }).eq('document_id', file.document_id);
+  
+      if (error) throw error;
+      return file_ids[0];
+    } catch (error) {
+      console.error('[documentStore] Upload failed:', error);
+      throw error;
+    }
+  },
   getFileQueue: () => {
     return get().fileQueue;
   },
@@ -77,5 +108,4 @@ async function fetchDocumentsCount(): Promise<number> {
   if (error) throw error;
   return data?.length ?? 0;
 }
-
 export { fetchDocumentsCount };

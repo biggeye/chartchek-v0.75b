@@ -4,10 +4,9 @@ import { createClient } from '@/utils/supabase/client'
 import { useEffect, useRef } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-import { MessageContent as MessageContentComponent } from './MessageContent'
 import { OpenAIMessage } from '@/types/api/openai/messages'
 import { ChatMessageAnnotation } from '@/types/store/client';
-import { MessageContent } from '@/types/database'
+import { MessageContent as MessageContentType } from '@/types/database'
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useClientStore } from '@/store/clientStore';
@@ -16,8 +15,39 @@ import { Message } from '@/types/store/client';
 
 interface MessageListProps {
   messages: OpenAIMessage[]
-  streamingContent?: MessageContent[]
+  streamingContent?: MessageContentType[]
 }
+
+const ChatbotContent = ({ content, annotations = [] }: { content: string; annotations?: any[] }) => {
+  const handleContentClick = () => {
+    // Your click handler logic
+  };
+
+  return (
+    <span
+      onClick={handleContentClick}
+      className="inline-block"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+};
+
+const MessageContent = ({ content, isStreaming }: { content: any[]; isStreaming: boolean }) => {
+  return (
+    <div className="prose dark:prose-invert max-w-none">
+      <div className="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+        {content.map((item, index) => (
+          <ChatbotContent
+            key={index}
+            content={item.text}
+            annotations={item.annotations}
+          />
+        ))}
+        {isStreaming && <span className="animate-pulse">▊</span>}
+      </div>
+    </div>
+  );
+};
 
 export const MessageList = React.memo(({ messages, streamingContent }: MessageListProps) => {
   const supabase = createClient();
@@ -111,7 +141,7 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
             <div className="text-xs font-medium text-muted-foreground">
               Assistant
             </div>
-            <MessageContentComponent content={streamingContent} isStreaming />
+            <MessageContent content={streamingContent} isStreaming />
           </div>
         )}
         <div ref={bottomRef} />

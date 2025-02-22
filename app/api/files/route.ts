@@ -54,20 +54,7 @@ export async function POST(req: Request) {
         );
         console.log(myVectorStoreFileBatch);
 
-        const { data, error } = await supabase
-            .from('documents')
-            .insert(files.map((file, index) => ({
-                user_id: user.data.user?.id,
-                filename: file.name,
-                file_id: fileIds[index],
-                file_type: file.type,
-                thread_id: threadId
-            })));
-
-        if (error) {
-            console.error('[FileUpload] Supabase insert error:', error)
-            throw error;
-        }
+     
 
         return new Response(JSON.stringify({
             file_ids: fileIds,

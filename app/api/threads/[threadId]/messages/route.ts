@@ -5,14 +5,15 @@ import { openai as awaitOpenai } from '@/utils/openai'
 import type { MessageRole } from '@/types/api/openai/messages'
 
 export async function POST(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: { threadId: string } }
 ) {
   const supabase = await createServer();
   const openai = await awaitOpenai();
+  await params;
 
   console.log('[POST] Received request to create message in thread:', params.threadId);
-
+  if (params){
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -23,60 +24,44 @@ export async function POST(
       );
     }
 
-    const threadId = await params.threadId;
-    if (!threadId) {
-      console.error('[POST] Missing thread ID');
+    const { content, attachments } = await req.json();
+    
+    if (!content || typeof content !== 'string') {
       return NextResponse.json(
-        { error: 'Thread ID required', code: 'THREAD_ID_MISSING' },
+        { error: 'Message content required' },
         { status: 400 }
       );
     }
 
-    const formData = await request.formData();
-    console.log('[POST] Form data received:', formData);
-
-    const content = formData.get('content') as string;
-    const role = formData.get('role') as MessageRole || 'user';
-    const attachments = formData.get('attachments') ? JSON.parse(formData.get('attachments') as string) : undefined;
-    const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
-
-    const message = await openai.beta.threads.messages.create(threadId, {
-      role,
+    const message = await openai.beta.threads.messages.create(params.threadId, {
+      role: "user",
       content,
-      attachments,
-      metadata
+      attachments: attachments,
     });
-    console.log('[POST] Message created with OpenAI:', message);
 
-    const { error: dbError } = await supabase
+    const { error } = await supabase
       .from('chat_messages')
       .insert({
-        thread_id: threadId,
         user_id: user.id,
-        content: message.content,
-        role: message.role,
+        thread_id: params.threadId,
+        content: { text: content },
+        file_ids: attachments || [],
+        role: 'user',
         message_id: message.id
-      })
+      });
 
-    if (dbError) {
-      console.error('[POST] Database insertion error:', dbError);
-      throw dbError;
-    }
-
+    if (error) throw error;
     console.log('[POST] Message stored in Supabase');
     return NextResponse.json(message);
-
+    
   } catch (error) {
     console.error('[POST] Error during message creation:', error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Operation failed',
-        code: 'MESSAGE_CREATION_FAILED'
-      },
+      { error: 'Message processing failed' },
       { status: 500 }
     );
   }
-}
+}}
 
 export async function GET(
   request: NextRequest,

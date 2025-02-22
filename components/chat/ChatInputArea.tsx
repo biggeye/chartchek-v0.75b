@@ -14,10 +14,35 @@ interface DocumentListProps {
   removeFromFileQueue: (doc: Document) => void;
 }
 
-export default function ChatInputArea({ threadId, onSubmit, isLoading }: { threadId: string; onSubmit: (message: string) => void; isLoading: boolean }) {
-  const currentMessage = useClientStore((state) => state.currentMessage);
-  const setCurrentMessage = useClientStore((state) => state.setCurrentMessage);
-  const { documents, isLoading: isDocumentsLoading, fetchDocuments, fileQueue, addToFileQueue, removeFromFileQueue } = useDocumentStore();
+export default function ChatInputArea({
+  onMessageSubmit,
+  isSubmitting
+}: {
+  onMessageSubmit: (content: string, attachments: string[]) => Promise<void>;
+  isSubmitting: boolean;
+}) {
+  const [currentMessage, setCurrentMessage] = useState('');
+  const { fileQueue, uploadFileToOpenAI } = useDocumentStore();
+  const { currentThreadId } = useClientStore((state) => state);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentMessage.trim() || isSubmitting) return;
+
+    try {
+      const attachments = await Promise.all(
+        fileQueue.map(file => uploadFileToOpenAI(file))
+      );
+
+      await onMessageSubmit(currentMessage.trim(), attachments.filter(Boolean) as string[]);
+      // Clear state after successful submission
+      setCurrentMessage('');
+    } catch (error) {
+      console.error('[ChatInput] Submit error:', error);
+    }
+  };
+
+  const { documents, isLoading: isDocumentsLoading, fetchDocuments, addToFileQueue, removeFromFileQueue } = useDocumentStore();
   const [page, setPage] = useState(0);
   const itemsPerPage = 4;
 
@@ -37,13 +62,6 @@ export default function ChatInputArea({ threadId, onSubmit, isLoading }: { threa
   const paginatedDocuments = useMemo(() => {
     return documents.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
   }, [documents, page, itemsPerPage]);
-
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentMessage) return;
-    await onSubmit(currentMessage);
-    setCurrentMessage('');
-  }, [currentMessage, onSubmit, setCurrentMessage]);
 
   const DocumentList = ({ documents, fileQueue, addToFileQueue, removeFromFileQueue }: {
     documents: Document[];
@@ -114,7 +132,7 @@ export default function ChatInputArea({ threadId, onSubmit, isLoading }: { threa
       <div className="bottom-0 px-2 flex rounded-lg bg-white outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
 
         <input
-  
+
           placeholder="Ask a question..."
           className="block w-full resize-none px-3 py-2 text-lg font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none z-20"
           value={currentMessage || ''}
@@ -125,50 +143,50 @@ export default function ChatInputArea({ threadId, onSubmit, isLoading }: { threa
             target.style.height = `${target.scrollHeight}px`;
           }}
           style={{ height: 'auto' }}
-    
+
         />
         {/* Spacer to match the toolbar height */}
-   
-  
-   
-        
-          <Listbox as="div" className="shrink-0 relative">
-            <ListboxButton
-              disabled={isDocumentsLoading}
-              className="inline-flex items-center rounded-full bg-gray-50 px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 sm:px-3 disabled:opacity-50"
-            >
-              {/* Always show the icon */}
-              <PaperClipIcon
-                aria-hidden="true"
-                className="h-5 w-5 shrink-0 text-gray-300"
-              />
-              <span className="hidden truncate sm:ml-2 sm:block">
-                {isDocumentsLoading
-                  ? 'Loading documents...'
-                  : fileQueue.length
+
+
+
+
+        <Listbox as="div" className="shrink-0 relative">
+          <ListboxButton
+            disabled={isDocumentsLoading}
+            className="inline-flex items-center rounded-full bg-gray-50 px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 sm:px-3 disabled:opacity-50"
+          >
+            {/* Always show the icon */}
+            <PaperClipIcon
+              aria-hidden="true"
+              className="h-5 w-5 shrink-0 text-gray-300"
+            />
+            <span className="hidden truncate sm:ml-2 sm:block">
+              {isDocumentsLoading
+                ? 'Loading documents...'
+                : fileQueue.length
                   ? `${fileQueue.length} selected`
                   : ''}
-              </span>
-            </ListboxButton>
-            <DocumentList
-              documents={documents}
-              fileQueue={fileQueue}
-              addToFileQueue={addToFileQueue}
-              removeFromFileQueue={removeFromFileQueue}
-            />
-          </Listbox>
-  
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            {isLoading ? 'Loading...' : 'Send'}
-          </button>
-      
-     
-    </div>
-  </form>
-  
+            </span>
+          </ListboxButton>
+          <DocumentList
+            documents={documents}
+            fileQueue={fileQueue}
+            addToFileQueue={addToFileQueue}
+            removeFromFileQueue={removeFromFileQueue}
+          />
+        </Listbox>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        >
+          {isSubmitting ? 'Loading...' : 'Send'}
+        </button>
+
+
+      </div>
+    </form>
+
   );
 }

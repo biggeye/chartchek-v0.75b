@@ -11,18 +11,18 @@ interface AssistantChatProps {
   assistantId: string
 }
 
-export function Chat({ assistantId }: AssistantChatProps) {
+export default function Chat({ assistantId }: AssistantChatProps) {
 
   const {
     currentAssistantId,
     createThread,
-    fetchThreadMessages,
-    setCurrentThreadId,
     setCurrentAssistantId,
     sendMessage,
     error: storeError,
     setError
   } = useClientStore();
+  
+  const setCurrentThreadId = useClientStore((state) => state.setCurrentThreadId);
 
   const { streamingContent, handleStream, setStreamingContent } = useStreaming();
   
@@ -31,65 +31,46 @@ export function Chat({ assistantId }: AssistantChatProps) {
   const [error, setLocalError] = useState<string | null>(null);
   const currentThreadId = useClientStore((state) => state.currentThreadId);
 
-  const handleSubmit = async (message: string) => {
-    if (isLoading || !message.trim()) return;
-
-    if (!currentThreadId) {
-      const newThreadId = await createThread(assistantId);
-      if (newThreadId) {
+  const handleMessageSubmit = async (content: string, attachments: string[]) => {
+    try {
+      console.log('[Chat] Submitting message:', content, attachments, currentThreadId);
+      if (!currentThreadId) {
+        const newThreadId = await createThread(currentAssistantId);
+        console.log('[Chat] Created new thread:', newThreadId);
+        if (newThreadId) {
         setCurrentThreadId(newThreadId);
+        }
       }
+      await sendMessage(currentThreadId, content, attachments);
+      await handleStream();
+    } catch (error) {
+      console.error('[Chat] Error submitting message:', error);
     }
-
-    const formData = new FormData();
-    formData.append('content', message);
-    formData.append('thread_id', currentThreadId);
-    formData.append('role', 'user');
-
-    const sentMessage = await sendMessage(currentThreadId, formData);
-    const result = await sentMessage.json();
-
-    if (result.error) {
-      setLocalError(result.error);
-    } else {
-      try {
-        await handleStream();
-
-      } catch (error) {
-
-        setLocalError('Failed to send message. Please try again.');
-      } finally {
-        fetchThreadMessages(currentThreadId);
-        setIsLoading(false);
-      }
-    };
   };
 
+  useEffect(() => {
+    setCurrentAssistantId(assistantId);
+  }, [assistantId, setCurrentAssistantId]);
 
-useEffect(() => {
-  setCurrentAssistantId(assistantId);
-}, [assistantId, setCurrentAssistantId]);
+  return (
+    <div className="chat-container">
+      <MessageList messages={messages} streamingContent={streamingContent} />
+      <ChatInputArea 
+        onMessageSubmit={handleMessageSubmit}
+        isSubmitting={isLoading}
+      />
+      {(error) && (
+        <div style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 50,
+          maxWidth: '24rem',
+          animation: 'slideIn 0.2s ease-out',
+        }}>
 
-return (
-  <div className="chat-container">
-    <MessageList messages={messages} streamingContent={streamingContent} />
-    <ChatInputArea
-      threadId={currentThreadId}
-      onSubmit={handleSubmit}
-      isLoading={isLoading}
-    />
-    {(error) && (
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        right: '1rem',
-        zIndex: 50,
-        maxWidth: '24rem',
-        animation: 'slideIn 0.2s ease-out',
-      }}>
-
-      </div>
-    )}
-  </div>
-)
+        </div>
+      )}
+    </div>
+  )
 }

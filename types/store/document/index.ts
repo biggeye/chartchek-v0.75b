@@ -1,5 +1,5 @@
 import { Leaf } from "lucide-react"
-
+import * as z from 'zod';
 
 interface DocumentStoreState {
     documents: Document[];
@@ -20,7 +20,7 @@ interface DocumentStoreState {
     fileName?: string;
     fileType?: string;
     fileSize?: number;
-    filePath?: string;
+    filePath: z.infer<typeof filePathSchema>;
     bucket?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -28,13 +28,16 @@ interface DocumentStoreState {
     processingStatus?: string;
     metadata?: DocumentMetadata[];
   }
-  
+
+const filePathSchema = z.string().min(1);
+
   interface DocumentStore extends DocumentStoreState {
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     fetchDocuments: () => any;
     addToFileQueue: (file: Document) => void;
     removeFromFileQueue: (file: Document) => void;
+    uploadFileToOpenAI: (file: Document) => Promise<string>;
   }
 
 interface VectorStore {

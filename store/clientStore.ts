@@ -29,6 +29,12 @@ const getInitialThreadId = () => {
   return localStorage.getItem(LOCAL_STORAGE_THREAD_ID_KEY) || '';
 };
 
+interface MessagePayload {
+  content: string;
+  attachments?: string[];
+  metadata?: Record<string, any>;
+}
+
 export const useClientStore = create<ClientStoreType>((set, get) => ({
   // Initial state
   userId: null,
@@ -230,31 +236,37 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
     get().fetchUserThreads(assistantId);
   },
-  sendMessage: async (threadId: string, formData: FormData): Promise<Response> => {
+  sendMessage: async (threadId: string, content: string, attachments: string[]): Promise<void> => {
     set({ isLoading: true, error: null });
+    
     try {
-      const userId: any = await fetchUserIdFromSupabase();
-      const content = formData.get('content')as string;
-      if (!content) {
-        throw new Error('Content is required');
+      if (!content.trim()) {
+        throw new Error('Message content required');
       }
-        const response = await fetch(`/api/threads/${threadId}/messages`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        console.error('[sendMessage] Failed to send message');
-        throw new Error('Failed to send message');
-      }
-      return response;
-    } catch (error) {
-      console.error('[sendMessage] Error:', error);
-      set({ error: (error as Error).message });
-      throw error as Error;
-    } finally {
 
-      await updateThreadInSupabase(threadId);
-      set({ isLoading: false });
+      const response = await fetch(`/api/threads/${threadId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, attachments })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
+      }
+
+      const newMessage = await response.json();
+      set(state => ({
+        currentConversation: [...state.currentConversation, newMessage],
+        isLoading: false
+      }));
+      
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Message submission failed',
+        isLoading: false
+      });
+      throw error;
     }
   },
   addAssistantMessageToThread: async (threadId: string, userId: string, content: string): Promise<string> => {
