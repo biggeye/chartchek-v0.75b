@@ -114,7 +114,7 @@ export const useStreaming = (): UseStreamingReturn => {
               }
               // Append incremental content to the streaming message.
               else if (data.type === 'textDelta' && messageStarted) {
-                const delta = data.data?.delta?.value || ''
+                const delta = data.data?.delta.value || '';
                 const newAnnotations = data.data?.delta?.annotations || []
                 accumulated.currentText += delta
                 accumulated.annotations = [...accumulated.annotations, ...newAnnotations]

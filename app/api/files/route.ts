@@ -14,6 +14,12 @@ export async function POST(req: Request) {
         }
         console.log('[FileUpload] User authenticated:', user.data.user?.id)
 
+        const contentType = req.headers.get('Content-Type') || '';
+        if (!contentType.includes('multipart/form-data') && !contentType.includes('application/x-www-form-urlencoded')) {
+            console.log('[FileUpload] Error: Invalid Content-Type:', contentType);
+            return new Response("Invalid Content-Type. Expected 'multipart/form-data' or 'application/x-www-form-urlencoded'.", { status: 400 });
+        }
+
         const formData = await req.formData();
         const files = formData.getAll('files') as File[];
         const threadId = formData.get('thread_id') as string;

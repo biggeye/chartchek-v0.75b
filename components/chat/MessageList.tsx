@@ -75,21 +75,30 @@ export const MessageList = React.memo(({ messages, streamingContent }: MessageLi
     }
   }, [currentThreadId, currentConversation])
 
-  // Initial fetch
+  /*
   useEffect(() => {
     const fetchMessages = async () => {
-      if (currentThreadId) {
-        const messages = await useClientStore.getState().fetchThreadMessages(currentThreadId)
-        setCurrentConversation(messages)
+      try {
+        if (currentThreadId) {
+          const messages = await useClientStore.getState().fetchThreadMessages(currentThreadId)
+          setCurrentConversation(messages)
+        } else {
+          // No thread yet, initialize with empty conversation
+          setCurrentConversation([])
+        }
+      } catch (error) {
+        console.error('[MessageList] Error fetching messages:', error)
+        // Initialize with empty conversation on error
+        setCurrentConversation([])
       }
     }
     fetchMessages()
   }, [currentThreadId])
-
+*/
   useEffect(() => {
     if (messages.length > 0) {
     }
-  }, [messages, streamingContent]);
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

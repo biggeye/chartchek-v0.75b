@@ -12,79 +12,53 @@ import { isValidUUID } from '@/utils/validation';
 // Add environment check utility
 const isBrowser = typeof window !== 'undefined';
 
-// Safe localStorage helper
-const getPersistedThreadId = () => {
-  try {
-    return isBrowser ? localStorage.getItem(LOCAL_STORAGE_THREAD_ID_KEY) || '' : '';
-  } catch (error) {
-    console.error('LocalStorage access error:', error);
-    return '';
-  }
-};
-// Update store initialization
-const LOCAL_STORAGE_THREAD_ID_KEY = 'currentThreadId';
-
-const getInitialThreadId = () => {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(LOCAL_STORAGE_THREAD_ID_KEY) || '';
-};
-
-interface MessagePayload {
-  content: string;
-  attachments?: string[];
-  metadata?: Record<string, any>;
-}
-
 export const useClientStore = create<ClientStoreType>((set, get) => ({
   // Initial state
   userId: null,
   userAssistants: [],
   userThreads: [],
-  currentThreadId: getPersistedThreadId(),
+  currentThreadId: '',
   currentThreadTitle: '',
   currentAssistantId: '',
-  currentMessage: null, // Ensure this line ends with a comma
-  currentConversation: [], // Add missing comma
-  currentFileQueue: null, // Add missing comma
-  isLoading: false, // Add missing comma
-  error: null, // Add missing comma
+  currentMessage: null,
+  currentConversation: [],
+  currentFileQueue: null,
+  isLoading: false,
+  error: null,
 
   // Actions
   setCurrentThreadId: (threadId: string) => {
     set({ currentThreadId: threadId });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_THREAD_ID_KEY, threadId);
-    }
-},
-  setCurrentThreadTitle: (title: string) => 
+  },
+  setCurrentThreadTitle: (title: string) =>
     set({ currentThreadTitle: title }),
-  setCurrentConversation: (messages: Message[]) => 
+  setCurrentConversation: (messages: Message[]) =>
     set({ currentConversation: messages }),
-  setCurrentAssistantId: (assistantId: string) => 
+  setCurrentAssistantId: (assistantId: string) =>
     set({ currentAssistantId: assistantId }),
-  setCurrentMessage: (message: string | null) => 
+  setCurrentMessage: (message: string | null) =>
     set({ currentMessage: message }),
-  setUserThreads: (threads: Thread[]) => 
+  setUserThreads: (threads: Thread[]) =>
     set({ userThreads: threads }),
-  setIsLoading: (isLoading: boolean) => 
+  setIsLoading: (isLoading: boolean) =>
     set({ isLoading }),
-  setError: (error: string | null) => 
+  setError: (error: string | null) =>
     set({ error }),
-  setLoading: (isLoading: boolean) => 
+  setLoading: (isLoading: boolean) =>
     set({ isLoading }),
-  reset: () => 
+  reset: () =>
     set({
-    userId: null,
-    userAssistants: [],
-    userThreads: [],
-    currentThreadId: '',
-    currentAssistantId: '',
-    currentMessage: null,
-    currentConversation: [],
-    currentFileQueue: null,
-    isLoading: false,
-    error: null
-  }),
+      userId: null,
+      userAssistants: [],
+      userThreads: [],
+      currentThreadId: '',
+      currentAssistantId: '',
+      currentMessage: null,
+      currentConversation: [],
+      currentFileQueue: null,
+      isLoading: false,
+      error: null
+    }),
 
   // Async Actions
   fetchUserId: async (): Promise<string> => {
@@ -93,7 +67,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       set({ userId });
       return userId;
     } catch (error) {
-      console.error('[Store: fetchUserId] Error:', error);
       set({ error: error instanceof Error ? error.message : String(error) });
       return '';
     }
@@ -108,7 +81,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     try {
       return await fetchUserAssistantsFromSupabase(userId);
     } catch (error) {
-      console.error('[Store: fetchUserAssistants] Error:', error);
       set({ error: error instanceof Error ? error.message : String(error) });
       return [];
     }
@@ -162,12 +134,21 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
   },
   fetchThreadMessages: async (threadId: string): Promise<Message[]> => {
     try {
+      if (!threadId) {
+        return [];
+      }
+
       const response = await fetch(`/api/threads/${threadId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
+
+      if (response.status === 404) {
+        return [];
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to fetch messages: ${response.statusText}`);
       }
@@ -193,7 +174,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
 
       return messages;
     } catch (err) {
-      console.error('[Store: fetchThreadMessages] Error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Message fetch failed';
       set({ error: errorMsg });
       return [];
@@ -225,9 +205,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
         const { currentThreadId } = get();
         if (currentThreadId === threadId) {
           set({ currentThreadId: '' });
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem(LOCAL_STORAGE_THREAD_ID_KEY);
-          }
         }
       }
     } catch (error) {
@@ -236,14 +213,37 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
     get().fetchUserThreads(assistantId);
   },
+  ensureThread: async (assistantId: string): Promise<string> => {
+    const state = get();
+    try {
+      if (state.currentThreadId) {
+        return state.currentThreadId;
+      }
+
+      const newThreadId = await state.createThread(assistantId);
+      if (!newThreadId) {
+        throw new Error('Failed to create new thread');
+      }
+
+      state.setCurrentThreadId(newThreadId);
+      return newThreadId;
+    } catch (error) {
+      console.error('[Store: ensureThread] Error:', error);
+      state.setError(error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  },
   sendMessage: async (threadId: string, content: string, attachments: string[]): Promise<void> => {
     set({ isLoading: true, error: null });
-    
+
     try {
       if (!content.trim()) {
         throw new Error('Message content required');
       }
-
+      if (!threadId) {
+        throw new Error('Thread ID required');
+      }
+      console.log('[Store: sendMessage] Sending message:', { content, attachments });
       const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,9 +260,9 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
         currentConversation: [...state.currentConversation, newMessage],
         isLoading: false
       }));
-      
+
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Message submission failed',
         isLoading: false
       });
@@ -276,7 +276,6 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       }
       const data = await addAssistantMessageToSupabase(threadId, userId, content);
       if (!data) {
-        console.error('[addAssistantMessageToThread] Error: No data returned', { threadId, userId, content });
         throw new Error('Failed to add message to Supabase');
       }
       return data;
@@ -350,17 +349,15 @@ const supabase = createClient();
 async function fetchUserIdFromSupabase(): Promise<string> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError) {
-    console.error('[fetchUserIdFromSupabase] Error:', authError);
     throw new Error(authError.message);
   }
   return user?.id || '';
 }
 async function fetchUserAssistantsFromSupabase(userId: string): Promise<string[]> {
   if (!userId || !isValidUUID(userId)) {
-      return [];
-  }const { data, error } = await supabase.from('user_assistants').select('assistant_id').eq('user_id', userId);
+    return [];
+  } const { data, error } = await supabase.from('user_assistants').select('assistant_id').eq('user_id', userId);
   if (error) {
-    console.error('[fetchUserAssistantsFromSupabase] Error:', error);
     throw new Error(error.message);
   }
   return data?.map(row => row.assistant_id) || [];
@@ -368,7 +365,6 @@ async function fetchUserAssistantsFromSupabase(userId: string): Promise<string[]
 async function addThreadToSupabase(threadId: string, assistantId: string, userId: string): Promise<void> {
   const data = await supabase.from('chat_threads').insert([{ thread_id: threadId, assistant_id: assistantId, user_id: userId }]);
   if (data.error) {
-    console.error('[addThreadToSupabase] Error:', data.error.message);
     throw new Error(data.error.message);
   }
 }
@@ -379,7 +375,6 @@ async function deleteThreadFromSupabase(threadId: string): Promise<void> {
     .eq('thread_id', threadId);
 
   if (error) {
-    console.error('[deleteThreadFromSupabase] Error:', error);
     throw error;
   }
 }
@@ -389,14 +384,12 @@ export async function updateThreadInSupabase(threadId: string): Promise<void> {
     .update({ updated_at: new Date() })
     .eq('thread_id', threadId);
   if (error) {
-    console.error('[updateThreadInSupabase] Error:', error);
     throw error as Error;
   }
 }
 async function addAssistantMessageToSupabase(threadId: string, userId: string, content: any): Promise<string> {
   const { data, error } = await supabase.from('chat_messages').insert([{ user_id: userId, message_id: new Date().toISOString(), thread_id: threadId, content, role: 'assistant' }]);
   if (error) {
-    console.error('[addAssistantMessageToSupabase] Error:', error.message);
     throw error;
   }
   // Return a simple success message or the inserted data

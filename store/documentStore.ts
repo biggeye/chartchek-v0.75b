@@ -71,21 +71,24 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   
       if (!urlData?.publicUrl) throw new Error('Failed to generate file URL');
   
+      const formData = new FormData();
+      formData.append('files', new File([urlData.publicUrl], file.filePath));
+      formData.append('purpose', 'assistants');
+  
       const uploadResponse = await fetch('/api/files', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: [{ url: urlData.publicUrl, purpose: 'assistants' }] })
+        body: formData
       });
   
-      const { file_ids } = await uploadResponse.json();
-  
+      const uploadData = await uploadResponse.json();
+      console.log('[documentStore] Uploaded file IDs:', uploadData);
       const { error } = await supabase.from('documents').update({
-        openai_file_id: file_ids[0],
+        openai_file_id: uploadData.file_id,
         updated_at: new Date().toISOString()
       }).eq('document_id', file.document_id);
   
       if (error) throw error;
-      return file_ids[0];
+      return uploadData.file_id;
     } catch (error) {
       console.error('[documentStore] Upload failed:', error);
       throw error;

@@ -15,14 +15,14 @@ export default function Chat({ assistantId }: AssistantChatProps) {
 
   const {
     currentAssistantId,
-    createThread,
+    ensureThread,
     setCurrentAssistantId,
     sendMessage,
     error: storeError,
     setError
   } = useClientStore();
   
-  const setCurrentThreadId = useClientStore((state) => state.setCurrentThreadId);
+
 
   const { streamingContent, handleStream, setStreamingContent } = useStreaming();
   
@@ -30,21 +30,22 @@ export default function Chat({ assistantId }: AssistantChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setLocalError] = useState<string | null>(null);
   const currentThreadId = useClientStore((state) => state.currentThreadId);
-
+  
   const handleMessageSubmit = async (content: string, attachments: string[]) => {
     try {
-      console.log('[Chat] Submitting message:', content, attachments, currentThreadId);
-      if (!currentThreadId) {
-        const newThreadId = await createThread(currentAssistantId);
-        console.log('[Chat] Created new thread:', newThreadId);
-        if (newThreadId) {
-        setCurrentThreadId(newThreadId);
-        }
-      }
-      await sendMessage(currentThreadId, content, attachments);
+      setIsLoading(true);
+      setLocalError(null);
+      
+      // Ensure we have a valid thread before sending message
+      const threadId = await ensureThread(currentAssistantId);
+      console.log('[Chat: handleMessageSubmit] threadId: ', threadId);
+      await sendMessage(threadId, content, attachments);
       await handleStream();
     } catch (error) {
       console.error('[Chat] Error submitting message:', error);
+      setLocalError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsLoading(false);
     }
   };
 

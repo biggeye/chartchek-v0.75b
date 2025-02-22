@@ -13,6 +13,29 @@ interface DocumentStoreState {
     tags: string[];
     category: string;
   }
+
+  interface TextContentBlockParam {
+    type: "text";
+    text: string;
+  }
+  
+  interface FileSearchTool {
+    type: "file_search";
+  }
+  
+  interface MessageAttachment {
+    file_id: string;
+    tools: FileSearchTool[]; // now each tool is guaranteed to be a FileSearch tool
+  }
+  
+  interface MessagePayload {
+    role: "user" | "assistant";
+    content: string | TextContentBlockParam[];
+    attachments?: MessageAttachment[] | null;
+    metadata?: Record<string, string>;
+  }
+  
+  
   
   interface Document {
     document_id: string;
@@ -92,6 +115,7 @@ interface VectorStoreFileBatch {
 }
 
 export type {
+  MessagePayload,
     DocumentStoreState,
     DocumentMetadata,
     Document,

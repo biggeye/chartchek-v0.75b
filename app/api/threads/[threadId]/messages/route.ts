@@ -1,8 +1,10 @@
 // app/api/threads/[threadId]/messages/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { createServer } from '@/utils/supabase/server'
-import { openai as awaitOpenai } from '@/utils/openai'
-import type { MessageRole } from '@/types/api/openai/messages'
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createServer } from '@/utils/supabase/server';
+import { openai as awaitOpenai } from '@/utils/openai';
+import type { MessagePayload } from '@/types/store/document/index';
 
 export async function POST(
   req: NextRequest,
@@ -10,12 +12,14 @@ export async function POST(
 ) {
   const supabase = await createServer();
   const openai = await awaitOpenai();
-  await params;
 
-  console.log('[POST] Received request to create message in thread:', params.threadId);
-  if (params){
+  // Grab the threadId from params
+  const { threadId } = params;
+  console.log('[POST] Received request to create message in thread:', threadId);
+
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const userId = user?.id;
     if (authError || !user) {
       console.error('[POST] Unauthorized access attempt');
       return NextResponse.json(
@@ -25,7 +29,6 @@ export async function POST(
     }
 
     const { content, attachments } = await req.json();
-    
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
         { error: 'Message content required' },
@@ -33,27 +36,47 @@ export async function POST(
       );
     }
 
-    const message = await openai.beta.threads.messages.create(params.threadId, {
+    if (!threadId) {
+      return NextResponse.json(
+        { error: 'Thread ID required' },
+        { status: 400 }
+      );
+    }
+
+    // Build the payload.
+    const payload: MessagePayload = {
       role: "user",
       content,
-      attachments: attachments,
-    });
+    };
 
-    const { error } = await supabase
+    // If attachments exist, map them into the expected structure.
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      // Note: Ensure the tool type is the literal "file_search"
+      payload.attachments = attachments.map((fileId: string) => ({
+        file_id: fileId,
+        tools: [{ type: "file_search" as const }],
+      }));
+    }
+
+    // Create the message using OpenAI API.
+    const message = await openai.beta.threads.messages.create(threadId, payload);
+
+    // Save the message to Supabase.
+    const { error: dbError } = await supabase
       .from('chat_messages')
       .insert({
-        user_id: user.id,
-        thread_id: params.threadId,
+        user_id: userId,
+        thread_id: threadId,
         content: { text: content },
         file_ids: attachments || [],
         role: 'user',
-        message_id: message.id
+        message_id: message.id,
       });
 
-    if (error) throw error;
+    if (dbError) throw dbError;
     console.log('[POST] Message stored in Supabase');
+
     return NextResponse.json(message);
-    
   } catch (error) {
     console.error('[POST] Error during message creation:', error);
     return NextResponse.json(
@@ -61,7 +84,8 @@ export async function POST(
       { status: 500 }
     );
   }
-}}
+}
+
 
 export async function GET(
   request: NextRequest,

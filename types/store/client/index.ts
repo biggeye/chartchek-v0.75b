@@ -71,6 +71,7 @@ interface UIState {
 interface AsyncActions {
   // create
   createThread: (assistantId: string) => Promise<string | null>;  // Create a thread with assistantId and store response
+  ensureThread: (assistantId: string) => Promise<string>;  // Ensures a thread exists, creating one if necessary
   sendMessage: (threadId: string, currentMessage: string, attachments: any[]) => Promise<void>;
   addAssistantMessageToThread: (threadId: string, userId: string, content: any) => Promise<string>;
   // read

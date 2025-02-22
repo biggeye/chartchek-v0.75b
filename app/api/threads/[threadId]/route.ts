@@ -9,8 +9,8 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   const openai = await awaitOpenai();
   
-  try {
-    const supabase = await createServer()
+  
+   const supabase = await createServer()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return new Response(JSON.stringify({ 
@@ -21,15 +21,15 @@ export async function GET(request: NextRequest): Promise<Response> {
         headers: { 'Content-Type': 'application/json' } 
       })
     }
-
+    
     // Get pagination params
+    try{
     const { searchParams } = request.nextUrl;
-    const threadId = request.nextUrl.pathname.split('/').pop(); // Extract threadId from the URL path
+    const urlParts = request.nextUrl.pathname.split('/');
+    const threadId = urlParts[urlParts.length - 1]; // Extract threadId from the URL path
 
-    console.log('Request received for threadId:', threadId);
-
-    if (!threadId) {
-      console.log('Thread ID is missing from the request.');
+    if (!threadId || threadId === '[threadId]') {
+      console.log('Invalid or missing thread ID in the request URL.');
       return new Response(JSON.stringify({ 
         error: 'Thread ID is required',
         code: 'INVALID_REQUEST'
@@ -48,28 +48,45 @@ export async function GET(request: NextRequest): Promise<Response> {
         'OpenAI-Beta': "assistants=v2"
       },
     });
-
+    console.log ('[ThreadFetch] Response:', response)
     console.log('Response status from OpenAI API:', response.status);
+
+    // Handle specific OpenAI API response cases
+    if (response.status === 404) {
+      console.log('Thread not found or no messages yet');
+      return new Response(JSON.stringify({ 
+        object: 'list',
+        data: [],
+        first_id: null,
+        last_id: null,
+        has_more: false
+      }), { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
 
     if (!response.ok) {
       console.log('Failed to fetch from OpenAI API with status:', response.status);
+      const errorData = await response.json().catch(() => ({}));
       return new Response(JSON.stringify({ 
-        error: 'Failed to fetch from OpenAI API',
-        code: 'EXTERNAL_API_ERROR'
+        error: errorData.error?.message || 'Failed to fetch from OpenAI API',
+        code: 'EXTERNAL_API_ERROR',
+        status: response.status
       }), { 
         status: response.status, 
         headers: { 'Content-Type': 'application/json' } 
-      })
+      });
     }
 
     const data = await response.json();
 
-    // Assuming the response is in the expected format
+    // Ensure we have a valid response structure even if empty
     const formattedResponse = {
-      object: data.object,
-      data: data.data,
-      first_id: data.data[0]?.id || null,
-      last_id: data.data[data.data.length - 1]?.id || null,
+      object: data.object || 'list',
+      data: data.data || [],
+      first_id: data.data?.[0]?.id || null,
+      last_id: data.data?.[data.data?.length - 1]?.id || null,
       has_more: data.has_more || false
     };
 
