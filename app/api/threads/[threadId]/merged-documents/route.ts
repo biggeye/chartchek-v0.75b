@@ -3,14 +3,12 @@ import { NextResponse } from 'next/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 import { createServer } from '@/utils/supabase/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { threadId: string } }
-) {
+export async function GET(request: Request) {
+  const { pathname } = new URL(request.url);
+  const threadId = pathname.split('/').slice(-2, -1)[0];
+
   const supabase = await createServer();
   const openai = await awaitOpenai();
-
-  const { threadId } = params;
 
   try {
     // Retrieve the thread object from OpenAI using the threadId.
