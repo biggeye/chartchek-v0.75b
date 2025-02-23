@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function GET(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: { threadId: string } }
 ) {
-  const supabase = await createServer();
+  const { threadId } = params;
+  if (!threadId) {
+    return NextResponse.json({ error: 'Missing threadId' }, { status: 400 });
+  }
   const openai = await awaitOpenai();
-
   try {
+    const supabase = await createServer();
+  
+
     // Authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -20,9 +25,9 @@ export async function GET(
     }
 
     // Delete the thread using OpenAI's API
-    const response = await openai.beta.threads.del(params.threadId);
+    await openai.beta.threads.del(threadId);
 
-    return NextResponse.json(response);
+    return NextResponse.json({ message: 'Thread deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error('[DELETE Thread] Error:', error);
     return NextResponse.json(
