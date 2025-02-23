@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { threadId: string } }
-) {
+export async function POST(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const threadId = pathname.split('/').slice(-2, -1)[0];
+
   const supabase = await createServer();
   const openai = await awaitOpenai();
 
@@ -25,7 +25,7 @@ export async function POST(
     const toolResources = formData.get('tool_resources') ? JSON.parse(formData.get('tool_resources') as string) : undefined;
 
     // Modify the thread using OpenAI's API
-    const updatedThread = await openai.beta.threads.update(params.threadId, {
+    const updatedThread = await openai.beta.threads.update(threadId, {
       metadata,
       tool_resources: toolResources
     });

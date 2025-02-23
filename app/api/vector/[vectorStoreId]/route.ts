@@ -46,14 +46,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { vectorStoreId: string } }
-) {
-  const supabase = await createServer();
-  const openai = await awaitOpenai();
+export async function GET(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const vectorStoreId = pathname.split('/').slice(-2, -1)[0];
+
+  if (!vectorStoreId) {
+    return NextResponse.json({ error: 'Missing vectorStoreId' }, { status: 400 });
+  }
 
   try {
+    const supabase = await createServer();
+    const openaiClient = await awaitOpenai();
+
     // Authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -63,18 +67,7 @@ export async function GET(
       );
     }
 
-    // Validate vectorStoreId
-    const { vectorStoreId } = params;
-    if (!vectorStoreId) {
-      return NextResponse.json(
-        { error: 'Vector Store ID required', code: 'ID_MISSING' },
-        { status: 400 }
-      );
-    }
-
-    // Retrieve the vector store using OpenAI's API
-    const vectorStore = await openai.beta.vectorStores.retrieve(vectorStoreId);
-
+    const vectorStore = await openaiClient.beta.vectorStores.retrieve(vectorStoreId);
     return NextResponse.json(vectorStore);
   } catch (error) {
     console.error('[Retrieve Vector Store] Error:', error);
@@ -82,6 +75,40 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : 'Retrieve operation failed',
         code: 'RETRIEVE_OPERATION_FAILED'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const vectorStoreId = pathname.split('/').slice(-2, -1)[0];
+
+  if (!vectorStoreId) {
+    return NextResponse.json({ error: 'Missing vectorStoreId' }, { status: 400 });
+  }
+
+  try {
+    const openaiClient = await awaitOpenai();
+    const formData = await request.formData();
+    const name = formData.get('name') as string | null;
+    const expiresAfter = formData.get('expires_after') ? JSON.parse(formData.get('expires_after') as string) : undefined;
+    const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
+
+    const updatedVectorStore = await openaiClient.beta.vectorStores.update(vectorStoreId, {
+      name,
+      expires_after: expiresAfter,
+      metadata
+    });
+
+    return NextResponse.json(updatedVectorStore);
+  } catch (error) {
+    console.error('Error modifying vector store:', error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Modify operation failed',
+        code: 'MODIFY_OPERATION_FAILED'
       },
       { status: 500 }
     );

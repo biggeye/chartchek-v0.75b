@@ -6,15 +6,13 @@ import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 import type { MessagePayload } from '@/types/store/document/index';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { threadId: string } }
-) {
+export async function POST(req: NextRequest) {
+  const { pathname } = new URL(req.url);
+  const threadId = pathname.split('/').slice(-2, -1)[0];
+
   const supabase = await createServer();
   const openai = await awaitOpenai();
 
-  // Grab the threadId from params
-  const { threadId } = params;
   console.log(`[/api/threads/${threadId}/messages] Received request to create message `);
 
   try {
@@ -86,15 +84,14 @@ export async function POST(
   }
 }
 
+export async function GET(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const threadId = pathname.split('/').slice(-2, -1)[0];
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { threadId: string } }
-) {
   const supabase = await createServer();
   const openai = await awaitOpenai();
 
-  console.log('[GET] Received request to list messages for thread:', params.threadId);
+  console.log('[GET] Received request to list messages for thread:', threadId);
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -106,7 +103,6 @@ export async function GET(
       );
     }
 
-    const threadId = params.threadId;
     if (!threadId) {
       console.error('[GET] Missing thread ID');
       return NextResponse.json(

@@ -78,14 +78,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { vectorStoreId: string } }
-) {
-  const supabase = await createServer();
-  const openai = await awaitOpenai();
+export async function POST(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const vectorStoreId = pathname.split('/').slice(-2, -1)[0];
+
+  if (!vectorStoreId) {
+    return NextResponse.json({ error: 'Missing vectorStoreId' }, { status: 400 });
+  }
 
   try {
+    const supabase = await createServer();
+    const openai = await awaitOpenai();
+
     // Authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -95,25 +99,15 @@ export async function POST(
       );
     }
 
-    // Validate vectorStoreId
-    const { vectorStoreId } = params;
-    if (!vectorStoreId) {
-      return NextResponse.json(
-        { error: 'Vector Store ID required', code: 'ID_MISSING' },
-        { status: 400 }
-      );
-    }
-
-    // Process input data
     const formData = await request.formData();
     const name = formData.get('name') as string | null;
-    const expires_after = formData.get('expires_after') ? JSON.parse(formData.get('expires_after') as string) : undefined;
+    const expiresAfter = formData.get('expires_after') ? JSON.parse(formData.get('expires_after') as string) : undefined;
     const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
 
     // Modify the vector store using OpenAI's API
     const updatedVectorStore = await openai.beta.vectorStores.update(vectorStoreId, {
       name,
-      expires_after,
+      expires_after: expiresAfter,
       metadata
     });
 
