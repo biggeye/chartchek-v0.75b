@@ -22,7 +22,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const response = await openai.beta.threads.create();  
     const threadId = response.id;
-    console.log('[/api/threads] Response status:', 200);
+    console.log('[/api/threads] Thread created: ', threadId, 200);
     return new Response(JSON.stringify({ threadId: threadId }), { 
       status: 200, 
       headers: { 'Content-Type': 'application/json' } 

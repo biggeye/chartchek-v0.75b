@@ -120,7 +120,7 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
         },
       });
       if (!threads.ok) {
-        throw new Error(`Failed to fetch messages: ${threads.statusText}`);
+        throw new Error(`Failed to fetch conversations: ${threads.statusText}`);
       }
       const threadsData = await threads.json();
       return threadsData;
@@ -132,13 +132,53 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       set({ isLoading: false });
     }
   },
+  fetchThreadDetails: async (threadId: string): Promise<string[]> => {
+    try {
+      if (!threadId) {
+        throw new Error('Thread ID is required');
+      }
+      set({ isLoading: true });
+      // Fetch thread details from the threads API endpoint
+      const threadResponse = await fetch(`/api/threads/${threadId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!threadResponse.ok) {
+        throw new Error('Failed to fetch thread details');
+      }
+      const threadData = await threadResponse.json();
+      // Since each thread always returns one vector store ID, extract the first one.
+      const vectorStoreId: string = threadData.tool_resources?.file_search?.vector_store_ids?.[0];
+      if (!vectorStoreId) {
+        set({ isLoading: false });
+        return [];
+      }
+      // Fetch the files from the vector store using the vector store ID.
+      const fileResponse = await fetch(`/api/vector/${vectorStoreId}/files`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!fileResponse.ok) {
+        throw new Error('Failed to fetch vector store files');
+      }
+      const fileData = await fileResponse.json();
+      set({ isLoading: false });
+      // Return the list of file IDs from the vector store.
+      return fileData.fileIds;
+    } catch (error: any) {
+      console.error('Error fetching thread details:', error);
+      set({ error: error.message, isLoading: false });
+      return [];
+    }
+  },
+  
   fetchThreadMessages: async (threadId: string): Promise<Message[]> => {
     try {
       if (!threadId) {
         return [];
       }
 
-      const response = await fetch(`/api/threads/${threadId}`, {
+      const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

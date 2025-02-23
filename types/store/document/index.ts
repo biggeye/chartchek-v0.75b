@@ -50,6 +50,7 @@ interface DocumentStoreState {
     userId?: string;
     processingStatus?: string;
     metadata?: DocumentMetadata[];
+    openai_file_id?: string;
   }
 
 const filePathSchema = z.string().min(1);

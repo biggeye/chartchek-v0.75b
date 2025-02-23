@@ -15,7 +15,7 @@ export async function POST(
 
   // Grab the threadId from params
   const { threadId } = params;
-  console.log('[POST] Received request to create message in thread:', threadId);
+  console.log(`[/api/threads/${threadId}/messages] Received request to create message `);
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();

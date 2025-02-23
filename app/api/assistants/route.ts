@@ -4,21 +4,18 @@ import { openai as awaitOpenai } from '@/utils/openai'
 import type { AssistantCreateRequest, AssistantCreateResponse, ApiResponse } from '@/types/api/routes'
 import type { UserAssistant } from '@/types/database'
 import type { Assistant } from '@/types/api/openai'
-
+import { checkAuth } from '@/utils/auth/checkAuth'
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const supabase = await createServer()
-    const openai = await awaitOpenai()
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    const authResult = await checkAuth();
+    if (authResult instanceof Response) {
+      return authResult;
     }
-
+    const userId = authResult as string;
+    const openai = await awaitOpenai();
+    
     const formData = await request.formData()
     const requestData: AssistantCreateRequest = {
       name: formData.get('name') as string,
@@ -45,7 +42,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const { data: existingAssistant, error: queryError } = await supabase
       .from('user_assistants')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('name', requestData.name)
       .eq('is_active', true)
       .single()
@@ -87,7 +84,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Store assistant in database
     const userAssistant: Omit<UserAssistant, 'id' | 'created_at' | 'updated_at'> = {
-      user_id: user.id,
+      user_id: userId!,
       assistant_id: assistant.id,
       name: assistant.name || requestData.name,
       description: assistant.description || requestData.description,

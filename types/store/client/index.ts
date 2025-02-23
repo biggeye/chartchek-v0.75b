@@ -79,6 +79,7 @@ interface AsyncActions {
   fetchUserAssistants: () => Promise<UserState['userAssistants']>;  // Fetch assistants from PostgreSQL using userId
   fetchUserThreads: (assistantId: string) => Promise<Thread[]>;  // Fetch threads using assistantId
   fetchThreadMessages: (threadId: ChatState['currentThreadId']) => Promise<ChatState['currentConversation']>;  // Fetch messages using threadId
+  fetchThreadDetails: (threadId: string) => Promise<string[]>;  // Fetch thread details using threadId
   // update
   setUserThreads: (userThreads: Thread[]) => void;
   setThreadTitle: (thread_id: string, title: string) => void;
@@ -112,4 +113,6 @@ export type ClientStoreType =
   UIState &
   ClientState &
   AsyncActions &
-  UIActions;
+  UIActions & {
+  fetchThreadDetails: (threadId: string) => Promise<string[]>;
+};

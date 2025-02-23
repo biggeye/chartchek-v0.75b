@@ -29,7 +29,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     const threadId = urlParts[urlParts.length - 1]; // Extract threadId from the URL path
 
     if (!threadId || threadId === '[threadId]') {
-      console.log('Invalid or missing thread ID in the request URL.');
+
       return new Response(JSON.stringify({ 
         error: 'Thread ID is required',
         code: 'INVALID_REQUEST'
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest): Promise<Response> {
       });
     }
 
-    console.log('Fetching messages for threadId:', threadId);
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+
+    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
@@ -48,23 +48,6 @@ export async function GET(request: NextRequest): Promise<Response> {
         'OpenAI-Beta': "assistants=v2"
       },
     });
-    console.log ('[ThreadFetch] Response:', response)
-    console.log('Response status from OpenAI API:', response.status);
-
-    // Handle specific OpenAI API response cases
-    if (response.status === 404) {
-      console.log('Thread not found or no messages yet');
-      return new Response(JSON.stringify({ 
-        object: 'list',
-        data: [],
-        first_id: null,
-        last_id: null,
-        has_more: false
-      }), { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
-      });
-    }
 
     if (!response.ok) {
       console.log('Failed to fetch from OpenAI API with status:', response.status);
@@ -81,22 +64,13 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const data = await response.json();
 
-    // Ensure we have a valid response structure even if empty
-    const formattedResponse = {
-      object: data.object || 'list',
-      data: data.data || [],
-      first_id: data.data?.[0]?.id || null,
-      last_id: data.data?.[data.data?.length - 1]?.id || null,
-      has_more: data.has_more || false
-    };
-
-    return new Response(JSON.stringify(formattedResponse), { 
+    return new Response(JSON.stringify(data), { 
       status: 200, 
       headers: { 'Content-Type': 'application/json' } 
     })
   } catch (error) {
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Failed to list threads',
+      error: error instanceof Error ? error.message : 'Failed to retrieve thread',
       code: 'INTERNAL_ERROR'
     }), {
       status: 500,

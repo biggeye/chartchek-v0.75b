@@ -1,3 +1,4 @@
+//documentStore.ts
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
 import { DocumentStoreState, DocumentMetadata, Document, DocumentStore } from '@/types/store/document';
