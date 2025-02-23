@@ -42,10 +42,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { vectorStoreId: string } }
-) {
+export async function DELETE(request: NextRequest) {
   const supabase = await createServer();
   const openai = await awaitOpenai();
 
@@ -59,13 +56,11 @@ export async function DELETE(
       );
     }
 
-    // Validate vectorStoreId
-    const { vectorStoreId } = params;
+    const { pathname } = new URL(request.url);
+    const vectorStoreId = pathname.split('/').slice(-2, -1)[0];
+
     if (!vectorStoreId) {
-      return NextResponse.json(
-        { error: 'Vector Store ID required', code: 'ID_MISSING' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing vectorStoreId' }, { status: 400 });
     }
 
     // Delete the vector store using OpenAI's API

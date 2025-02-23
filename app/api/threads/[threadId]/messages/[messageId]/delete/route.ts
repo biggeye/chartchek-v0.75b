@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { threadId: string, messageId: string } }
-) {
+export async function DELETE(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const pathSegments = pathname.split('/');
+  const threadId = pathSegments[pathSegments.length - 3];
+  const messageId = pathSegments[pathSegments.length - 1];
+
   const supabase = await createServer();
   const openai = await awaitOpenai();
 
@@ -20,7 +22,6 @@ export async function DELETE(
     }
 
     // Validate threadId and messageId
-    const { threadId, messageId } = params;
     if (!threadId || !messageId) {
       return NextResponse.json(
         { error: 'Thread ID and Message ID required', code: 'ID_MISSING' },
