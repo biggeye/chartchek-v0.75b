@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { openai as awaitOpenai } from '@/utils/openai';
 
-export async function DELETE(
+export async function GET(
   request: NextRequest,
   { params }: { params: { threadId: string } }
 ) {
