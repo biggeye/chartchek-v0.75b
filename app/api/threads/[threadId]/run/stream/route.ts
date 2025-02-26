@@ -1,10 +1,11 @@
 // app/api/threads/[threadId]/run/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
 import { openai as awaitOpenai } from '@/utils/openai';
+import { NextRequest } from 'next/server';
 
 export const maxDuration = 60;
 
-export async function POST(req: Request, { params }: { params: { threadId: string } }) {
+export async function POST(req: NextRequest) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
 
@@ -19,8 +20,9 @@ export async function POST(req: Request, { params }: { params: { threadId: strin
   }
 
   try {
-    // Derive threadId from URL parameters
-    const threadId = params.threadId;
+    // Extract threadId from URL pathname
+    const { pathname } = new URL(req.url);
+    const threadId = pathname.split('/')[3]; // Get the threadId from the URL path segments
     const body = await req.json();
     const assistant_id: string = body.assistantId;
 
