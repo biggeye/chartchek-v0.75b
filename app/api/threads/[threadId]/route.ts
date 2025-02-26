@@ -1,13 +1,12 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { openai as awaitOpenai } from '@/utils/openai'
+import { openai } from '@/utils/openai'
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
-import type { ChatThread } from '@/types/database'
 import fetch from 'node-fetch';
 
 export async function GET(request: NextRequest): Promise<Response> {
 
-  const openai = await awaitOpenai();
+
   
   
    const supabase = await createServer()
@@ -103,4 +102,47 @@ export async function POST(request: NextRequest): Promise<Response> {
     status: 200, 
     headers: { 'Content-Type': 'application/json' } 
   })
+}
+
+export async function DELETE(request: NextRequest): Promise<Response> {
+   const newOpenAI = await openai();
+   const supabase = await createServer();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ 
+      error: 'Unauthorized',
+      code: 'AUTH_REQUIRED'
+    }), { 
+      status: 401, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  }
+  const threadId = request.nextUrl.pathname.split('/').pop();
+  
+  if (!threadId) {
+    return new Response(JSON.stringify({ 
+      error: 'Thread ID is required',
+      code: 'THREAD_ID_REQUIRED'
+    }), { 
+      status: 400, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  }
+  
+  const threadDeletedFromOpenAI = await newOpenAI.beta.threads.del(threadId);
+  if (!threadDeletedFromOpenAI) {
+    return new Response(JSON.stringify({ 
+      error: 'Failed to delete thread from OpenAI',
+      code: 'DELETE_THREAD_OPENAI_FAILED'
+    }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  }
+  const threadDeleted = await supabase.from('chat_threads').delete().eq('thread_id', threadId).single();  
+  return new Response(JSON.stringify(threadDeleted), { 
+    status: 200, 
+    headers: { 'Content-Type': 'application/json' } 
+  })
+
 }

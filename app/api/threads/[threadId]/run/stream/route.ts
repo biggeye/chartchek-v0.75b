@@ -1,13 +1,12 @@
+// app/api/threads/[threadId]/run/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { openai as awaitOpenai } from '@/utils/openai'
+import { openai as awaitOpenai } from '@/utils/openai';
 
 export const maxDuration = 60;
 
-export async function POST(req: Request) {
-  
+export async function POST(req: Request, { params }: { params: { threadId: string } }) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
-
 
   // Authenticate user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -20,18 +19,28 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { thread_id } = await req.json();
-    const { data, error } = await supabase.from('chat_threads').select('assistant_id').eq('thread_id', thread_id).single();
+    // Derive threadId from URL parameters
+    const threadId = params.threadId;
+    const body = await req.json();
+    const assistant_id: string = body.assistantId;
+
+    console.log(`[API] Starting stream request to thread ${threadId} with assistantId ${assistant_id}`);
+    // Fetch assistant_id using threadId from Supabase
+ /*   const { data, error } = await supabase
+      .from('chat_threads')
+      .select('assistant_id')
+      .eq('thread_id', threadId)
+      .single();
     if (error || !data) {
       console.error('[API] Error fetching assistant_id:', error);
       return new Response('Error fetching assistant_id', { status: 500 });
     }
     const assistant_id = data.assistant_id;
+   */ 
+
     
-    console.log('[API] Starting stream:', { thread_id, assistant_id });
-    
-    if (!thread_id || !assistant_id) {
-      console.error('[API] Missing required parameters:', { thread_id, assistant_id });
+    if (!threadId || !assistant_id) {
+      console.error('[API] Missing required parameters:', { threadId, assistant_id });
       return new Response(
         JSON.stringify({ success: false, error: "Missing required parameters" }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -41,19 +50,19 @@ export async function POST(req: Request) {
     // Create a new ReadableStream for SSE events.
     const stream = new ReadableStream({
       async start(controller) {
-        console.log('[API]', new Date().toISOString(), 'Stream started');
+        console.log('[API]', assistant_id, 'Stream started');
         try {
           let currentRunId: string | null = null;
           let lastStepId: string | null = null;
 
-          const run = openai.beta.threads.runs.stream(thread_id, {
+          const run = openai.beta.threads.runs.stream(threadId, {
             assistant_id: assistant_id,
             stream: true
           });
 
           // Text event: textCreated
           run.on('textCreated', (text) => {
-             controller.enqueue(`data: ${JSON.stringify({
+            controller.enqueue(`data: ${JSON.stringify({
               type: 'textCreated',
               data: text
             })}\n\n`);
@@ -61,7 +70,7 @@ export async function POST(req: Request) {
 
           // Text event: textDelta
           run.on('textDelta', (textDelta, snapshot) => {
-             controller.enqueue(`data: ${JSON.stringify({
+            controller.enqueue(`data: ${JSON.stringify({
               type: 'textDelta',
               data: { delta: textDelta, snapshot }
             })}\n\n`);
@@ -84,7 +93,7 @@ export async function POST(req: Request) {
             if (currentRunId) {
               try {
                 const steps = await openai.beta.threads.runs.steps.list(
-                  thread_id,
+                  threadId,
                   currentRunId,
                   { limit: 1, order: 'desc' }
                 );
@@ -156,7 +165,7 @@ export async function POST(req: Request) {
                 .eq('run_id', currentRunId);
               console.log('[API]', new Date().toISOString(), 'Updated run status to completed for run_id:', currentRunId);
               try {
-                const finalSteps = await openai.beta.threads.runs.steps.list(thread_id, currentRunId);
+                const finalSteps = await openai.beta.threads.runs.steps.list(threadId, currentRunId);
                 console.log('[API]', new Date().toISOString(), 'Final run steps fetched:', finalSteps.data);
                 controller.enqueue(`data: ${JSON.stringify({
                   type: 'finalSteps',

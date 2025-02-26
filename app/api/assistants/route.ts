@@ -1,9 +1,10 @@
-import { NextRequest } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
+import { NextRequest } from 'next/server'
 import { openai as awaitOpenai } from '@/utils/openai'
 import type { AssistantCreateRequest, AssistantCreateResponse, ApiResponse } from '@/types/api/routes'
 import type { UserAssistant } from '@/types/database'
 import type { Assistant } from '@/types/api/openai'
+import type { ToolType } from '@/types/database'
 import { checkAuth } from '@/utils/auth/checkAuth'
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -86,10 +87,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     const userAssistant: Omit<UserAssistant, 'id' | 'created_at' | 'updated_at'> = {
       user_id: userId!,
       assistant_id: assistant.id,
-      name: assistant.name || requestData.name,
-      description: assistant.description || requestData.description,
-      instructions: assistant.instructions || requestData.instructions,
+      name: assistant.name || requestData.name || '',
+      description: assistant.description || requestData.description || '',
+      instructions: assistant.instructions || requestData.instructions || '',
       model: assistant.model,
+      tools: assistant.tools.map(tool => tool.type as ToolType), // Map OpenAI tool types to our ToolType
       metadata: assistant.metadata || requestData.metadata,
       is_active: true
     }

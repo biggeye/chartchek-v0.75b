@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { fetchDocumentsCount } from '@/store/documentStore';
-import { useClientStore } from '@/store/clientStore';
-
-const { fetchUserAssistants, fetchUserThreads } = useClientStore.getState();
 
 function classNames(...classes: (string | undefined)[]) {
   return classes.filter(Boolean).join(' ')
@@ -23,12 +20,8 @@ export default function UserStats()  {
   useEffect(() => {
     // Fetch data from the database and update stats
     async function fetchStats() {
-      const assistantsCount = (await fetchUserAssistants()).length;
-      const conversationsCount = (await fetchUserThreads('')).length;
       const documentsCount = await fetchDocumentsCount();
       setStats([
-        { name: 'Assistants Deployed', value: assistantsCount },
-        { name: 'Conversations', value: conversationsCount },
         { name: 'Documents', value: documentsCount },
       ]);
     }

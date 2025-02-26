@@ -27,13 +27,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { content, attachments } = await req.json();
-    if (!content || typeof content !== 'string') {
+    if (!content) {
       return NextResponse.json(
         { error: 'Message content required' },
         { status: 400 }
       );
     }
-
     if (!threadId) {
       return NextResponse.json(
         { error: 'Thread ID required' },
@@ -49,32 +48,45 @@ export async function POST(req: NextRequest) {
 
     // If attachments exist, map them into the expected structure.
     if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-      // Note: Ensure the tool type is the literal "file_search"
-      payload.attachments = attachments.map((fileId: string) => ({
-        file_id: fileId,
-        tools: [{ type: "file_search" as const }],
-      }));
+      payload.attachments = attachments.map((attachment: any) => {
+        const fileId = typeof attachment === 'object' && attachment.file_id ? attachment.file_id : attachment;
+        return {
+          file_id: fileId,
+          tools: [{ type: "file_search" as const }],
+        };
+      });
     }
 
-    // Create the message using OpenAI API.
+    console.log('[/api/threads/[threadId]/messages] Creating message in OpenAI with payload:', payload);
     const message = await openai.beta.threads.messages.create(threadId, payload);
+    console.log(`[/api/threads/${threadId}/messages] Message created in OpenAI:`, message.id);
 
     // Save the message to Supabase.
-    const { error: dbError } = await supabase
+    console.log(`[/api/threads/${threadId}/messages] Storing message in Supabase`);
+    const { data: dbMessage, error: dbError } = await supabase
       .from('chat_messages')
       .insert({
         user_id: userId,
         thread_id: threadId,
         content: { text: content },
-        file_ids: attachments || [],
+        attachments: message.attachments || [],
         role: 'user',
         message_id: message.id,
-      });
+      })
+      .select()
+      .single();
 
-    if (dbError) throw dbError;
-    console.log('[POST] Message stored in Supabase');
+    if (dbError) {
+      console.error(`[/api/threads/${threadId}/messages] Supabase error:`, dbError);
+      throw dbError;
+    }
+    
+    console.log(`[/api/threads/${threadId}/messages] Message stored in Supabase:`, dbMessage.id);
 
-    return NextResponse.json(message);
+    return NextResponse.json({
+      messageId: message.id,
+      message: dbMessage
+    });
   } catch (error) {
     console.error('[POST] Error during message creation:', error);
     return NextResponse.json(
@@ -85,6 +97,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // ... existing GET handler code remains unchanged ...
+
   const { pathname } = new URL(request.url);
   const threadId = pathname.split('/').slice(-2, -1)[0];
 
@@ -122,6 +136,24 @@ export async function GET(request: NextRequest) {
 
     const messages = await openai.beta.threads.messages.list(threadId);
     console.log('[GET] Retrieved messages:', messages);
+
+    // Extract and update attachments for each message
+    for (const message of messages.data) {
+      if (message.attachments && message.attachments.length > 0) {
+        const attachments = message.attachments.map(file_id => ({
+          file_id,
+          tools: [
+            { type: 'code_interpreter' },
+            { type: 'file_search' }
+          ]
+        }));
+
+        await supabase
+          .from('chat_messages')
+          .update({ attachments })
+          .eq('message_id', message.id);
+      }
+    }
 
     return NextResponse.json(messages);
   } catch (error) {

@@ -34,6 +34,7 @@ export async function POST(req: Request) {
                 purpose: "assistants",
             });
             fileIds.push(fileUpload.id);
+            console.log('[FileUpload] Uploaded file ID:', fileUpload.id);
         }
 
         // Handle single file upload

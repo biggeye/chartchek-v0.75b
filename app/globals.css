@@ -66,6 +66,85 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .data-[state=active]:bg-primary {
+    @apply dark:text-white;
+  }
+
+  .chart-1 {
+    @apply text-[hsl(var(--chart-1))];
+  }
+
+  .chart-2 {
+    @apply text-[hsl(var(--chart-2))];
+  }
+
+  .chart-3 {
+    @apply text-[hsl(var(--chart-3))];
+  }
+
+  .chart-4 {
+    @apply text-[hsl(var(--chart-4))];
+  }
+
+  .chart-5 {
+    @apply text-[hsl(var(--chart-5))];
+  }
+
+  .chat-container {
+    @apply flex flex-col h-screen;
+  }
+
+  .border {
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215.4 16.3% 46.9%) transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50;
+  }
+  
+  /* Streaming content animations */
+  @keyframes pulse-fast {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  
+  @keyframes pulse-slow {
+    0%, 100% { 
+      @apply bg-primary/5;
+      @apply border-primary/20;
+    }
+    50% { 
+      @apply bg-primary/10;
+      @apply border-primary/30;
+    }
+  }
+  
+  .animate-pulse-fast {
+    animation: pulse-fast 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Streaming message content styles */
+  .streaming-content {
+    position: relative;
+  }
 }
 
 @layer utilities {
@@ -99,22 +178,5 @@
 
   .transition-bg {
     transition: background-color 0.3s ease-in-out;
-  }
-
-  .scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(215.4 16.3% 46.9%) transparent;
-  }
-
-  .scrollbar::-webkit-scrollbar {
-    @apply w-2;
-  }
-
-  .scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
-  .scrollbar::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50;
   }
 }

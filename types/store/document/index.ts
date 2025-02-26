@@ -48,7 +48,8 @@ interface DocumentStoreState {
     createdAt?: string;
     updatedAt?: string;
     userId?: string;
-    processingStatus?: string;
+    processingStatus?: 'pending' | 'processing' | 'indexed' | 'failed' | 'unsupported_format' | string;
+    processingError?: string;
     metadata?: DocumentMetadata[];
     openai_file_id?: string;
   }
@@ -62,6 +63,8 @@ const filePathSchema = z.string().min(1);
     addToFileQueue: (file: Document) => void;
     removeFromFileQueue: (file: Document) => void;
     uploadFileToOpenAI: (file: Document) => Promise<string>;
+    uploadDocument: (file: File) => Promise<Document | null>;
+    uploadAndProcessDocument: (file: File) => Promise<Document | null>;
   }
 
 interface VectorStore {

@@ -25,6 +25,7 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
   currentFileQueue: null,
   isLoading: false,
   error: null,
+  abortController: new AbortController(),
 
   // Actions
   setCurrentThreadId: (threadId: string) => {
@@ -46,8 +47,10 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     set({ error }),
   setLoading: (isLoading: boolean) =>
     set({ isLoading }),
-  reset: () =>
+  reset: () => {
+    get().abortController.abort();
     set({
+      abortController: new AbortController(),
       userId: null,
       userAssistants: [],
       userThreads: [],
@@ -58,7 +61,8 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       currentFileQueue: null,
       isLoading: false,
       error: null
-    }),
+    });
+  },
 
   // Async Actions
   fetchUserId: async (): Promise<string> => {
@@ -133,15 +137,12 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
     }
   },
   fetchThreadDetails: async (threadId: string): Promise<string[]> => {
+    const { abortController } = get();
     try {
-      if (!threadId) {
-        throw new Error('Thread ID is required');
-      }
-      set({ isLoading: true });
-      // Fetch thread details from the threads API endpoint
+      if (!threadId) throw new Error('Thread ID required');
+      
       const threadResponse = await fetch(`/api/threads/${threadId}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        signal: abortController.signal
       });
       if (!threadResponse.ok) {
         throw new Error('Failed to fetch thread details');
@@ -166,8 +167,10 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       // Return the list of file IDs from the vector store.
       return fileData.fileIds;
     } catch (error: any) {
-      console.error('Error fetching thread details:', error);
-      set({ error: error.message, isLoading: false });
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching thread details:', error);
+        set({ error: error.message, isLoading: false });
+      }
       return [];
     }
   },
@@ -273,21 +276,15 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       throw error;
     }
   },
-  sendMessage: async (threadId: string, content: string, attachments: string[]): Promise<void> => {
-    set({ isLoading: true, error: null });
+  sendMessage: async (threadId, content, attachments) => {
 
+    
     try {
-      if (!content.trim()) {
-        throw new Error('Message content required');
-      }
-      if (!threadId) {
-        throw new Error('Thread ID required');
-      }
-      console.log('[Store: sendMessage] Sending message:', { content, attachments });
       const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, attachments })
+        body: JSON.stringify({ content, attachments }),
+        signal: get().abortController.signal
       });
 
       if (!response.ok) {
@@ -302,10 +299,12 @@ export const useClientStore = create<ClientStoreType>((set, get) => ({
       }));
 
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Message submission failed',
-        isLoading: false
-      });
+      if (error.name !== 'AbortError') {
+        set({
+          error: error instanceof Error ? error.message : 'Message submission failed',
+          isLoading: false
+        });
+      }
       throw error;
     }
   },

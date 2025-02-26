@@ -3,7 +3,6 @@
 import { useParams } from 'next/navigation'
 import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
-import { useClientStore } from '@/store/clientStore';
 
 export default function AccountPage() {
   const params = useParams();

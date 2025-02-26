@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import type { ChatMessageAnnotation } from '@/types/store/client';
+import type { ChatMessageAnnotation } from '@/types/database';
 
 interface ProcessedContent {
   content: string;
@@ -7,18 +7,6 @@ interface ProcessedContent {
   pageReferences: { index: number; pageRange: string }[];
 }
 
-/*
-  processAnnotations() processes two kinds of markers:
-  
-  1. Annotation markers of the form
-       【start_index:end_index†filename】
-     These are replaced with a <sup> marker. A parallel footnotes array is built.
-     
-  2. Page references of the form “[number-number]”
-     These are replaced with an <a> marker. A parallel pageReferences array is built.
-     
-  (The ordering in both cases is assumed to match.)
-*/
 const processAnnotations = (
   content: string,
   annotations: ChatMessageAnnotation[] = []
@@ -32,18 +20,24 @@ const processAnnotations = (
   let pageReferences: { index: number; pageRange: string }[] = [];
   let footnoteCounter = 1;
 
-  // Replace annotation markers (【…】)
-  const contentAfterAnnotations = content.replace(/【(\d+):(\d+)†([^】]+)】/g, (match, start, end, file) => {
-    const ann = annotations[footnoteCounter - 1] || { start_index: start, end_index: end, file_id: file, text: '' };
-    footnotes.push({ index: footnoteCounter, annotation: ann });
-    const sup = `<sup class="footnote-indicator" data-index="${footnoteCounter}">${footnoteCounter}</sup>`;
-    footnoteCounter++;
-    return sup;
+  // Process annotations based on their type
+  annotations.forEach((ann) => {
+    const start = ann.start_index;
+    const end = ann.end_index;
+    
+    if (start !== undefined && end !== undefined) {
+      footnotes.push({ index: footnoteCounter, annotation: ann });
+      // Insert footnote marker at the end of the annotated text
+      const beforeMarker = content.slice(0, end);
+      const afterMarker = content.slice(end);
+      content = beforeMarker + `<sup class="footnote-indicator" data-index="${footnoteCounter}">${footnoteCounter}</sup>` + afterMarker;
+      footnoteCounter++;
+    }
   });
 
   // Replace page reference markers ([number-number])
   let pageRefCounter = 1;
-  const contentAfterPages = contentAfterAnnotations.replace(/\[(\d+-\d+)\]/g, (match, range) => {
+  const contentAfterPages = content.replace(/\[(\d+-\d+)\]/g, (match, range) => {
     pageReferences.push({ index: pageRefCounter, pageRange: range });
     const link = `<a class="page-indicator" data-index="${pageRefCounter}" href="javascript:void(0)">${pageRefCounter}</a>`;
     pageRefCounter++;
@@ -53,18 +47,9 @@ const processAnnotations = (
   return { content: contentAfterPages, footnotes, pageReferences };
 };
 
-/*
-  applyFormatting() performs further text transformations:
-  
-  1. It wraps the text between a numbered list indicator (e.g. “1. Coverage Termination:”) in a <strong> tag.
-  
-  2. It splits any line containing markdown bold (**…**) so that the bold text appears as its own paragraph.
-  
-  3. It wraps each nonempty token in a <p> tag.
-*/
 const applyFormatting = (content: string): string => {
   // 1. Wrap marker text in numbered list items
-  content = content.replace(/(^|\n)(\d+\.\s*)([^:]+)(:)/gm, '$1$2<strong>$3</strong>$4');
+  content = content.replace(/(^|\n)(\d+\.\s*)([^:]+)(:)/gm, '$1<div>$2<strong>$3</strong>$4</div>');
 
   // 2. Split and wrap by line
   const lines = content.split('\n');
@@ -81,22 +66,18 @@ const applyFormatting = (content: string): string => {
         if (!partTrimmed) return;
         if (/^\*\*(.+?)\*\*$/.test(partTrimmed)) {
           const boldText = partTrimmed.replace(/^\*\*(.+?)\*\*$/, '<strong>$1</strong>');
-          paragraphs.push(`<p>${boldText}</p>`);
+          paragraphs.push(`<span>${boldText}</span>`);
         } else {
-          paragraphs.push(`<p>${partTrimmed}</p>`);
+          paragraphs.push(`<span>${partTrimmed}</span>`);
         }
       });
     } else {
-      paragraphs.push(`<p>${trimmed}</p>`);
+      paragraphs.push(`<span>${trimmed}</span>`);
     }
   });
   return paragraphs.join('');
 };
 
-/*
-  --- Post-processing helper ---
-  Inserts a space between adjacent markers so that two consecutive <sup> or <a> tags don’t merge into one.
-*/
 const insertMarkerSpacing = (html: string): string => {
   // Insert a space between adjacent superscript markers.
   html = html.replace(/(<\/sup>)(<sup)/g, '$1 $2');
@@ -105,71 +86,69 @@ const insertMarkerSpacing = (html: string): string => {
   return html;
 };
 
-/*
-  FootnoteModal displays the annotation details.
-  It is hidden by default via inline style (display: 'none').
-  When its corresponding <sup> marker is clicked, its display is toggled.
-*/
 interface FootnoteModalProps {
   index: number;
   annotation: ChatMessageAnnotation;
   onClose: (id: string) => void;
 }
+
 const FootnoteModal: React.FC<FootnoteModalProps> = ({ index, annotation, onClose }) => {
+  let fileId = '';
+  if (annotation.file_citation) {
+    fileId = annotation.file_citation.file_id;
+  } else if (annotation.file_path) {
+    fileId = annotation.file_path.file_id;
+  }
+
   return (
     <div id={`footnote-${index}`} className="footnote-modal" style={{ display: 'none' }}>
       <div className="modal-content">
         <button className="close" onClick={() => onClose(`footnote-${index}`)}>&times;</button>
-        <p>
+        <div>
           <strong>{index}:</strong> {annotation.text || 'No additional information available.'}
-        </p>
-        <p>
-          <span className="tooltip">File ID: {annotation.file_id || 'N/A'}</span>
-        </p>
+        </div>
+        {fileId && (
+          <div>
+            <span className="tooltip">File ID: {fileId}</span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-/*
-  PageRefModal displays details for a page reference.
-  It is hidden by default via inline style.
-*/
 interface PageRefModalProps {
   index: number;
   fileId: string;
   pageRange: string;
   onClose: (id: string) => void;
 }
+
 const PageRefModal: React.FC<PageRefModalProps> = ({ index, fileId, pageRange, onClose }) => {
   return (
     <div id={`page-ref-${index}`} className="page-ref-modal" style={{ display: 'none' }}>
       <div className="modal-content">
         <button className="close" onClick={() => onClose(`page-ref-${index}`)}>&times;</button>
-        <p>
+        <div>
           <strong>{index}:</strong> {fileId}: {pageRange}
-        </p>
+        </div>
       </div>
     </div>
   );
 };
 
-/*
-  ChatbotContent renders the processed content along with both kinds of modals.
-  When a <sup> (footnote marker) or <a> (page reference marker) is clicked, an event handler toggles 
-  the display of the corresponding modal.
-*/
 interface ChatbotContentProps {
   content: string;
   annotations?: ChatMessageAnnotation[];
 }
+
 export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotations = [] }) => {
   if (!content) return null;
 
   // Process the markers in the content.
   const { content: processedText, footnotes, pageReferences } = processAnnotations(content, annotations);
   // Apply further formatting.
-  let formattedContent = applyFormatting(processedText);
+  let formattedContent = applyFormatting(processedText).replace(/<p>/g, '<div>').replace(/<\/p>/g, '</div>');
   // Insert spacing between adjacent markers.
   formattedContent = insertMarkerSpacing(formattedContent);
 
@@ -180,6 +159,7 @@ export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotat
       modal.style.display = 'block';
     }
   };
+
   const hideModal = (id: string) => {
     const modal = document.getElementById(id);
     if (modal) {
@@ -201,39 +181,29 @@ export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotat
   };
 
   return (
-    <>
-      <div onClick={onContentClick} dangerouslySetInnerHTML={{ __html: formattedContent || content }} />
-      
-      {/* Render the footnotes modals (hidden by default) */}
-      <div className="footnotes">
-        {footnotes.map(({ index, annotation }) => (
-          <FootnoteModal key={`footnote-${index}`} index={index} annotation={annotation} onClose={hideModal} />
-        ))}
-      </div>
-      {/* Render the page reference modals (hidden by default) */}
-      <div className="page-references">
-        {pageReferences.map((pr) => {
-          // Find the corresponding annotation for file_id matching (if ordering matches).
-          const correspondingAnnotation = footnotes.find((f) => f.index === pr.index);
-          const fileId = correspondingAnnotation ? correspondingAnnotation.annotation.file_id || 'N/A' : 'N/A';
-          return (
-            <PageRefModal
-              key={`page-ref-${pr.index}`}
-              index={pr.index}
-              fileId={fileId}
-              pageRange={pr.pageRange}
-              onClose={hideModal}
-            />
-          );
-        })}
-      </div>
-    </>
+    <div className="chatbot-content" onClick={onContentClick}>
+      <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      {footnotes.map(({ index, annotation }) => (
+        <FootnoteModal
+          key={`footnote-${index}`}
+          index={index}
+          annotation={annotation}
+          onClose={hideModal}
+        />
+      ))}
+      {pageReferences.map(({ index, pageRange }) => (
+        <PageRefModal
+          key={`page-ref-${index}`}
+          index={index}
+          fileId="document"
+          pageRange={pageRange}
+          onClose={hideModal}
+        />
+      ))}
+    </div>
   );
 };
 
-/*
-  renderContent returns the ChatbotContent component synchronously.
-*/
 export const renderContent = (
   text: string,
   annotations: ChatMessageAnnotation[] = []
@@ -241,12 +211,9 @@ export const renderContent = (
   return <ChatbotContent content={text} annotations={annotations} />;
 };
 
-/*
-  renderContentAsync is an asynchronous wrapper.
-*/
-export async function renderContentAsync(
+export const renderContentAsync = async (
   text: string,
   annotations: ChatMessageAnnotation[] = []
-): Promise<ReactNode> {
-  return <ChatbotContent content={text} annotations={annotations} />;
-}
+): Promise<ReactNode> => {
+  return renderContent(text, annotations);
+};

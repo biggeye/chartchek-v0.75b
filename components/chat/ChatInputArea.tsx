@@ -1,103 +1,97 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useMemo } from 'react';
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
-import { PaperClipIcon } from '@heroicons/react/20/solid';
-import { useDocumentStore } from '@/store/documentStore';
-import { useClientStore } from '@/store/clientStore';
-import { useCurrentThread, useThreadActions } from '@/store/threadStore';
-import { Document } from '@/types/store/document';
+import { useState, useEffect, useMemo } from 'react'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
+import { PaperClipIcon } from '@heroicons/react/20/solid'
+import { useDocumentStore } from '@/store/documentStore'
+import { useChatStore } from '@/store/chatStore'
+import { Document } from '@/types/store/document'
 
 export default function ChatInputArea({
   onMessageSubmit,
   isSubmitting
 }: {
-  onMessageSubmit: (content: string, attachments: string[]) => Promise<void>;
-  isSubmitting: boolean;
+  onMessageSubmit: (content: string, attachments: string[]) => Promise<void>
+  isSubmitting: boolean
 }) {
-  const [currentMessage, setCurrentMessage] = useState('');
-  const {
-    fileQueue,
-    documents,
-    isLoading: isDocumentsLoading,
-    fetchDocuments,
-    addToFileQueue,
-    removeFromFileQueue,
-    uploadFileToOpenAI,
-  } = useDocumentStore();
-  const { currentThreadId } = useClientStore((state) => state);
-  const currentThread = useCurrentThread();
-  const { toggleStagedFile } = useThreadActions();
+  const [currentMessage, setCurrentMessage] = useState('')
 
-  const itemsPerPage = 4;
-  const [page, setPage] = useState(0);
+  // Use chatStore for file queue management and file uploads.
+  const { 
+    transientFileQueue, 
+    addFileToQueue, 
+    removeFileFromQueue, 
+    currentThread
+  } = useChatStore()
 
-  // Determine if the current thread is active (i.e. has a real vector store id)
-  const isThreadActive = currentThread && currentThread.vector_store_id && currentThread.vector_store_id !== 'temp-vector-store';
+  // Use documentStore for fetching the global list of documents.
+  const { uploadFileToOpenAI, documents, isLoading: isDocumentsLoading, fetchDocuments } = useDocumentStore()
 
-  // Fetch global documents on mount
+  const itemsPerPage = 4
+  const [page, setPage] = useState(0)
+
+  // Determine if the current thread is active (i.e. has a valid vector store id)
+  const isThreadActive =
+    currentThread &&
+    currentThread.tool_resources?.file_search?.vector_store_ids &&
+    currentThread.tool_resources.file_search.vector_store_ids[0] !== 'temp-vector-store'
+
+  // Fetch documents on mount.
   useEffect(() => {
     (async () => {
       try {
-        await fetchDocuments();
+        await fetchDocuments()
       } catch (error) {
-        console.error('Failed to load documents:', error);
+        console.error('Failed to load documents:', error)
       }
-    })();
-  }, [fetchDocuments]);
+    })()
+  }, [fetchDocuments])
 
   const paginatedDocuments = useMemo(() => {
-    return documents.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
-  }, [documents, page, itemsPerPage]);
+    return documents.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
+  }, [documents, page, itemsPerPage])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentMessage.trim() || isSubmitting) return;
+    e.preventDefault()
+    if (!currentMessage.trim() || isSubmitting) return
 
     try {
-      // For each file in the fileQueue (global) use the openai_file_id if available,
-      // otherwise upload the file to OpenAI.
+      // For each file in the file queue, use its openai_file_id if available,
+      // otherwise upload it via chatStore.uploadFile.
       const attachments = await Promise.all(
-        fileQueue.map(async (file) => {
-          if (file.openai_file_id) return file.openai_file_id;
-          return await uploadFileToOpenAI(file);
+        transientFileQueue.map(async (file: Document) => {
+          if (file.openai_file_id) return file.openai_file_id
+          return await uploadFileToOpenAI(file)
         })
-      );
-      const validAttachments = attachments.filter(Boolean) as string[];
-
-      await onMessageSubmit(currentMessage.trim(), validAttachments);
-      setCurrentMessage('');
+      )
+      const validAttachments = attachments.filter(Boolean) as string[]
+      await onMessageSubmit(currentMessage.trim(), validAttachments)
+      setCurrentMessage('')
     } catch (error) {
-      console.error('[ChatInputArea] Submit error:', error);
+      console.error('[ChatInputArea] Submit error:', error)
     }
-  };
+  }
 
-  // Handler for checkbox toggling based on whether the thread is active
+  // Toggle a document's attachment state in the file queue.
   const handleCheckboxChange = (doc: Document) => {
-    if (isThreadActive) {
-      // When thread is active, use threadStore toggle (document must have an openai_file_id)
-      if (!doc.openai_file_id) {
-        console.warn(`Document ${doc.fileName} has no OpenAI file id yet.`);
-        return;
-      }
-      toggleStagedFile(doc.openai_file_id);
-    } else {
-      // Otherwise, update global fileQueue
-      if (fileQueue.some((f: Document) => f.document_id === doc.document_id)) {
-        removeFromFileQueue(doc);
-      } else {
-        addToFileQueue(doc);
-      }
+    if (!doc.openai_file_id) {
+      console.warn(`Document ${doc.fileName} has no OpenAI file id yet.`)
+      return
     }
-  };
+    if (transientFileQueue.some((f: Document) => f.document_id === doc.document_id)) {
+      removeFileFromQueue(doc)
+    } else {
+      addFileToQueue(doc)
+    }
+  }
 
-  // Compute which files are attached to the current thread (if active)
-  const attachedFileIds = isThreadActive && currentThread?.current_files
-    ? currentThread.current_files.map(file => file.id)
-    : [];
+  // Compute attached file IDs from the current thread if active.
+  const attachedFileIds =
+    isThreadActive && currentThread?.current_files
+      ? currentThread.current_files.map((file: Document) => file.openai_file_id)
+      : []
 
-  // Render the document list; checkboxes will be pre-checked based on attached files if thread active,
-  // or based on fileQueue (for new conversations).
+  // Render document list as a dropdown.
   const DocumentList = () => (
     <ListboxOptions className="absolute bottom-full right-0 mb-1 max-w-[40vw] bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none overflow-y-hidden">
       {isDocumentsLoading ? (
@@ -108,13 +102,15 @@ export default function ChatInputArea({
         paginatedDocuments.map((doc: Document) => {
           const isChecked = isThreadActive
             ? Boolean(doc.openai_file_id && attachedFileIds.includes(doc.openai_file_id))
-            : fileQueue.some((f: Document) => f.document_id === doc.document_id);
+            : transientFileQueue.some((f: Document) => f.document_id === doc.document_id)
           return (
             <ListboxOption
               key={doc.document_id}
               value={doc}
               className={({ active }) =>
-                `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-indigo-50' : 'text-gray-900'}`
+                `relative cursor-default select-none py-2 pl-3 pr-9 ${
+                  active ? 'bg-indigo-50' : 'text-gray-900'
+                }`
               }
             >
               <div className="flex items-center">
@@ -133,7 +129,7 @@ export default function ChatInputArea({
                 </span>
               </div>
             </ListboxOption>
-          );
+          )
         })
       )}
       {documents.length > itemsPerPage && (
@@ -157,7 +153,7 @@ export default function ChatInputArea({
         </div>
       )}
     </ListboxOptions>
-  );
+  )
 
   return (
     <form onSubmit={handleSubmit} className="relative z-10">
@@ -168,15 +164,16 @@ export default function ChatInputArea({
           value={currentMessage}
           onChange={(e) => setCurrentMessage(e.target.value)}
           onInput={(e) => {
-            const target = e.target as HTMLInputElement;
-            target.style.height = 'auto';
-            target.style.height = `${target.scrollHeight}px`;
+            const target = e.target as HTMLInputElement
+            target.style.height = 'auto'
+            target.style.height = `${target.scrollHeight}px`
           }}
           style={{ height: 'auto' }}
+          disabled={isSubmitting}
         />
         <Listbox as="div" className="relative">
           <ListboxButton
-            disabled={isDocumentsLoading}
+            disabled={isDocumentsLoading || isSubmitting}
             className="inline-flex items-center rounded-full bg-gray-50 px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 sm:px-3 disabled:opacity-50"
           >
             <PaperClipIcon className="h-5 w-5 mr-1" />
@@ -185,8 +182,8 @@ export default function ChatInputArea({
                 ? 'Loading documents...'
                 : isThreadActive
                 ? `${attachedFileIds.length} selected`
-                : fileQueue.length
-                ? `${fileQueue.length} selected`
+                : transientFileQueue.length
+                ? `${transientFileQueue.length} selected`
                 : ''}
             </span>
           </ListboxButton>
@@ -194,12 +191,12 @@ export default function ChatInputArea({
         </Listbox>
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          disabled={isSubmitting || !currentMessage.trim()}
+          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-indigo-400"
         >
           {isSubmitting ? 'Loading...' : 'Send'}
         </button>
       </div>
     </form>
-  );
+  )
 }

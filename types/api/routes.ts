@@ -1,6 +1,7 @@
-import type { Assistant, Run, Tool, MessageRole, FileAttachment, ToolResources } from './openai'
+import type { Assistant, Run, Tool, MessageRole, FileAttachment, ToolResources } from '@/types/api/openai'
 import type { UserAssistant, ChatThread, ChatMessage, Document } from '../database'
-import { ChatMessageAnnotation } from '../store/client'
+import { ChatMessageAnnotation } from '../database'
+
 // Assistant Routes
 export interface AssistantCreateRequest {
   name?: string
