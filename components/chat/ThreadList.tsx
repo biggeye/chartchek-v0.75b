@@ -6,12 +6,13 @@ import Tooltip from '@/components/ui/Tooltip'
 import { useChatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
 
-export function ThreadList() {
+export function ThreadList({ assistantId }: { assistantId?: string }) {
   const {
     historicalThreads,
     currentThread,
     setCurrentThread,
     fetchHistoricalThreads,
+    fetchCurrentMessages,
     deleteThread,
     createThread,
     setError,
@@ -27,10 +28,15 @@ export function ThreadList() {
   }
 
 
+  useEffect(() => {
+    fetchHistoricalThreads()
+  }, [assistantId])
+
   const handleThreadChange = (threadId: string) => {
     const selectedThread = historicalThreads.find((t: Thread) => t.thread_id === threadId)
     if (selectedThread) {
-      setCurrentThread(selectedThread)
+      setCurrentThread(selectedThread);
+      fetchCurrentMessages(threadId);
     }
   }
 

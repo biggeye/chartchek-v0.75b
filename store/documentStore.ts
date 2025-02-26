@@ -238,8 +238,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     let documentRecord: Document | null = null;
     
     try {
-      console.log('[documentStore] Starting document upload and processing for file:', file.name);
-      
+
       // Step 1: Upload to storage and create DB record
       documentRecord = await store.uploadDocument(file);
       if (!documentRecord) {
@@ -247,9 +246,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         throw new Error('Failed to upload document to storage');
       }
       
-      console.log('[documentStore] Document uploaded successfully, now processing with OpenAI', documentRecord);
-
-      // Step 2: Upload to OpenAI
+        // Step 2: Upload to OpenAI
       try {
         // Set status to processing
         const { error: updateError } = await supabase.from('documents').update({
@@ -265,15 +262,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         documentRecord.processingStatus = 'processing';
         
         // Upload to OpenAI
-        console.log('[documentStore] Uploading document to OpenAI:', documentRecord.document_id);
         const openaiFileId = await store.uploadFileToOpenAI(documentRecord);
-        
+        console.log('[documentStore] Uploaded file ID:', openaiFileId);
         if (!openaiFileId) {
           throw new Error('No OpenAI file ID returned from upload');
         }
-        
-        console.log('[documentStore] Successfully uploaded to OpenAI with file ID:', openaiFileId);
-        
+      
         // Update the database with success status
         const { error: finalUpdateError } = await supabase.from('documents').update({
           openai_file_id: openaiFileId,

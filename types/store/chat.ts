@@ -37,7 +37,8 @@ export interface ChatStoreState {
   fetchCurrentMessages: (threadId: string) => Promise<ChatMessage[]>;
   addAssistantMessage: (content: any) => Promise<string>;
   setCurrentMessages: (messages: ChatMessage[]) => void;
-  
+  addAssistantIdToThread?: (assistantId: string, threadId: string) => Promise<void>;
+
   // --- FILE / DOCUMENT MANAGEMENT ---
   addFileToQueue: (doc: Document) => void;
   removeFileFromQueue: (doc: Document) => void;

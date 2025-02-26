@@ -13,7 +13,7 @@ export const useStreaming = () => {
     cancelStream, 
     endStream, 
     setStreamError,
-    handleToolCall 
+    handleToolCall
   } = useStreamingStore();
 
   /**
@@ -32,8 +32,7 @@ export const useStreaming = () => {
 
     try {
       // Start/reset the streaming store state
-      startStream();
-      console.log('[useStreaming] Starting stream for thread:', threadId, 'with assistantId:', assistantId);
+      startStream(); 
 
       // Call the streaming service. It will update the store via our callbacks.
       const { cancel } = await streamAssistantResponse(threadId, assistantId, {

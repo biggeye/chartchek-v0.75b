@@ -73,47 +73,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   // Fetch assistant name for specific routes
-  useEffect(() => {
-    const fetchAssistantName = async () => {
-      if (pathname === '/protected/compliance' || pathname === '/protected/billing') {
-        try {
-          const supabase = await createClient();
-          const { data: user } = await supabase.auth.getUser();
-          
-          if (!user.user) return;
-          
-          const assistantId = pathname === '/protected/compliance' 
-            ? 'compliance-assistant' // Replace with actual assistant ID
-            : 'billing-assistant';   // Replace with actual assistant ID
-            
-          const { data, error } = await supabase
-            .from('user_assistants')
-            .select('name')
-            .eq('user_id', user.user.id)
-            .eq('assistant_id', assistantId)
-            .single();
-            
-          if (data && !error) {
-            setRouteTitle(data.name);
-          } else {
-            // Fallback to route name if no assistant found
-            setRouteTitle(pathname === '/protected/compliance' ? 'Compliance' : 'Accounts & Billing');
-          }
-        } catch (error) {
-          console.error('Error fetching assistant name:', error);
-          setRouteTitle(pathname === '/protected/compliance' ? 'Compliance' : 'Accounts & Billing');
-        }
-      } else if (pathname === '/protected/documents') {
-        setRouteTitle('Documents');
-      } else if (pathname === '/protected/facilities') {
-        setRouteTitle('Facilities');
-      } else {
-        setRouteTitle('');
-      }
-    };
-    
-    fetchAssistantName();
-  }, [pathname]);
 
   function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
@@ -123,8 +82,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   let asideContent;
   switch (pathname) {
     case '/protected/billing':
+      asideContent = <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />;
+      break;
     case '/protected/compliance':
-      asideContent = <ThreadList />;
+      asideContent = <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />;
       break;
     case '/protected':
       asideContent = <UserStats />;
@@ -276,7 +237,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="w-full overflow-auto">
             <div className="py-6 px-4">
               {children}
-              <ChatStoreWidget />
+   
             </div>
           </main>
 

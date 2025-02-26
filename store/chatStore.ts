@@ -75,17 +75,19 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
 
   // Fetches historical threads via API
   fetchHistoricalThreads: async (): Promise<Thread[]> => {
+    set({ isLoading: true });
     try {
-      const response = await fetch(`/api/threads`, { method: 'GET' });
+        const response = await fetch(`/api/threads`, { method: 'GET' });
       if (!response.ok) {
+        console.error('[chatStore:fetchHistoricalThreads] Failed to fetch threads, status:', response.status);
         throw new Error('Failed to fetch threads');
       }
       const threads: Thread[] = await response.json();
-      console.log('[fetchHistoricalThreads] threads:', threads);
-      set({ historicalThreads: threads });
+      set({ historicalThreads: threads, isLoading: false });
       return threads;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to fetch threads' });
+      console.error('[chatStore:fetchHistoricalThreads] Error fetching threads:', error);
+      set({ error: error.message || 'Failed to fetch threads', isLoading: false });
       throw error;
     }
   },
@@ -179,7 +181,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       
       const data = await response.json();
       console.log(`[chatStore:sendMessage] Message sent successfully:`, data);
-      
+      addAssistantIdToThread(assistantId, threadId);
       // Add this message to the current thread's messages immediately
       // This gives immediate feedback to the user before real-time updates arrive
       set((state: ChatStoreState) => {
@@ -208,25 +210,38 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
 
   // Fetches current messages for the given thread
   fetchCurrentMessages: async (threadId: string) => {
+    console.log(`[chatStore:fetchCurrentMessages] Starting to fetch messages for thread: ${threadId}`);
+    set({ isLoading: true });
     try {
+      console.log(`[chatStore:fetchCurrentMessages] Making API request to /api/threads/${threadId}/messages`);
       const response = await fetch(`/api/threads/${threadId}/messages`);
+      
+      console.log('[chatStore:fetchCurrentMessages] API response status:', response.status, response.statusText);
       if (!response.ok) {
+        console.error(`[chatStore:fetchCurrentMessages] Failed to fetch messages, status: ${response.status}`);
         throw new Error('Failed to fetch messages');
       }
+      
       const data = await response.json();
       const messages = data?.data || data || [];
+      console.log(`[chatStore:fetchCurrentMessages] Successfully fetched ${messages.length} messages`);
+      console.log('[chatStore:fetchCurrentMessages] Messages data:', messages);
+      
       set((state: ChatStoreState) => {
         const currentThread = state.currentThread;
         if (currentThread && currentThread.thread_id === threadId) {
+          console.log(`[chatStore:fetchCurrentMessages] Updating current thread with fetched messages`);
           return {
             currentThread: { ...currentThread, messages },
+            isLoading: false
           };
         }
-        return state;
+        return { ...state, isLoading: false };
       });
       return messages;
     } catch (error) {
-      console.error('[fetchCurrentMessages] Error:', error);
+      console.error('[chatStore:fetchCurrentMessages] Error fetching messages:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to fetch messages', isLoading: false });
       throw error;
     }
   },
@@ -310,32 +325,6 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     set({ transientFileQueue: [] });
   },
 
-  // Fetch file names given a vector store ID
-  fetchFileNames: async (vectorStoreId: string): Promise<string[]> => {
-    try {
-      const response = await fetch(`/api/vector/${vectorStoreId}/files`, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error('Failed to fetch file IDs');
-      }
-      const { fileIds } = await response.json();
-      if (!fileIds?.length) {
-        return [];
-      }
-      const { data: documents, error } = await supabase
-        .from('documents')
-        .select('file_name')
-        .in('openai_file_id', fileIds);
-      if (error) {
-        console.error('[fetchFileNames] Supabase error:', error);
-        throw error;
-      }
-      return documents?.map((doc: any) => doc.file_name) || [];
-    } catch (error) {
-      console.error('[fetchFileNames] Error:', error);
-      throw error;
-    }
-  },
-
   // Stub for file upload; replace with your actual implementation.
   uploadFile: async (file: Document): Promise<string> => {
     if (file.openai_file_id) return file.openai_file_id;
@@ -343,17 +332,75 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     return simulatedId;
   },
 
+  // Fetch file names given a vector store ID
+  fetchFileNames: async (vectorStoreId: string): Promise<string[]> => {
+    console.log(`[chatStore:fetchFileNames] Starting to fetch file names for vector store: ${vectorStoreId}`);
+    set({ isLoading: true });
+    try {
+      console.log(`[chatStore:fetchFileNames] Making API request to /api/vector/${vectorStoreId}/files`);
+      const response = await fetch(`/api/vector/${vectorStoreId}/files`, { method: 'GET' });
+      
+      console.log('[chatStore:fetchFileNames] API response status:', response.status, response.statusText);
+      if (!response.ok) {
+        console.error(`[chatStore:fetchFileNames] Failed to fetch file IDs, status: ${response.status}`);
+        throw new Error('Failed to fetch file IDs');
+      }
+      
+      const { fileIds } = await response.json();
+      console.log(`[chatStore:fetchFileNames] Successfully fetched ${fileIds?.length || 0} file IDs:`, fileIds);
+      
+      if (!fileIds?.length) {
+        console.log('[chatStore:fetchFileNames] No file IDs found, returning empty array');
+        set({ isLoading: false });
+        return [];
+      }
+      
+      console.log('[chatStore:fetchFileNames] Querying Supabase for file names with IDs:', fileIds);
+      const { data: documents, error } = await supabase
+        .from('documents')
+        .select('file_name')
+        .in('openai_file_id', fileIds);
+        
+      if (error) {
+        console.error('[chatStore:fetchFileNames] Supabase error:', error);
+        set({ isLoading: false });
+        throw error;
+      }
+      
+      const fileNames = documents?.map((doc: any) => doc.file_name) || [];
+      console.log(`[chatStore:fetchFileNames] Successfully fetched ${fileNames.length} file names:`, fileNames);
+      set({ isLoading: false });
+      return fileNames;
+    } catch (error) {
+      console.error('[chatStore:fetchFileNames] Error fetching file names:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to fetch file names', isLoading: false });
+      throw error;
+    }
+  },
+
   // Fetches documents via API
   fetchDocuments: async (): Promise<Document[]> => {
+    console.log('[chatStore:fetchDocuments] Starting to fetch documents');
+    set({ isLoading: true });
     try {
+      console.log('[chatStore:fetchDocuments] Making API request to /api/documents');
       const response = await fetch('/api/documents', { method: 'GET' });
+      
+      console.log('[chatStore:fetchDocuments] API response status:', response.status, response.statusText);
       if (!response.ok) {
+        console.error(`[chatStore:fetchDocuments] Failed to fetch documents, status: ${response.status}`);
         throw new Error('Failed to fetch documents');
       }
+      
       const docs: Document[] = await response.json();
+      console.log(`[chatStore:fetchDocuments] Successfully fetched ${docs.length} documents`);
+      console.log('[chatStore:fetchDocuments] Documents data:', docs);
+      
+      set({ isLoading: false });
       return docs;
     } catch (error: any) {
-      set({ error: error.message || 'Failed to fetch documents' });
+      console.error('[chatStore:fetchDocuments] Error fetching documents:', error);
+      set({ error: error.message || 'Failed to fetch documents', isLoading: false });
       throw error;
     }
   },
@@ -385,6 +432,16 @@ async function fetchUserIdFromSupabase(): Promise<string> {
   return user?.id || '';
 }
 
+async function addAssistantIdToThread(assistantId: string, threadId: string): Promise<void> {
+  const threadUpdated = await supabase
+    .from('chat_threads')
+    .update({ assistant_id: assistantId })
+    .eq('thread_id', threadId);
+  if (threadUpdated.error) {
+    throw new Error(threadUpdated.error.message);
+  }
+}
+
 async function addAssistantMessageToSupabase(
   threadId: string,
   content: StreamingState['currentStreamContent']
@@ -402,5 +459,9 @@ async function addAssistantMessageToSupabase(
   if (error) {
     throw error;
   }
+  const updatedThread = await supabase
+  .from('chat_threads')
+  .update({ updated_at: new Date().toISOString() })
+  .eq('thread_id', threadId);
   return data ? 'Message added successfully' : 'No data returned';
 }

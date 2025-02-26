@@ -11,6 +11,8 @@ const ChatStoreWidget: React.FC = () => {
   const currentThreadId = chatState.currentThread?.thread_id;
   const currentThreadTitle = chatState.currentThread?.title;
   const vectorStoreId = chatState.currentThread?.tool_resources?.file_search?.vector_store_ids?.[0];
+  const threadTitles = chatState.historicalThreads.map((t) => t.title);
+  const threadIds = chatState.historicalThreads.map((t) => t.thread_id);
 
   useEffect(() => {
     // Subscribe to chatStore updates and log changes
@@ -64,7 +66,8 @@ const ChatStoreWidget: React.FC = () => {
       }}
     > 
 
-      <h4 style={{ margin: '0 0 10px 0' }}>{currentThreadTitle ?? currentThreadId}</h4>
+      <h4 style={{ margin: '0 0 10px 0' }}>current:  {currentThreadTitle ?? currentThreadId}</h4>
+      <h6 style={{ margin: '0 0 10px 0' }}>threads:  {threadIds[0]}</h6>
       <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
         Vector Store ID: {vectorStoreId}
       </pre>

@@ -8,6 +8,8 @@ export const useStreamingStore = create<StreamingState>((set, get) => ({
   currentStreamContent: '',
   streamError: null,
   
+  
+
   startStream: () => {
     console.log('[streamingStore] Starting stream session');
     set({
