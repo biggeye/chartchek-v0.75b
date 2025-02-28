@@ -7,7 +7,7 @@ export const maxDuration = 30;
 
 export async function POST(
   req: NextRequest,
-  context: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
@@ -20,7 +20,7 @@ export async function POST(
   }
 
   try {
-    const { threadId } = context.params;
+    const { threadId } = await params;
     const body = await req.json();
     const assistant_id: string = body.assistant_id;
     
