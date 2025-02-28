@@ -157,10 +157,10 @@ export default function ChatInputArea({
 
   return (
     <form onSubmit={handleSubmit} className="relative z-10">
-      <div className="bottom-0 px-2 flex rounded-lg bg-white outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
+      <div className="flex items-center rounded-xl bg-white shadow-lg border border-gray-300 focus-within:border-indigo-600">
         <input
           placeholder="Ask a question..."
-          className="block w-full resize-none px-3 py-2 text-lg font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none z-20"
+          className="block w-full resize-none px-4 py-3 text-md font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none z-20 rounded-l-xl"
           value={currentMessage}
           onChange={(e) => setCurrentMessage(e.target.value)}
           onInput={(e) => {
@@ -168,18 +168,18 @@ export default function ChatInputArea({
             target.style.height = 'auto'
             target.style.height = `${target.scrollHeight}px`
           }}
-          style={{ height: 'auto' }}
+          style={{ height: 'auto', maxHeight: '120px', overflowY: 'auto' }}
           disabled={isSubmitting}
         />
         <Listbox as="div" className="relative">
           <ListboxButton
             disabled={isDocumentsLoading || isSubmitting}
-            className="inline-flex items-center rounded-full bg-gray-50 px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 sm:px-3 disabled:opacity-50"
+            className="inline-flex items-center px-3 py-3 text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50"
           >
-            <PaperClipIcon className="h-5 w-5 mr-1" />
+            <PaperClipIcon className="h-5 w-5" />
             <span className="hidden truncate sm:ml-2 sm:block">
               {isDocumentsLoading
-                ? 'Loading documents...'
+                ? 'Loading...'
                 : isThreadActive
                 ? `${attachedFileIds.length} selected`
                 : transientFileQueue.length
@@ -192,7 +192,7 @@ export default function ChatInputArea({
         <button
           type="submit"
           disabled={isSubmitting || !currentMessage.trim()}
-          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-indigo-400"
+          className="inline-flex items-center rounded-r-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:bg-indigo-400"
         >
           {isSubmitting ? 'Loading...' : 'Send'}
         </button>

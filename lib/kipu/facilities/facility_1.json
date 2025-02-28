@@ -1,0 +1,423 @@
+{
+  "facility_id": "facility_1",
+  "name": "California Detox Center",
+  "address": "456 Detox Ave, Los Angeles, CA 90012",
+  "phone": "(213) 555-0001",
+  "email": "info@caldetox.com",
+  "created_at": "2023-01-01T00:00:00Z",
+  "data": {
+    "patients": [
+      {
+        "id": "patient_1",
+        "first_name": "John",
+        "last_name": "Doe",
+        "dob": "1980-01-15",
+        "gender": "male",
+        "contact": {
+          "phone": "(310) 555-1234",
+          "email": "john.doe@example.com"
+        },
+        "address": "456 Detox Ave, Los Angeles, CA 90012",
+        "created_at": "2023-01-01T08:00:00Z",
+        "updated_at": "2023-01-05T10:00:00Z",
+        "patient_colors_map": {
+          "color": "blue"
+        },
+        "restricted_patients_map": {}
+      },
+      {
+        "id": "patient_2",
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "dob": "1985-06-20",
+        "gender": "female",
+        "contact": {
+          "phone": "(310) 555-2345",
+          "email": "jane.smith@example.com"
+        },
+        "address": "456 Detox Ave, Los Angeles, CA 90012",
+        "created_at": "2023-01-02T09:00:00Z",
+        "updated_at": "2023-01-06T11:00:00Z",
+        "patient_colors_map": {
+          "color": "green"
+        },
+        "restricted_patients_map": {}
+      },
+      {
+        "id": "patient_3",
+        "first_name": "Robert",
+        "last_name": "Johnson",
+        "dob": "1975-03-10",
+        "gender": "male",
+        "contact": {
+          "phone": "(310) 555-3456",
+          "email": "robert.johnson@example.com"
+        },
+        "address": "456 Detox Ave, Los Angeles, CA 90012",
+        "created_at": "2023-01-03T10:00:00Z",
+        "updated_at": "2023-01-07T12:00:00Z",
+        "patient_colors_map": {
+          "color": "red"
+        },
+        "restricted_patients_map": {}
+      }
+    ],
+    "appointments": [
+      {
+        "id": "appointment_1",
+        "patient_id": "patient_1",
+        "provider_id": "provider_1",
+        "appointment_time": "2023-01-07T09:00:00Z",
+        "status": "admitted",
+        "created_at": "2023-01-06T08:00:00Z",
+        "appointments_map": {}
+      },
+      {
+        "id": "appointment_2",
+        "patient_id": "patient_2",
+        "provider_id": "provider_2",
+        "appointment_time": "2023-01-07T09:15:00Z",
+        "status": "admitted",
+        "created_at": "2023-01-06T08:05:00Z",
+        "appointments_map": {}
+      },
+      {
+        "id": "appointment_3",
+        "patient_id": "patient_3",
+        "provider_id": "provider_1",
+        "appointment_time": "2023-01-07T09:30:00Z",
+        "status": "admitted",
+        "created_at": "2023-01-06T08:10:00Z",
+        "appointments_map": {}
+      }
+    ],
+    "providers": [
+      {
+        "id": "provider_1",
+        "name": "Dr. Martinez",
+        "specialty": "Detox Medicine",
+        "contact": {
+          "phone": "(213) 555-1010",
+          "email": "dr.martinez@caldetox.com"
+        },
+        "created_at": "2023-01-01T07:00:00Z",
+        "roles_map": {}
+      },
+      {
+        "id": "provider_2",
+        "name": "Nurse Garcia",
+        "specialty": "Nursing",
+        "contact": {
+          "phone": "(213) 555-2020",
+          "email": "nurse.garcia@caldetox.com"
+        },
+        "created_at": "2023-01-01T07:30:00Z",
+        "roles_map": {}
+      }
+    ],
+    "insurances": [
+      {
+        "id": "insurance_1",
+        "patient_id": "patient_1",
+        "insurance_company": "California Health",
+        "policy_number": "CAH-001",
+        "origin_id": "origin_1",
+        "created_at": "2023-01-06T10:00:00Z"
+      },
+      {
+        "id": "insurance_2",
+        "patient_id": "patient_2",
+        "insurance_company": "California Health",
+        "policy_number": "CAH-002",
+        "origin_id": "origin_1",
+        "created_at": "2023-01-06T10:05:00Z"
+      },
+      {
+        "id": "insurance_3",
+        "patient_id": "patient_3",
+        "insurance_company": "California Health",
+        "policy_number": "CAH-003",
+        "origin_id": "origin_1",
+        "created_at": "2023-01-06T10:10:00Z"
+      }
+    ],
+    "evaluations": [
+      {
+        "id": "evaluation_1",
+        "patient_id": "patient_1",
+        "evaluation_type": "detox intake",
+        "notes": "Patient requires monitoring for withdrawal symptoms. Vitals stable.",
+        "created_at": "2023-01-07T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_2",
+        "patient_id": "patient_2",
+        "evaluation_type": "detox intake",
+        "notes": "Patient exhibits mild withdrawal. Recommend vitamin supplementation.",
+        "created_at": "2023-01-07T10:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_3",
+        "patient_id": "patient_3",
+        "evaluation_type": "detox intake",
+        "notes": "Patient shows signs of dehydration. Increase fluids.",
+        "created_at": "2023-01-07T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      }
+    ],
+    "contacts": [
+      {
+        "id": "contact_1",
+        "patient_id": "patient_1",
+        "type": "emergency",
+        "name": "Alice Doe",
+        "phone": "(310) 555-1111",
+        "relationship": "sibling",
+        "contact_person_object": {}
+      },
+      {
+        "id": "contact_2",
+        "patient_id": "patient_2",
+        "type": "emergency",
+        "name": "Bob Smith",
+        "phone": "(310) 555-2222",
+        "relationship": "parent",
+        "contact_person_object": {}
+      },
+      {
+        "id": "contact_3",
+        "patient_id": "patient_3",
+        "type": "emergency",
+        "name": "Carol Johnson",
+        "phone": "(310) 555-3333",
+        "relationship": "spouse",
+        "contact_person_object": {}
+      }
+    ],
+    "vital_signs": [
+      {
+        "id": "vital_sign_1",
+        "patient_id": "patient_1",
+        "type": "blood_pressure",
+        "value": "118/76",
+        "timestamp": "2023-01-07T09:30:00Z",
+        "vital_sign_object": {}
+      },
+      {
+        "id": "vital_sign_2",
+        "patient_id": "patient_2",
+        "type": "blood_pressure",
+        "value": "120/80",
+        "timestamp": "2023-01-07T09:35:00Z",
+        "vital_sign_object": {}
+      },
+      {
+        "id": "vital_sign_3",
+        "patient_id": "patient_3",
+        "type": "blood_pressure",
+        "value": "122/82",
+        "timestamp": "2023-01-07T09:40:00Z",
+        "vital_sign_object": {}
+      }
+    ],
+    "locations": [
+      {
+        "id": "location_1",
+        "name": "California Detox Center",
+        "address": "456 Detox Ave, Los Angeles, CA 90012",
+        "phone": "(213) 555-0001",
+        "locations_map": {}
+      }
+    ],
+    "users": [
+      {
+        "id": "user_1",
+        "username": "detox_admin",
+        "email": "admin@caldetox.com",
+        "roles": [
+          "admin"
+        ],
+        "created_at": "2023-01-01T09:00:00Z",
+        "main_user_object": {}
+      }
+    ],
+    "roles": [
+      {
+        "id": "role_1",
+        "name": "Admin",
+        "description": "Administrator Role",
+        "role_object": {}
+      },
+      {
+        "id": "role_2",
+        "name": "Provider",
+        "description": "Medical Provider Role",
+        "role_object": {}
+      },
+      {
+        "id": "role_3",
+        "name": "Counselor",
+        "description": "Counselor Role",
+        "role_object": {}
+      }
+    ],
+    "consent_form_records": [
+      {
+        "id": "consent_1",
+        "patient_id": "patient_1",
+        "form_type": "detox consent",
+        "signed_at": "2023-01-07T08:00:00Z",
+        "created_at": "2023-01-07T08:00:00Z",
+        "consent_form_record_base": {}
+      },
+      {
+        "id": "consent_2",
+        "patient_id": "patient_2",
+        "form_type": "detox consent",
+        "signed_at": "2023-01-07T08:05:00Z",
+        "created_at": "2023-01-07T08:05:00Z",
+        "consent_form_record_base": {}
+      },
+      {
+        "id": "consent_3",
+        "patient_id": "patient_3",
+        "form_type": "detox consent",
+        "signed_at": "2023-01-07T08:10:00Z",
+        "created_at": "2023-01-07T08:10:00Z",
+        "consent_form_record_base": {}
+      }
+    ],
+    "allergens": [
+      {
+        "id": "allergen_1",
+        "name": "Penicillin",
+        "allergen_object": {}
+      },
+      {
+        "id": "allergen_2",
+        "name": "Latex",
+        "allergen_object": {}
+      }
+    ],
+    "allergies": [
+      {
+        "id": "allergy_1",
+        "patient_id": "patient_1",
+        "allergen_id": "allergen_1",
+        "reaction": "anaphylaxis",
+        "created_at": "2023-01-07T10:00:00Z"
+      },
+      {
+        "id": "allergy_2",
+        "patient_id": "patient_3",
+        "allergen_id": "allergen_2",
+        "reaction": "mild rash",
+        "created_at": "2023-01-07T10:30:00Z"
+      }
+    ],
+    "glucose_logs": [
+      {
+        "id": "glucose_log_1",
+        "patient_id": "patient_1",
+        "level": 90,
+        "timestamp": "2023-01-07T09:15:00Z",
+        "glucose_log_object": {}
+      },
+      {
+        "id": "glucose_log_2",
+        "patient_id": "patient_2",
+        "level": 95,
+        "timestamp": "2023-01-07T09:20:00Z",
+        "glucose_log_object": {}
+      },
+      {
+        "id": "glucose_log_3",
+        "patient_id": "patient_3",
+        "level": 88,
+        "timestamp": "2023-01-07T09:25:00Z",
+        "glucose_log_object": {}
+      }
+    ],
+    "group_sessions": [
+      {
+        "id": "group_session_1",
+        "patient_id": "patient_1",
+        "session_name": "Group Therapy: Coping Strategies",
+        "session_date": "2023-01-07T14:00:00Z",
+        "scheduler_appointment_object": {}
+      }
+    ],
+    "patient_diets": [
+      {
+        "id": "diet_1",
+        "patient_id": "patient_1",
+        "diet_type": "detox diet",
+        "notes": "Low sugar, high protein."
+      },
+      {
+        "id": "diet_2",
+        "patient_id": "patient_2",
+        "diet_type": "detox diet",
+        "notes": "Low fat, high fiber."
+      },
+      {
+        "id": "diet_3",
+        "patient_id": "patient_3",
+        "diet_type": "detox diet",
+        "notes": "Vegetarian detox plan."
+      }
+    ],
+    "patient_orders": [
+      {
+        "id": "order_1",
+        "patient_id": "patient_1",
+        "order_type": "lab test",
+        "details": "Complete blood count",
+        "created_at": "2023-01-07T08:30:00Z",
+        "patient_order_object": {}
+      },
+      {
+        "id": "order_2",
+        "patient_id": "patient_2",
+        "order_type": "lab test",
+        "details": "Liver function test",
+        "created_at": "2023-01-07T08:35:00Z",
+        "patient_order_object": {}
+      },
+      {
+        "id": "order_3",
+        "patient_id": "patient_3",
+        "order_type": "lab test",
+        "details": "Electrolyte panel",
+        "created_at": "2023-01-07T08:40:00Z",
+        "patient_order_object": {}
+      }
+    ],
+    "program_history": [
+      {
+        "id": "program_1",
+        "patient_id": "patient_1",
+        "program": "Residential Detox",
+        "start_date": "2023-01-07",
+        "end_date": "2023-02-07"
+      },
+      {
+        "id": "program_2",
+        "patient_id": "patient_2",
+        "program": "Residential Detox",
+        "start_date": "2023-01-07",
+        "end_date": "2023-02-07"
+      },
+      {
+        "id": "program_3",
+        "patient_id": "patient_3",
+        "program": "Residential Detox",
+        "start_date": "2023-01-07",
+        "end_date": "2023-02-07"
+      }
+    ],
+    "vaults": []
+  }
+}

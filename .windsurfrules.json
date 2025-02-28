@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "development_assistance": "chartChek",
+    "project_description": "A project that uses NextJS 15 and OpenAI's Assistants API to provide instant, accurate, and actionable insights for behavioral health facilities.",
+    "coding_guidelines": {
+      "openai": "Always reference current OpenAI documentation before writing new code, especially with regards to the Assistant API (v2 beta).",
+      "refactoring": "When refactoring always consider the source of truth hierarchy: 1) supabase table schema, 2) type definitions, 3) zustand state store"
+    },
+    "environment": {
+      "kipu_test": {
+        "logic": "/lib/kipu/index.ts",
+        "types": "/lib/kipu/types.ts",
+        "facilities": "/lib/kipu/facilities/*",
+        "reference": "/lib/kipu/ref/*"
+      }
+    }
+  }
+}

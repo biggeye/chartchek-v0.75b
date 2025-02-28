@@ -13,7 +13,8 @@ export const useStreaming = () => {
     cancelStream, 
     endStream, 
     setStreamError,
-    handleToolCall
+    handleToolCall,
+    setCurrentMessageId
   } = useStreamingStore();
 
   /**
@@ -39,9 +40,27 @@ export const useStreaming = () => {
         onTextDelta: (delta: string) => {
           appendStream(delta);
         },
+        onMessageCreated: (message: any) => {
+          console.log('[useStreaming] Message created with ID:', message.id);
+          if (message.id) {
+            setCurrentMessageId(message.id);
+          }
+        },
         onToolCall: (toolData: any) => {
           console.log('[useStreaming] Tool call received:', toolData);
           handleToolCall(toolData);
+        },
+        onToolCallCreated: (toolCall: any) => {
+          console.log('[useStreaming] Tool call created:', toolCall);
+          handleToolCall(toolCall);
+        },
+        onToolCallDelta: (toolCallDelta: any) => {
+          console.log('[useStreaming] Tool call delta:', toolCallDelta);
+          if (toolCallDelta.snapshot) {
+            handleToolCall(toolCallDelta.snapshot);
+          } else {
+            handleToolCall(toolCallDelta);
+          }
         },
         onEnd: () => {
           console.log('[useStreaming] Stream ended for thread:', threadId);
@@ -62,7 +81,7 @@ export const useStreaming = () => {
       setStreamError(errorMessage);
       return () => {}; // Return empty cancel function
     }
-  }, [startStream, appendStream, cancelStream, endStream, setStreamError, handleToolCall]);
+  }, [startStream, appendStream, cancelStream, endStream, setStreamError, handleToolCall, setCurrentMessageId]);
 
   return { 
     streamingContent: currentStreamContent, 

@@ -63,85 +63,144 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
   uploadFileToOpenAI: async (file: Document): Promise<string> => {
-    try {
-      if (!file.filePath?.trim()) {
-        throw new Error('Invalid document: missing file path');
+    // Maximum number of retries for file downloads
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second delay between retries
+    let retryCount = 0;
+    
+    while (retryCount <= MAX_RETRIES) {
+      try {
+        if (!file.filePath?.trim()) {
+          throw new Error('Invalid document: missing file path');
+        }
+    
+        // Get a signed URL for the file from Supabase Storage instead of a public URL
+        // Increase the expiration time to ensure we have enough time to download
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(file.filePath, 120); // 120 seconds expiration (doubled)
+    
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          console.error('[documentStore] Failed to get signed URL:', signedUrlError);
+          throw new Error('Failed to generate signed file URL');
+        }
+        
+        console.log(`[documentStore] Got signed URL for file: ${file.filePath} (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+    
+        // Add a delay before fetching to ensure the file is fully available
+        if (retryCount > 0) {
+          console.log(`[documentStore] Waiting ${RETRY_DELAY}ms before downloading file...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        }
+    
+        // Fetch the actual file blob from the signed URL.
+        const fileResponse = await fetch(signedUrlData.signedUrl);
+        if (!fileResponse.ok) {
+          console.error('[documentStore] Failed to fetch file from URL. Status:', fileResponse.status);
+          
+          // If we have more retries, try again
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            console.log(`[documentStore] Retrying file download (${retryCount}/${MAX_RETRIES})...`);
+            continue;
+          }
+          
+          throw new Error(`Failed to fetch file from URL: ${fileResponse.status} ${fileResponse.statusText}`);
+        }
+        
+        const blob = await fileResponse.blob();
+        console.log('[documentStore] Successfully fetched file blob. Size:', blob.size);
+        
+        // Validate the blob size to ensure we have a complete file
+        if (blob.size === 0) {
+          console.error('[documentStore] Downloaded blob is empty');
+          
+          // If we have more retries, try again
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            console.log(`[documentStore] Retrying file download (${retryCount}/${MAX_RETRIES})...`);
+            continue;
+          }
+          
+          throw new Error('Downloaded file is empty');
+        }
+    
+        // Create a new File object from the blob.
+        const fileToUpload = new File(
+          [blob], 
+          file.fileName || 'unknown_file', 
+          { type: file.fileType || 'application/octet-stream' }
+        );
+    
+        // Prepare the form data to send to OpenAI.
+        const formData = new FormData();
+        formData.append('file', fileToUpload); // Changed 'files' to 'file' to match API expectations
+        
+        console.log('[documentStore] Sending file to OpenAI API...', {
+          fileName: fileToUpload.name,
+          fileSize: fileToUpload.size,
+          fileType: fileToUpload.type
+        });
+        
+        // Send the file to OpenAI.
+        const uploadResponse = await fetch('/api/files', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('[documentStore] API response error:', uploadResponse.status, errorText);
+          
+          // If we have more retries and it looks like a temporary error, try again
+          if (retryCount < MAX_RETRIES && 
+              (uploadResponse.status === 500 || 
+               uploadResponse.status === 503 ||
+               errorText.includes('No file provided'))) {
+            retryCount++;
+            console.log(`[documentStore] Retrying file upload (${retryCount}/${MAX_RETRIES})...`);
+            continue;
+          }
+          
+          throw new Error(`API error (${uploadResponse.status}): ${errorText}`);
+        }
+        
+        const uploadData = await uploadResponse.json();
+        console.log('[documentStore] Uploaded file response:', uploadData);
+    
+        // The API now returns file_id directly instead of id for single file uploads
+        const openaiFileId = uploadData.file_id || '';
+        
+        if (!openaiFileId) {
+          throw new Error('Failed to get file ID from OpenAI upload response');
+        }
+    
+        // Update the document record in Supabase with the new openai_file_id.
+        const { error } = await supabase.from('documents').update({
+          openai_file_id: openaiFileId,
+          updated_at: new Date().toISOString()
+        }).eq('document_id', file.document_id);
+    
+        if (error) throw error;
+        return openaiFileId;
+        
+      } catch (error) {
+        // Only throw the error if we've exhausted all retries
+        if (retryCount >= MAX_RETRIES) {
+          console.error('[documentStore] Upload failed after all retries:', error);
+          throw error;
+        }
+        
+        // Otherwise, increment the retry counter and try again
+        retryCount++;
+        console.log(`[documentStore] Error during attempt ${retryCount}/${MAX_RETRIES + 1}:`, error);
+        console.log(`[documentStore] Retrying in ${RETRY_DELAY}ms...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       }
-  
-      // Get a signed URL for the file from Supabase Storage instead of a public URL
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(file.filePath, 60); // 60 seconds expiration
-  
-      if (signedUrlError || !signedUrlData?.signedUrl) {
-        console.error('[documentStore] Failed to get signed URL:', signedUrlError);
-        throw new Error('Failed to generate signed file URL');
-      }
-      
-      console.log('[documentStore] Got signed URL for file:', file.filePath);
-  
-      // Fetch the actual file blob from the signed URL.
-      const fileResponse = await fetch(signedUrlData.signedUrl);
-      if (!fileResponse.ok) {
-        console.error('[documentStore] Failed to fetch file from URL. Status:', fileResponse.status);
-        throw new Error(`Failed to fetch file from URL: ${fileResponse.status} ${fileResponse.statusText}`);
-      }
-      
-      const blob = await fileResponse.blob();
-      console.log('[documentStore] Successfully fetched file blob. Size:', blob.size);
-  
-      // Create a new File object from the blob.
-      const fileToUpload = new File(
-        [blob], 
-        file.fileName || 'unknown_file', 
-        { type: file.fileType || 'application/octet-stream' }
-      );
-  
-      // Prepare the form data to send to OpenAI.
-      const formData = new FormData();
-      formData.append('files', fileToUpload);
-      formData.append('purpose', 'assistants');
-      
-      // Since the API route also requires a thread_id, create a temporary one
-      // or use a default one for document uploads
-      formData.append('thread_id', 'temp-thread-for-document-upload');
-
-      console.log('[documentStore] Sending file to OpenAI API...');
-      
-      // Send the file to OpenAI.
-      const uploadResponse = await fetch('/api/files', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error('[documentStore] API response error:', uploadResponse.status, errorText);
-        throw new Error(`API error (${uploadResponse.status}): ${errorText}`);
-      }
-      
-      const uploadData = await uploadResponse.json();
-      console.log('[documentStore] Uploaded file response:', uploadData);
-  
-      // The API now returns file_id directly instead of id for single file uploads
-      const openaiFileId = uploadData.file_id || '';
-      
-      if (!openaiFileId) {
-        throw new Error('Failed to get file ID from OpenAI upload response');
-      }
-  
-      // Update the document record in Supabase with the new openai_file_id.
-      const { error } = await supabase.from('documents').update({
-        openai_file_id: openaiFileId,
-        updated_at: new Date().toISOString()
-      }).eq('document_id', file.document_id);
-  
-      if (error) throw error;
-      return openaiFileId;
-    } catch (error) {
-      console.error('[documentStore] Upload failed:', error);
-      throw error;
     }
+    
+    // This should never be reached due to the checks above
+    throw new Error('Failed to upload file to OpenAI after all retries');
   },
   
   getFileQueue: () => {

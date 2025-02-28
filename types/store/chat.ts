@@ -17,6 +17,25 @@ export interface UserChatMessage {
   attachments?: ChatMessageAttachment[];
 }
 
+/**
+ * Response object for checking the status of a run
+ */
+export interface RunStatusResponse {
+  isActive: boolean;
+  status?: string;
+  requiresAction?: boolean;
+  requiredAction?: {
+    type: string;
+    toolCalls?: any[];
+  };
+  runId?: string; // Add the runId for tool output submissions
+}
+
+export interface SendMessageResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface ChatStoreState {
   // --- CORE STATE ---
   currentThread: Thread | null;
@@ -24,6 +43,7 @@ export interface ChatStoreState {
   transientFileQueue: Document[];
   isLoading: boolean;
   error: string | null;
+  activeRunStatus: RunStatusResponse | null;
 
   // --- THREAD MANAGEMENT ---
   createThread: () => Promise<string>;
@@ -33,12 +53,18 @@ export interface ChatStoreState {
   setCurrentThread: (thread: Thread | null) => void;
 
   // --- MESSAGE MANAGEMENT ---
-  sendMessage: (assistantId: string,threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<void>;
+  sendMessage: (assistantId: string,threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<SendMessageResult>;
   fetchCurrentMessages: (threadId: string) => Promise<ChatMessage[]>;
-  addAssistantMessage: (content: any) => Promise<string>;
+  addAssistantMessage: (content: any, messageId: string) => Promise<string>;
   setCurrentMessages: (messages: ChatMessage[]) => void;
   addAssistantIdToThread?: (assistantId: string, threadId: string) => Promise<void>;
-
+  subscribeToRealtimeMessages: (threadId: string) => () => void;
+  
+  // --- RUN MANAGEMENT ---
+  checkActiveRun: (threadId: string) => Promise<RunStatusResponse>;
+  updateActiveRunStatus: (status: RunStatusResponse | null) => void;
+  getLatestRun: (threadId: string) => Promise<import('../api/openai').Run | null>;
+  
   // --- FILE / DOCUMENT MANAGEMENT ---
   addFileToQueue: (doc: Document) => void;
   removeFileFromQueue: (doc: Document) => void;
@@ -48,7 +74,4 @@ export interface ChatStoreState {
   // --- USER / ERROR MANAGEMENT ---
   setCurrentAssistantId: (assistantId: string) => void;
   setError: (error: string | null) => void;
-
-  // --- REALTIME SUBSCRIPTIONS (OPTIONAL) ---
-  subscribeToRealtimeMessages?: (threadId: string) => () => void;
 }

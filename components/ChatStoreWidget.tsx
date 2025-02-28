@@ -1,10 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useChatStore } from '@/store/chatStore';
+import { useStreamingStore } from '@/store/streamingStore';
 import { ScrollArea } from './ui/scroll-area';
 
 const ChatStoreWidget: React.FC = () => {
   const { fetchFileNames } = useChatStore();
   const chatState = useChatStore.getState();
+  const streamingState = useStreamingStore.getState();
+
+  const streamingActive = streamingState.isStreamingActive;
+
   const [logs, setLogs] = useState<string[]>([]);
   const [filenames, setFilenames] = useState<string[]>([]);
   const prevStateRef = useRef(chatState);
@@ -13,7 +18,8 @@ const ChatStoreWidget: React.FC = () => {
   const vectorStoreId = chatState.currentThread?.tool_resources?.file_search?.vector_store_ids?.[0];
   const threadTitles = chatState.historicalThreads.map((t) => t.title);
   const threadIds = chatState.historicalThreads.map((t) => t.thread_id);
-
+  const activeRunStatus = useChatStore.getState().activeRunStatus;
+  
   useEffect(() => {
     // Subscribe to chatStore updates and log changes
     const unsubscribe = useChatStore.subscribe((newState) => {
@@ -69,10 +75,13 @@ const ChatStoreWidget: React.FC = () => {
       <h4 style={{ margin: '0 0 10px 0' }}>current:  {currentThreadTitle ?? currentThreadId}</h4>
       <h6 style={{ margin: '0 0 10px 0' }}>threads:  {threadIds[0]}</h6>
       <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-        Vector Store ID: {vectorStoreId}
+        {streamingActive ? 'Streaming Active' : 'Streaming Inactive'}
+        Run Status: {activeRunStatus?.isActive ? 'Active' : 'Inactive'}
+        
       </pre>
       {vectorStoreId && filenames.length > 0 && (
         <div style={{ fontSize: '12px', whiteSpace: 'pre-wrap', marginTop: '5px' }}>
+           Vector Store ID: {vectorStoreId}
           File Names: {filenames.join(', ')}
         </div>
       )}

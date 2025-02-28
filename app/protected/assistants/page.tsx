@@ -14,7 +14,7 @@ const AssistantCard = ({ assistant }: { assistant: Assistant }) => {
     <li className="flex flex-col py-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-900">{assistant.name}</p>
-        <Button variant="default" className="inline-flex items-center gap-x-1.5 text-sm font-semibold">
+        <Button color="light" className="inline-flex items-center gap-x-1.5 text-sm font-semibold">
           <PlusIcon aria-hidden="true" className="h-5 w-5 text-gray-400" />
           Create <span className="sr-only">{assistant.name}</span>
         </Button>

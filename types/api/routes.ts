@@ -111,6 +111,53 @@ export interface RunCreateResponse {
   run: Run
 }
 
+export interface RunListRequest {
+  thread_id: string
+  limit?: number
+  order?: 'asc' | 'desc'
+  after?: string
+  before?: string
+}
+
+export interface RunListResponse {
+  object: string
+  data: Run[]
+}
+
+export interface RunRetrieveRequest {
+  thread_id: string
+  run_id: string
+}
+
+export interface RunRetrieveResponse {
+  run: Run
+}
+
+export interface ToolOutput {
+  tool_call_id: string
+  output: string
+}
+
+export interface RunSubmitToolOutputsRequest {
+  thread_id: string
+  run_id: string
+  tool_outputs: ToolOutput[]
+  stream?: boolean
+}
+
+export interface RunSubmitToolOutputsResponse {
+  run: Run
+}
+
+export interface RunCancelRequest {
+  thread_id: string
+  run_id: string
+}
+
+export interface RunCancelResponse {
+  run: Run
+}
+
 export interface RunStreamEvent {
   type: 'thread.message.created' | 'thread.message.delta' | 'thread.message.completed'
   data: {
@@ -150,5 +197,10 @@ export interface ApiRoutes {
   '/api/thread/message': ApiRoute<ThreadMessageRequest, ThreadMessageResponse>
   '/api/thread/message/attachment': ApiRoute<ThreadMessageAttachmentRequest, ThreadMessageAttachmentResponse>
   '/api/file/upload': ApiRoute<FileUploadRequest, FileUploadResponse>
+  '/api/thread/run/create': ApiRoute<RunCreateRequest, RunCreateResponse>
+  '/api/thread/run/list': ApiRoute<RunListRequest, RunListResponse>
+  '/api/thread/run/retrieve': ApiRoute<RunRetrieveRequest, RunRetrieveResponse>
+  '/api/thread/run/submit-tool-outputs': ApiRoute<RunSubmitToolOutputsRequest, RunSubmitToolOutputsResponse>
+  '/api/thread/run/cancel': ApiRoute<RunCancelRequest, RunCancelResponse>
   '/api/thread/run/stream': ApiRoute<RunCreateRequest, RunStreamEvent>
 }

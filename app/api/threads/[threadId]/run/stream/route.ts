@@ -3,6 +3,13 @@ import { createServer } from "@/utils/supabase/server";
 import { openai as awaitOpenai } from '@/utils/openai';
 import { NextRequest } from 'next/server';
 
+// Define interface for Text object from OpenAI
+interface OpenAIText {
+  id?: string;
+  value: string;
+  [key: string]: any; // Allow for other properties
+}
+
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
@@ -63,11 +70,20 @@ export async function POST(req: NextRequest) {
           });
 
           // Text event: textCreated
-          run.on('textCreated', (text) => {
+          run.on('textCreated', (text: OpenAIText) => {
             controller.enqueue(`data: ${JSON.stringify({
               type: 'textCreated',
               data: text
             })}\n\n`);
+            
+            // Also emit a messageCreated event with the message ID
+            if (text.id) {
+              console.log('[API]', new Date().toISOString(), 'Message created with ID:', text.id);
+              controller.enqueue(`data: ${JSON.stringify({
+                type: 'messageCreated',
+                data: { id: text.id, thread_id: threadId }
+              })}\n\n`);
+            }
           });
 
           // Text event: textDelta

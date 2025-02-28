@@ -234,11 +234,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          <main className="w-full overflow-auto">
-            <div className="py-6 px-4">
+          <main className="w-full h-full">
               {children}
-   
-            </div>
           </main>
 
           {/* Right sidebar for thread list, etc. (conditionally shown) */}

@@ -40,15 +40,18 @@ export interface OpenAIFile {
   }
   
   export interface OpenAIStreamingEvent {
-    type: 'textDelta' | 'toolCall' | 'end' | 'error';
+    type: 'textDelta' | 'textCreated' | 'messageCreated' | 'toolCall' | 'toolCallCreated' | 'toolCallDelta' | 'stepCreated' | 'codeInput' | 'codeOutput' | 'end' | 'error';
     data: any;
   }
   
   export interface OpenAIStreamingResponse {
-    onTextDelta: (delta: string) => void;
-    onToolCall?: (toolData: any) => void;
-    onEnd: () => void;
-    onError?: (error: any) => void;
+    onTextDelta?: (textDelta: string) => void;
+    onMessageCreated?: (message: any) => void;
+    onToolCall?: (toolCall: any) => void;
+    onToolCallCreated?: (toolCall: any) => void;
+    onToolCallDelta?: (toolCallDelta: any) => void;
+    onEnd?: () => void;
+    onError?: (error: Error) => void;
   }
 
 // Added types to replace old_openai imports

@@ -1,0 +1,430 @@
+{
+  "facility_id": "facility_2",
+  "name": "Florida Recovery Institute",
+  "address": "789 Recovery Drive, Miami, FL 33101",
+  "phone": "(305) 555-0001",
+  "email": "info@floridari.com",
+  "created_at": "2023-02-01T00:00:00Z",
+  "data": {
+    "patients": [
+      {
+        "id": "patient_101",
+        "first_name": "Michael",
+        "last_name": "Wilson",
+        "dob": "1982-03-12",
+        "gender": "male",
+        "contact": {
+          "phone": "(305) 555-1234",
+          "email": "michael.wilson@example.com"
+        },
+        "address": "789 Recovery Drive, Miami, FL 33101",
+        "created_at": "2023-02-01T08:00:00Z",
+        "updated_at": "2023-02-05T10:00:00Z",
+        "patient_colors_map": {
+          "color": "blue"
+        },
+        "restricted_patients_map": {}
+      },
+      {
+        "id": "patient_102",
+        "first_name": "Sarah",
+        "last_name": "Brown",
+        "dob": "1990-07-25",
+        "gender": "female",
+        "contact": {
+          "phone": "(305) 555-2345",
+          "email": "sarah.brown@example.com"
+        },
+        "address": "789 Recovery Drive, Miami, FL 33101",
+        "created_at": "2023-02-02T09:00:00Z",
+        "updated_at": "2023-02-06T11:00:00Z",
+        "patient_colors_map": {
+          "color": "green"
+        },
+        "restricted_patients_map": {}
+      },
+      {
+        "id": "patient_103",
+        "first_name": "David",
+        "last_name": "Taylor",
+        "dob": "1978-11-30",
+        "gender": "male",
+        "contact": {
+          "phone": "(305) 555-3456",
+          "email": "david.taylor@example.com"
+        },
+        "address": "789 Recovery Drive, Miami, FL 33101",
+        "created_at": "2023-02-03T10:00:00Z",
+        "updated_at": "2023-02-07T12:00:00Z",
+        "patient_colors_map": {
+          "color": "red"
+        },
+        "restricted_patients_map": {}
+      }
+    ],
+    "appointments": [
+      {
+        "id": "appointment_101",
+        "patient_id": "patient_101",
+        "provider_id": "provider_101",
+        "appointment_time": "2023-02-07T09:00:00Z",
+        "status": "admitted",
+        "created_at": "2023-02-06T08:00:00Z",
+        "appointments_map": {}
+      },
+      {
+        "id": "appointment_102",
+        "patient_id": "patient_102",
+        "provider_id": "provider_102",
+        "appointment_time": "2023-02-07T09:15:00Z",
+        "status": "admitted",
+        "created_at": "2023-02-06T08:05:00Z",
+        "appointments_map": {}
+      },
+      {
+        "id": "appointment_103",
+        "patient_id": "patient_103",
+        "provider_id": "provider_101",
+        "appointment_time": "2023-02-07T09:30:00Z",
+        "status": "admitted",
+        "created_at": "2023-02-06T08:10:00Z",
+        "appointments_map": {}
+      }
+    ],
+    "providers": [
+      {
+        "id": "provider_101",
+        "name": "Dr. Rodriguez",
+        "specialty": "Addiction Medicine",
+        "contact": {
+          "phone": "(305) 555-1010",
+          "email": "dr.rodriguez@floridari.com"
+        },
+        "created_at": "2023-02-01T07:00:00Z",
+        "roles_map": {}
+      },
+      {
+        "id": "provider_102",
+        "name": "Nurse Thompson",
+        "specialty": "Nursing",
+        "contact": {
+          "phone": "(305) 555-2020",
+          "email": "nurse.thompson@floridari.com"
+        },
+        "created_at": "2023-02-01T07:30:00Z",
+        "roles_map": {}
+      }
+    ],
+    "insurances": [
+      {
+        "id": "insurance_101",
+        "patient_id": "patient_101",
+        "insurance_company": "Florida Blue",
+        "policy_number": "FLB-001",
+        "origin_id": "origin_101",
+        "created_at": "2023-02-06T10:00:00Z"
+      },
+      {
+        "id": "insurance_102",
+        "patient_id": "patient_102",
+        "insurance_company": "Florida Blue",
+        "policy_number": "FLB-002",
+        "origin_id": "origin_101",
+        "created_at": "2023-02-06T10:05:00Z"
+      },
+      {
+        "id": "insurance_103",
+        "patient_id": "patient_103",
+        "insurance_company": "Florida Blue",
+        "policy_number": "FLB-003",
+        "origin_id": "origin_101",
+        "created_at": "2023-02-06T10:10:00Z"
+      }
+    ],
+    "evaluations": [
+      {
+        "id": "evaluation_101",
+        "patient_id": "patient_101",
+        "evaluation_type": "substance abuse assessment",
+        "notes": "Patient exhibits signs of alcohol dependency. Recommend residential treatment.",
+        "created_at": "2023-02-07T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_102",
+        "patient_id": "patient_102",
+        "evaluation_type": "substance abuse assessment",
+        "notes": "Patient reports opioid use. Consult with addiction specialist.",
+        "created_at": "2023-02-07T10:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_103",
+        "patient_id": "patient_103",
+        "evaluation_type": "substance abuse assessment",
+        "notes": "Patient shows signs of stimulant abuse. Monitor for withdrawal symptoms.",
+        "created_at": "2023-02-07T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      }
+    ],
+    "contacts": [
+      {
+        "id": "contact_101",
+        "patient_id": "patient_101",
+        "type": "emergency",
+        "name": "Emily Wilson",
+        "phone": "(305) 555-1111",
+        "relationship": "spouse",
+        "contact_person_object": {}
+      },
+      {
+        "id": "contact_102",
+        "patient_id": "patient_102",
+        "type": "emergency",
+        "name": "Mark Brown",
+        "phone": "(305) 555-2222",
+        "relationship": "sibling",
+        "contact_person_object": {}
+      },
+      {
+        "id": "contact_103",
+        "patient_id": "patient_103",
+        "type": "emergency",
+        "name": "Lisa Taylor",
+        "phone": "(305) 555-3333",
+        "relationship": "spouse",
+        "contact_person_object": {}
+      }
+    ],
+    "vital_signs": [
+      {
+        "id": "vital_sign_101",
+        "patient_id": "patient_101",
+        "type": "blood_pressure",
+        "value": "130/85",
+        "timestamp": "2023-02-07T09:30:00Z",
+        "vital_sign_object": {}
+      },
+      {
+        "id": "vital_sign_102",
+        "patient_id": "patient_102",
+        "type": "blood_pressure",
+        "value": "125/80",
+        "timestamp": "2023-02-07T09:35:00Z",
+        "vital_sign_object": {}
+      },
+      {
+        "id": "vital_sign_103",
+        "patient_id": "patient_103",
+        "type": "blood_pressure",
+        "value": "135/88",
+        "timestamp": "2023-02-07T09:40:00Z",
+        "vital_sign_object": {}
+      }
+    ],
+    "locations": [
+      {
+        "id": "location_101",
+        "name": "Florida Recovery Institute",
+        "address": "789 Recovery Drive, Miami, FL 33101",
+        "phone": "(305) 555-0001",
+        "locations_map": {}
+      }
+    ],
+    "users": [
+      {
+        "id": "user_101",
+        "username": "recovery_admin",
+        "email": "admin@floridari.com",
+        "roles": [
+          "admin"
+        ],
+        "created_at": "2023-02-01T09:00:00Z",
+        "main_user_object": {}
+      }
+    ],
+    "roles": [
+      {
+        "id": "role_101",
+        "name": "Admin",
+        "description": "Administrator Role",
+        "role_object": {}
+      },
+      {
+        "id": "role_102",
+        "name": "Provider",
+        "description": "Medical Provider Role",
+        "role_object": {}
+      },
+      {
+        "id": "role_103",
+        "name": "Counselor",
+        "description": "Counselor Role",
+        "role_object": {}
+      }
+    ],
+    "consent_form_records": [
+      {
+        "id": "consent_101",
+        "patient_id": "patient_101",
+        "form_type": "treatment consent",
+        "signed_at": "2023-02-07T08:00:00Z",
+        "created_at": "2023-02-07T08:00:00Z",
+        "consent_form_record_base": {}
+      },
+      {
+        "id": "consent_102",
+        "patient_id": "patient_102",
+        "form_type": "treatment consent",
+        "signed_at": "2023-02-07T08:05:00Z",
+        "created_at": "2023-02-07T08:05:00Z",
+        "consent_form_record_base": {}
+      },
+      {
+        "id": "consent_103",
+        "patient_id": "patient_103",
+        "form_type": "treatment consent",
+        "signed_at": "2023-02-07T08:10:00Z",
+        "created_at": "2023-02-07T08:10:00Z",
+        "consent_form_record_base": {}
+      }
+    ],
+    "allergens": [
+      {
+        "id": "allergen_101",
+        "name": "Sulfa Drugs",
+        "allergen_object": {}
+      },
+      {
+        "id": "allergen_102",
+        "name": "NSAIDs",
+        "allergen_object": {}
+      }
+    ],
+    "allergies": [
+      {
+        "id": "allergy_101",
+        "patient_id": "patient_101",
+        "allergen_id": "allergen_101",
+        "reaction": "severe rash",
+        "created_at": "2023-02-07T10:00:00Z"
+      },
+      {
+        "id": "allergy_102",
+        "patient_id": "patient_102",
+        "allergen_id": "allergen_102",
+        "reaction": "stomach upset",
+        "created_at": "2023-02-07T10:15:00Z"
+      }
+    ],
+    "glucose_logs": [
+      {
+        "id": "glucose_log_101",
+        "patient_id": "patient_101",
+        "level": 105,
+        "timestamp": "2023-02-07T09:15:00Z",
+        "glucose_log_object": {}
+      },
+      {
+        "id": "glucose_log_102",
+        "patient_id": "patient_102",
+        "level": 98,
+        "timestamp": "2023-02-07T09:20:00Z",
+        "glucose_log_object": {}
+      },
+      {
+        "id": "glucose_log_103",
+        "patient_id": "patient_103",
+        "level": 110,
+        "timestamp": "2023-02-07T09:25:00Z",
+        "glucose_log_object": {}
+      }
+    ],
+    "group_sessions": [
+      {
+        "id": "group_session_101",
+        "patient_id": "patient_101",
+        "session_name": "Group Therapy: Relapse Prevention",
+        "session_date": "2023-02-07T14:00:00Z",
+        "scheduler_appointment_object": {}
+      },
+      {
+        "id": "group_session_102",
+        "patient_id": "patient_102",
+        "session_name": "Group Therapy: Family Support",
+        "session_date": "2023-02-07T16:00:00Z",
+        "scheduler_appointment_object": {}
+      }
+    ],
+    "patient_diets": [
+      {
+        "id": "diet_101",
+        "patient_id": "patient_101",
+        "diet_type": "recovery diet",
+        "notes": "High protein, balanced nutrition."
+      },
+      {
+        "id": "diet_102",
+        "patient_id": "patient_102",
+        "diet_type": "recovery diet",
+        "notes": "Low sodium, high fiber."
+      },
+      {
+        "id": "diet_103",
+        "patient_id": "patient_103",
+        "diet_type": "recovery diet",
+        "notes": "Gluten-free, balanced nutrition."
+      }
+    ],
+    "patient_orders": [
+      {
+        "id": "order_101",
+        "patient_id": "patient_101",
+        "order_type": "lab test",
+        "details": "Toxicology screening",
+        "created_at": "2023-02-07T08:30:00Z",
+        "patient_order_object": {}
+      },
+      {
+        "id": "order_102",
+        "patient_id": "patient_102",
+        "order_type": "lab test",
+        "details": "Complete metabolic panel",
+        "created_at": "2023-02-07T08:35:00Z",
+        "patient_order_object": {}
+      },
+      {
+        "id": "order_103",
+        "patient_id": "patient_103",
+        "order_type": "lab test",
+        "details": "Hepatic function panel",
+        "created_at": "2023-02-07T08:40:00Z",
+        "patient_order_object": {}
+      }
+    ],
+    "program_history": [
+      {
+        "id": "program_101",
+        "patient_id": "patient_101",
+        "program": "Residential Treatment",
+        "start_date": "2023-02-07",
+        "end_date": "2023-03-07"
+      },
+      {
+        "id": "program_102",
+        "patient_id": "patient_102",
+        "program": "Intensive Outpatient",
+        "start_date": "2023-02-07",
+        "end_date": "2023-04-07"
+      },
+      {
+        "id": "program_103",
+        "patient_id": "patient_103",
+        "program": "Partial Hospitalization",
+        "start_date": "2023-02-07",
+        "end_date": "2023-03-21"
+      }
+    ],
+    "vaults": []
+  }
+}

@@ -15,13 +15,31 @@ export async function POST(req: Request) {
         }
 
         const formData = await req.formData();
-        const file = formData.get('file') as File;
+        
+        // First try 'file', then fall back to 'files' for backward compatibility
+        let file = formData.get('file') as File;
+        if (!file) {
+            file = formData.get('files') as File;
+        }
 
         if (!file) {
+            console.error('[FileUpload] No file provided in form data. Available fields:', Array.from(formData.keys()));
             return new Response("No file provided", { status: 400 });
         }
+        
+        console.log('[FileUpload] Processing file:', {
+            name: file.name,
+            type: file.type,
+            size: file.size
+        });
        
         try {
+            // Validate file is not empty
+            if (file.size === 0) {
+                console.error('[FileUpload] File is empty');
+                return new Response("File is empty", { status: 400 });
+            }
+            
             const fileUpload = await openai.files.create({
                 file: file,
                 purpose: "assistants",
@@ -33,10 +51,10 @@ export async function POST(req: Request) {
             }), { status: 200 });
         } catch (uploadError) {
             console.error('[FileUpload] Error uploading file to OpenAI:', uploadError);
-            return new Response("Failed to upload file to OpenAI", { status: 500 });
+            return new Response("Failed to upload file to OpenAI: " + (uploadError instanceof Error ? uploadError.message : String(uploadError)), { status: 500 });
         }
     } catch (error) {
         console.error('[FileUpload] Error:', error);
-        return new Response("Internal Server Error", { status: 500 });
+        return new Response("Internal Server Error: " + (error instanceof Error ? error.message : String(error)), { status: 500 });
     }
 }

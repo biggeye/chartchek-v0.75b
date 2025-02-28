@@ -1,0 +1,1258 @@
+{
+    "patient_colors_map": {
+      "type": "array",
+      "items": {
+        "patient_colors_object": {
+          "patient_color_id": "integer",
+          "patient_color_name": "string"
+        }
+      }
+    },
+    "consent_form_record_base": {
+      "id": "integer",
+      "patient_casefile_id": {
+        "type": "casefilestring",
+        "format": "$casefile",
+        "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "consent_form_id": "integer",
+      "name": "string",
+      "complete": "boolean",
+      "expires": "boolean",
+      "expired": "boolean",
+      "expiration_date": {
+        "type": "nullable_datetimestring",
+        "format": "$datetime",
+        "nullable": true
+      }
+    },
+    "rfc822": {
+      "type": "string",
+      "format": "$rfc822",
+      "pattern": "^[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
+      "minLength": 29,
+      "maxLength": 29
+    },
+    "main_user_object": {},
+    "casefile": {
+      "type": "string",
+      "format": "$casefile",
+      "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "restricted_patients_map": {
+      "type": "array",
+      "items": {
+        "restricted_patient_object": {
+          "first_name": "string",
+          "last_name": "string",
+          "casefile_id": {
+            "type": "casefilestring",
+            "format": "$casefile",
+            "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        }
+      }
+    },
+    "days_of_the_week": {
+      "sun": "string",
+      "mon": "string",
+      "tue": "string",
+      "wed": "string",
+      "thu": "string",
+      "fri": "string",
+      "sat": "string"
+    },
+    "glucose_log_object": {
+      "id": "integer",
+      "evaluation_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "intervention": "[...]",
+      "reading": "number",
+      "note": "string",
+      "type_of_check": "string",
+      "patient_id": "integer",
+      "user_name": "string"
+    },
+    "contact_person_object": {
+      "id": "integer",
+      "first_name": "string",
+      "last_name": "string",
+      "phone": "string",
+      "mobile": "string",
+      "fax": "string",
+      "email": "string",
+      "contact_id": "integer",
+      "notes": "string",
+      "department": "string",
+      "individual_ext_id": "string",
+      "kipu_crm_contact_id": "string"
+    },
+    "selected_billing_code": {
+      "HCode": "string",
+      "CCode": "string",
+      "RCode": "string",
+      "Custom": "string"
+    },
+    "orthostatic_vital_sign_object": {
+      "id": "integer",
+      "interval_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "blood_pressure_systolic_sitting": "integer",
+      "blood_pressure_diastolic_sitting": "integer",
+      "blood_pressure_systolic_standing": "integer",
+      "blood_pressure_diastolic_standing": "integer",
+      "blood_pressure_systolic_lying": "integer",
+      "blood_pressure_diastolic_lying": "integer",
+      "pulse_standing": "integer",
+      "pulse_lying": "integer",
+      "pulse_sitting": "integer",
+      "temperature": "number",
+      "respirations": "integer",
+      "o2_saturation": "integer",
+      "patient_id": "integer",
+      "comments": "string",
+      "user_name": "string"
+    },
+    "appointments_map": {
+      "type": "array",
+      "items": {
+        "id": "integer",
+        "start_time": {
+          "type": "string",
+          "format": "$date-time"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "$date-time"
+        },
+        "subject": "string",
+        "appointment_type": "string",
+        "status": "string",
+        "billable": "boolean",
+        "all_day": "boolean",
+        "recurring": "boolean",
+        "upcoming_dates": "[...]"
+      }
+    },
+    "roles_map": {
+      "type": "array",
+      "items": {
+        "role_object": {
+          "id": {
+            "type": "uuidstring",
+            "format": "$uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "name": "string"
+        }
+      }
+    },
+    "cow_object": {},
+    "accepted_response": {
+      "status": {
+        "type": "string",
+        "enum": [1]
+      }
+    },
+    "with_locations": {
+      "locations": [
+        {
+          "id": "integer",
+          "name": "string"
+        }
+      ]
+    },
+    "role_object": {
+      "id": {
+        "type": "uuidstring",
+        "format": "$uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "minLength": 36,
+        "maxLength": 36
+      },
+      "name": "string"
+    },
+    "patient_tag_object": {
+      "id": "integer",
+      "name": "string",
+      "color": "string"
+    },
+    "patient_order_object": {
+      "id": "integer",
+      "name": "string",
+      "medication": "string",
+      "route": "string",
+      "dosage_form": "string",
+      "dispense_amount": "string",
+      "refills": "integer",
+      "justification": "string",
+      "no_substitutions": "boolean",
+      "warnings": "string",
+      "note": "string",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_start_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_end_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "user_name": "string",
+      "user_id": "integer",
+      "discontinued": "boolean",
+      "discontinue_reason": "string",
+      "discontinued_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "discontinued_user_name": "string",
+      "discontinued_user_id": "integer",
+      "discontinue_physician_id": "integer",
+      "original_patient_order_id": "integer",
+      "instructed_by": "string",
+      "ordered_by": "string",
+      "instructed_via": "string",
+      "medical_necessity_note": "string",
+      "prn": "boolean",
+      "erx": "boolean",
+      "patient_id": "integer",
+      "canceled": "boolean",
+      "canceled_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "diagnosis_code": "string",
+      "status": "string",
+      "interaction_check_error": "string",
+      "is_erx": "boolean",
+      "is_prn": "boolean",
+      "nurse_reviewed_by": "string",
+      "nurse_reviewed_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "schedule_prn": "boolean",
+      "fdb_data": "[...]"
+    },
+    "scheduler_appointment_object": {
+      "id": "integer",
+      "from": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "notes": "string",
+      "to": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "group_session": "boolean",
+      "telehealth_session": "boolean",
+      "recurring": "boolean",
+      "recurrence_end_date": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "master_appointment_id": "integer",
+      "group_session_occurrence_id": "integer",
+      "appointment_type_id": "integer",
+      "location": { "...": "..." },
+      "resources": "[...]",
+      "patients": "[...]",
+      "group_session_details": { "...": "..." }
+    },
+    "vital_sign_object": {
+      "id": "integer",
+      "interval_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "blood_pressure_systolic": "integer",
+      "blood_pressure_diastolic": "integer",
+      "temperature": "number",
+      "pulse": "integer",
+      "respirations": "integer",
+      "o2_saturation": "integer",
+      "patient_id": "integer",
+      "user_name": "string"
+    },
+    "with_restricted_patients": {
+      "restricted_patients": [
+        {
+          "first_name": "string",
+          "last_name": "string",
+          "casefile_id": {
+            "type": "casefilestring",
+            "format": "$casefile",
+            "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        }
+      ]
+    },
+    "pagination_object": {
+      "current_page": "string",
+      "total_pages": "string",
+      "records_per_page": "string",
+      "total_records": "string"
+    },
+    "patient_colors_object": {
+      "patient_color_id": "integer",
+      "patient_color_name": "string"
+    },
+    "settings_map": {
+      "type": "array",
+      "items": {
+        "settings_object": {
+          "Id": "integer",
+          "Code": "string",
+          "Name": "string"
+        }
+      }
+    },
+    "delivered_response": {
+      "status": {
+        "type": "string",
+        "enum": [1]
+      }
+    },
+    "share_response": {
+      "status": {
+        "type": "string",
+        "enum": [2]
+      }
+    },
+    "users_map": {
+      "type": "array",
+      "items": {
+        "user_object": {
+          "id": {
+            "type": "uuidstring",
+            "format": "$uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "first_name": "string",
+          "middle_name": "string",
+          "last_name": "string",
+          "title": "string",
+          "email": "string",
+          "mobile": "string",
+          "home_phone": "string"
+        }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "$date-time"
+    },
+    "patient_basic_info_object": {
+      "casefile_id": {
+        "type": "string",
+        "format": "$casefile",
+        "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "first_name": "string",
+      "middle_name": "string",
+      "last_name": "string",
+      "dob": "string",
+      "admission_date": "string",
+      "discharge_date": "string",
+      "mr_number": "string"
+    },
+    "patient_order_with_schedules_object": {
+      "id": "integer",
+      "name": "string",
+      "medication": "string",
+      "route": "string",
+      "dosage_form": "string",
+      "dispense_amount": "string",
+      "refills": "integer",
+      "justification": "string",
+      "no_substitutions": "boolean",
+      "warnings": "string",
+      "note": "string",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_start_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_end_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "user_name": "string",
+      "user_id": "integer",
+      "discontinued": "boolean",
+      "discontinue_reason": "string",
+      "discontinued_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "discontinued_user_name": "string",
+      "discontinued_user_id": "integer",
+      "discontinue_physician_id": "integer",
+      "original_patient_order_id": "integer",
+      "instructed_by": "string",
+      "ordered_by": "string",
+      "instructed_via": "string",
+      "medical_necessity_note": "string",
+      "prn": "boolean",
+      "erx": "boolean",
+      "patient_id": "integer",
+      "canceled": "boolean",
+      "canceled_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "diagnosis_code": "string",
+      "status": "string",
+      "interaction_check_error": "string",
+      "is_erx": "boolean",
+      "is_prn": "boolean",
+      "nurse_reviewed_by": "string",
+      "nurse_reviewed_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "schedule_prn": "boolean",
+      "fdb_data": "[...]",
+      "patient_order_items": "[...]"
+    },
+    "settings_object": {
+      "Id": "integer",
+      "Code": "string",
+      "Name": "string"
+    },
+    "patient_settings_map": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "patient_contact_type": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "ethnicity": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "gender_identity": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "insurance_plan_type": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "insurance_subscriber_relationship": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "insurance_type": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "marital_status": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "payment_method": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "pre_admission_status": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "race": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "referrer_name": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {
+            "patient_contact_relationship": {
+              "type": "array",
+              "items": {
+                "settings_object": {
+                  "Id": "integer",
+                  "Code": "string",
+                  "Name": "string"
+                }
+              }
+            }
+          },
+          {}
+        ]
+      }
+    },
+    "with_roles": {
+      "roles": {
+        "type": "array",
+        "items": {
+          "role_object": {
+            "id": {
+              "type": "uuidstring",
+              "format": "$uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "name": "string"
+          }
+        }
+      }
+    },
+    "patient_evaluation_item_base": {
+      "id": "integer",
+      "name": "string",
+      "evaluation_item_id": "integer",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "field_type": {
+        "type": "string",
+        "enum": [
+          "auto_complete",
+          "patient.admission_datetime",
+          "patient.allergies",
+          "patient.attendances",
+          "patient.bed",
+          "patient.bmi",
+          "patient.brought_in_medication",
+          "patient.diagnosis_code",
+          "patient.diagnosis_code_current",
+          "patient.diets",
+          "patient.discharge_datetime",
+          "patient.electronic_devices",
+          "patient.employer",
+          "patient.ethnicity",
+          "patient.height_weight",
+          "patient.height_weight_current",
+          "patient.level_of_care_clinical",
+          "patient.level_of_care_ur",
+          "patient.locker",
+          "patient.marital_status",
+          "patient.medication_current",
+          "patient.occupation",
+          "patient.recurring_forms",
+          "patient.vital_signs",
+          "patient.orthostatic_vitals",
+          "patient.ciwa_ar",
+          "patient.ciwa_b",
+          "patient.cows",
+          "patient.ciwa_ar_current",
+          "patient.ciwa_b_current",
+          "patient.cows_current",
+          "patient.vital_signs_current",
+          "patient.orthostatic_vital_signs_current",
+          "patient.glucose_log",
+          "patient.drug_of_choice",
+          "patient.toggle_mars_generation",
+          "treatment_plan_column_titles",
+          "treatment_plan_item",
+          "create_evaluation",
+          "image",
+          "image_with_canvas",
+          "matrix",
+          "timestamp",
+          "treatment_plan_master_plan",
+          "patient.discharge_type",
+          "treatment_plan_problem",
+          "problem_list",
+          "progress_note",
+          "golden_thread_tag",
+          "treatment_plan_goal",
+          "treatment_plan_objective",
+          "patient.anticipated_discharge_date",
+          "patient.discharge_medications",
+          "points_item",
+          "title",
+          "drop_down_list",
+          "string",
+          "check_box_first_value_none",
+          "text",
+          "radio_buttons",
+          "check_box",
+          "patient.medication_inventory",
+          "points_total",
+          "evaluation_start_and_end_time",
+          "evaluation_datetime",
+          "datestamp",
+          "evaluation_name",
+          "evaluation_date",
+          "evaluation_name_drop_down",
+          "formatted_text",
+          "conditional_question",
+          "care_team.Primary_Therapist",
+          "care_team.Case_Manager",
+          "care_team.Peer_Support_Specialist",
+          "care_team.Intake_Technician",
+          "care_team.Peer_Support_Specialist_Swing",
+          "care_team.Peer_Support_Specialist_Off_Day",
+          "care_team.Other_Case_Manager",
+          "care_team.Peer_Support",
+          "care_team.intake_specialist",
+          "care_team.Other_therapist",
+          "drop_down_list",
+          "evaluation_date",
+          "evaluation_datetime",
+          "evaluation_name",
+          "formatted_text",
+          "check_box",
+          "text",
+          "radio_buttons",
+          "title",
+          "string",
+          "points_item",
+          "points_total",
+          "matrix"
+        ]
+      },
+      "label": "string",
+      "optional": "boolean",
+      "divider_below": "boolean"
+    },
+    "consent_form_record_extended": {
+      "id": "integer",
+      "patient_casefile_id": {
+        "type": "casefilestring",
+        "format": "$casefile",
+        "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "consent_form_id": "integer",
+      "name": "string",
+      "complete": "boolean",
+      "expires": "boolean",
+      "expired": "boolean",
+      "expiration_date": {
+        "type": "nullable_datetimestring",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "oneOf": [
+        {
+          "error": "string"
+        },
+        {
+          "fields": {
+            "...": "..."
+          },
+          "content": {
+            "...": "..."
+          }
+        }
+      ]
+    },
+    "uuidstring": {
+      "type": "string",
+      "format": "$uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "patient_evaluation_field_type_enumstring": {
+      "type": "string",
+      "enum": [96]
+    },
+    "ciwa_b_object": {
+      "id": "integer",
+      "interval_label": "string",
+      "interval": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "irritable_label": "string",
+      "irritable": "integer",
+      "fatigued_label": "string",
+      "fatigued": "integer",
+      "tensed_label": "string",
+      "tensed": "integer",
+      "difficulty_concentrating_label": "string",
+      "difficulty_concentrating": "integer",
+      "loss_of_appetite_label": "string",
+      "loss_of_appetite": "integer",
+      "numbness_label": "string",
+      "numbness": "integer",
+      "heart_racing_label": "string",
+      "heart_racing": "integer",
+      "head_full_achy_label": "string",
+      "head_full_achy": "integer",
+      "muscle_ache_label": "string",
+      "muscle_ache": "integer",
+      "anxiety_label": "string",
+      "anxiety": "integer",
+      "upset_label": "string",
+      "upset": "integer",
+      "restful_sleep_label": "string",
+      "restful_sleep": "integer",
+      "weakness_label": "string",
+      "weakness": "integer",
+      "enough_sleep_label": "string",
+      "enough_sleep": "integer",
+      "visual_disturbances_label": "string",
+      "visual_disturbances": "integer",
+      "fearful_label": "string",
+      "fearful": "integer",
+      "possible_misfortunes_label": "string",
+      "possible_misfortunes": "integer",
+      "sweating_agitation_label": "string",
+      "sweating_agitation": "integer",
+      "tremors_label": "string",
+      "tremors": "integer",
+      "feel_palms_label": "string",
+      "feel_palms": "integer",
+      "score": "integer",
+      "patient_id": "integer",
+      "username": "string"
+    },
+    "user_object": {
+      "id": {
+        "type": "uuidstring",
+        "format": "$uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "minLength": 36,
+        "maxLength": 36
+      },
+      "first_name": "string",
+      "middle_name": "string",
+      "last_name": "string",
+      "title": "string",
+      "email": "string",
+      "mobile": "string",
+      "home_phone": "string"
+    },
+    "evaluation_item_object": {
+      "id": "integer",
+      "field_type": "string",
+      "name": "string",
+      "record_names": "string",
+      "column_names": "string",
+      "label": "string",
+      "enabled": "boolean",
+      "optional": "boolean",
+      "evaluation_id": "integer",
+      "default_value": "string",
+      "divider_below": "boolean",
+      "rule": "string",
+      "placeholder": "string",
+      "pre_populate_with_id": "integer",
+      "parent_item_id": "string",
+      "conditions": "string",
+      "label_width": "string",
+      "item_group": "string",
+      "show_string": "string",
+      "show_string_css": "string",
+      "matrix_default_records": "integer",
+      "css_style": "string",
+      "image": "string",
+      "skip_validations": "boolean"
+    },
+    "contact_object": {
+      "id": "integer",
+      "company_name": "string",
+      "address_street1": "string",
+      "address_street2": "string",
+      "address_city": "string",
+      "address_state": "string",
+      "address_zip": "string",
+      "company_phone": "string",
+      "company_website": "string",
+      "notes": "string",
+      "company_fax": "string",
+      "company_short_name": "string",
+      "contact_type": "string",
+      "contact_type_short_code": "string",
+      "contact_type_id": "integer",
+      "company_ext_id": "string",
+      "ext_username": "string",
+      "kipu_crm_rs_id": "string",
+      "contact_people": "[...]"
+    },
+    "full_user_object": {
+      "id": {
+        "type": "uuidstring",
+        "format": "$uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "minLength": 36,
+        "maxLength": 36
+      },
+      "first_name": "string",
+      "middle_name": "string",
+      "last_name": "string",
+      "title": "string",
+      "email": "string",
+      "mobile": "string",
+      "home_phone": "string",
+      "locations": "[...]",
+      "roles": "[...]",
+      "restricted_patients": "[...]"
+    },
+    "restricted_patient_object": {},
+    "evaluation_items_map": {
+      "type": "array",
+      "items": {
+        "evaluation_item_object": {
+          "id": "integer",
+          "field_type": "string",
+          "name": "string",
+          "record_names": "string",
+          "column_names": "string",
+          "label": "string",
+          "enabled": "boolean",
+          "optional": "boolean",
+          "evaluation_id": "integer",
+          "default_value": "string",
+          "divider_below": "boolean",
+          "rule": "string",
+          "placeholder": "string",
+          "pre_populate_with_id": "integer",
+          "parent_item_id": "string",
+          "conditions": "string",
+          "label_width": "string",
+          "item_group": "string",
+          "show_string": "string",
+          "show_string_css": "string",
+          "matrix_default_records": "integer",
+          "css_style": "string",
+          "image": "string",
+          "skip_validations": "boolean"
+        }
+      }
+    },
+    "error_response": {},
+    "patient_evaluation_item": {
+      "id": "integer",
+      "name": "string",
+      "evaluation_name": "string",
+      "evaluation_item_id": "integer",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "field_type": {
+        "type": "string",
+        "enum": [
+          "auto_complete",
+          "patient.admission_datetime",
+          "patient.allergies",
+          "patient.attendances",
+          "patient.bed",
+          "patient.bmi",
+          "patient.brought_in_medication",
+          "patient.diagnosis_code",
+          "patient.diagnosis_code_current",
+          "patient.diets",
+          "patient.discharge_datetime",
+          "patient.electronic_devices",
+          "patient.employer",
+          "patient.ethnicity",
+          "patient.height_weight",
+          "patient.height_weight_current",
+          "patient.level_of_care_clinical",
+          "patient.level_of_care_ur",
+          "patient.locker",
+          "patient.marital_status",
+          "patient.medication_current",
+          "patient.occupation",
+          "patient.recurring_forms",
+          "patient.vital_signs",
+          "patient.orthostatic_vitals",
+          "patient.ciwa_ar",
+          "patient.ciwa_b",
+          "patient.cows",
+          "patient.ciwa_ar_current",
+          "patient.ciwa_b_current",
+          "patient.cows_current",
+          "patient.vital_signs_current",
+          "patient.orthostatic_vital_signs_current",
+          "patient.glucose_log",
+          "patient.drug_of_choice",
+          "patient.toggle_mars_generation",
+          "treatment_plan_column_titles",
+          "treatment_plan_item",
+          "create_evaluation",
+          "image",
+          "image_with_canvas",
+          "matrix",
+          "timestamp",
+          "treatment_plan_master_plan",
+          "patient.discharge_type",
+          "treatment_plan_problem",
+          "problem_list",
+          "progress_note",
+          "golden_thread_tag",
+          "treatment_plan_goal",
+          "treatment_plan_objective",
+          "patient.anticipated_discharge_date",
+          "patient.discharge_medications",
+          "points_item",
+          "title",
+          "drop_down_list",
+          "string",
+          "check_box_first_value_none",
+          "text",
+          "radio_buttons",
+          "check_box",
+          "patient.medication_inventory",
+          "points_total",
+          "evaluation_start_and_end_time",
+          "evaluation_datetime",
+          "datestamp",
+          "evaluation_name",
+          "evaluation_date",
+          "evaluation_name_drop_down",
+          "formatted_text",
+          "conditional_question",
+          "care_team.Primary_Therapist",
+          "care_team.Case_Manager",
+          "care_team.Peer_Support_Specialist",
+          "care_team.Intake_Technician",
+          "care_team.Peer_Support_Specialist_Swing",
+          "care_team.Peer_Support_Specialist_Off_Day",
+          "care_team.Other_Case_Manager",
+          "care_team.Peer_Support",
+          "care_team.intake_specialist",
+          "care_team.Other_therapist",
+          "drop_down_list",
+          "evaluation_date",
+          "evaluation_datetime",
+          "evaluation_name",
+          "formatted_text",
+          "check_box",
+          "text",
+          "radio_buttons",
+          "title",
+          "string",
+          "points_item",
+          "points_total",
+          "matrix"
+        ]
+      },
+      "label": "string",
+      "optional": "boolean",
+      "divider_below": "boolean",
+      "description": "string",
+      "timestamp": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "start_time": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "end_time": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "duration": {
+        "type": "string",
+        "nullable": true
+      },
+      "record_names": "string",
+      "bed_name": "string",
+      "bmi": "string",
+      "primary_therapist": "string",
+      "assigned_on": {
+        "type": "string",
+        "format": "$date",
+        "nullable": true
+      },
+      "key": "string",
+      "diag_code": {
+        "type": "string",
+        "nullable": true
+      },
+      "diets": "string",
+      "other_restrictions": "string",
+      "discharge_type": "string",
+      "employer": "string",
+      "race": "string",
+      "ethnicity": "string",
+      "option_text": "string",
+      "points": "string",
+      "height": "float",
+      "weight": "float",
+      "height_units": "string",
+      "weight_units": "string",
+      "blood_pressure": { "...": "..." },
+      "respirations": "string",
+      "temperature": "string",
+      "pulse": "string",
+      "o2_saturation": "string",
+      "loc_label": "string",
+      "loc_value": "string",
+      "date_of_change": {
+        "type": "string",
+        "format": "$date",
+        "nullable": true
+      },
+      "transition_to_level_of_care": {
+        "type": "string",
+        "nullable": true
+      },
+      "blood_pressure_systolic_lying": "string",
+      "blood_pressure_diastolic_lying": "string",
+      "blood_pressure_systolic_sitting": "string",
+      "blood_pressure_diastolic_sitting": "string",
+      "blood_pressure_systolic_standing": "string",
+      "blood_pressure_diastolic_standing": "string",
+      "pulse_lying": "string",
+      "pulse_sitting": "string",
+      "pulse_standing": "string",
+      "ciwa_ar_interval_label": "string",
+      "ciwa_ar_interval": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "ciwa_ar_agitation_label": "string",
+      "ciwa_ar_agitation": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_anxiety_label": "string",
+      "ciwa_ar_anxiety": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_auditory_disturbances_label": "string",
+      "ciwa_ar_auditory_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_clouding_of_sensorium_label": "string",
+      "ciwa_ar_clouding_of_sensorium": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_headache_label": "string",
+      "ciwa_ar_headache": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_nausea_label": "string",
+      "ciwa_ar_nausea": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_paroxysmal_sweats_label": "string",
+      "ciwa_ar_paroxysmal_sweats": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_tactile_disturbances_label": "string",
+      "ciwa_ar_tactile_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_tremor_label": "string",
+      "ciwa_ar_tremor": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_visual_disturbances_label": "string",
+      "ciwa_ar_visual_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "score": "integer",
+      "ciwa_b_interval_label": "string",
+      "ciwa_b_irritable_label": "string",
+      "ciwa_b_fatigued_label": "string",
+      "ciwa_b_tensed_label": "string",
+      "ciwa_b_difficulty_concentrating_label": "string",
+      "ciwa_b_loss_of_appetite_label": "string",
+      "ciwa_b_numbness_label": "string",
+      "ciwa_b_heart_racing_label": "string",
+      "ciwa_b_head_full_achy_label": "string",
+      "ciwa_b_muscle_ache_label": "string",
+      "ciwa_b_anxiety_label": "string",
+      "ciwa_b_upset_label": "string",
+      "ciwa_b_restful_sleep_label": "string",
+      "ciwa_b_enough_sleep_label": "string",
+      "ciwa_b_visual_disturbances_label": "string",
+      "ciwa_b_fearful_label": "string",
+      "ciwa_b_possible_misfortunes_label": "string",
+      "ciwa_b_sweating_agitation_label": "string",
+      "ciwa_b_tremors_label": "string",
+      "ciwa_b_feel_palms_label": "string",
+      "nullable": true
+    },
+    "locations_map": {
+      "type": "array",
+      "items": {
+        "id": "integer",
+        "name": "string"
+      }
+    },
+    "ciwa_ar_object": {
+      "id": "integer",
+      "interval_label": "string",
+      "interval": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "agitation_label": "string",
+      "agitation": "integer",
+      "anxiety_label": "string",
+      "anxiety": "integer",
+      "auditory_disturbances_label": "string",
+      "auditory_disturbances": "integer",
+      "clouding_of_sensorium_label": "string",
+      "clouding_of_sensorium": "integer",
+      "headache_label": "string",
+      "headache": "integer",
+      "nausea_label": "string",
+      "nausea": "integer",
+      "paroxysmal_sweats_label": "string",
+      "paroxysmal_sweats": "integer",
+      "tactile_disturbances_label": "string",
+      "tactile_disturbances": "integer",
+      "tremor_label": "string",
+      "tremor": "integer",
+      "visual_disturbances_label": "string",
+      "visual_disturbances": "integer",
+      "score": "integer",
+      "patient_id": "integer",
+      "username": "string"
+    },
+    "patient_tags_map": {
+      "type": "array",
+      "items": {
+        "patient_tag_object": {
+          "id": "integer",
+          "name": "string",
+          "color": "string"
+        }
+      }
+    },
+    "nullable_datetime": {
+      "type": "string",
+      "format": "$datetime",
+      "nullable": true
+    }
+  }
+  

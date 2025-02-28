@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchDocumentsCount } from '@/store/documentStore';
+import { getPatientStats } from '@/lib/kipu';
 
 function classNames(...classes: (string | undefined)[]) {
   return classes.filter(Boolean).join(' ')
@@ -10,22 +10,25 @@ function classNames(...classes: (string | undefined)[]) {
 export default function UserStats()  {
   const [stats, setStats] = useState<{
     name: string;
-    value: number;
+    value: number | string;
   }[]>([
-    { name: 'Assistants Deployed', value: 0 },
-    { name: 'Conversations', value: 0 },
+    { name: 'Total Patients', value: 0 },
+    { name: 'Active Patients', value: 0 },
     { name: 'Documents', value: 0 },
   ]);
 
   useEffect(() => {
-    // Fetch data from the database and update stats
-    async function fetchStats() {
-      const documentsCount = await fetchDocumentsCount();
+    // Fetch data from our mock database
+    try {
+      const patientStats = getPatientStats();
       setStats([
-        { name: 'Documents', value: documentsCount },
+        { name: 'Total Patients', value: patientStats.totalPatients },
+        { name: 'Active Patients', value: patientStats.activePatients },
+        { name: 'New This Week', value: patientStats.newPatientsThisWeek },
       ]);
+    } catch (error) {
+      console.error("Error fetching patient stats:", error);
     }
-    fetchStats();
   }, []);
 
   return (

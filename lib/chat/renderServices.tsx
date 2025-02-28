@@ -95,6 +95,12 @@ export const ChatbotContent: React.FC<ChatbotContentProps> = ({ content, annotat
   );
 };
 
+const detectFormType = (text: string): string | null => {
+  if (/Incident Report Form/i.test(text)) return "incident_report";
+  if (/Safety Audit Checklist/i.test(text)) return "safety_audit";
+  return null;
+};
+
 export const renderContent = (
   text: string,
   annotations: ChatMessageAnnotation[] = []

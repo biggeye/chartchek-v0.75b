@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useChatStore } from '@/store/chatStore'
 import MessageContent from './MessageContent'
 import { MessageContent as MessageContentType } from '@/types/database'
+import DynamicForm from '@/lib/forms/DynamicForm'
 
 interface MessageListProps {
   isAssistantLoading?: boolean
@@ -133,8 +134,8 @@ export const MessageList = React.memo(({
   };
 
   return (
-    <ScrollArea className="h-[calc(100vh-14rem)] w-full mt-1 top-6">
-      <div className="flex flex-col gap-4 p-4">
+    <ScrollArea className="h-[calc(100vh-10rem)] w-full overflow-y-auto">
+      <div className="flex flex-col gap-4 p-4 pb-24">
         {messages.map((message, index) => (
           <div
             key={`${message.id}-${index}`}
@@ -168,6 +169,15 @@ export const MessageList = React.memo(({
                 />
               );
             })()}
+            
+            {/* Render dynamic form if this message has associated form key */}
+            {message.role === 'assistant' && 
+             message.metadata && 
+             message.metadata.formKey && (
+              <div className="mt-4 p-4 border rounded-lg bg-background">
+                <DynamicForm formKey={message.metadata.formKey} />
+              </div>
+            )}
           </div>
         ))}
         
