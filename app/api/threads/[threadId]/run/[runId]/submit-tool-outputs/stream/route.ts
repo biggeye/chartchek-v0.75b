@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   req: NextRequest,
-  context: { params: { threadId: string; runId: string } }
+  { params }: { params: Promise<{ threadId: string; runId: string }> }
 ) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
@@ -21,7 +21,7 @@ export async function POST(
   }
 
   try {
-    const { threadId, runId } = context.params;
+    const { threadId, runId } = await params;
     const body = await req.json();
     const { tool_outputs } = body;
     

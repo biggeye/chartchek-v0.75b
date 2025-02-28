@@ -5,10 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 30;
 
-// Using the correct Next.js route handler parameter pattern for App Router
+// Using the correct Next.js 15 route handler parameter pattern with Promise
 export async function POST(
   req: NextRequest,
-  { params }: { params: { threadId: string; runId: string } }
+  { params }: { params: Promise<{ threadId: string; runId: string }> }
 ) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
@@ -21,7 +21,7 @@ export async function POST(
   }
 
   try {
-    const { threadId, runId } = params;
+    const { threadId, runId } = await params;
     
     console.log(`[API] Cancelling run ${runId} in thread ${threadId}`);
     

@@ -8,7 +8,7 @@ export const maxDuration = 60;
 // GET: List runs or retrieve a specific run
 export async function GET(
   req: NextRequest,
-  { params }: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   const openai = await awaitOpenai();
   const supabase = await createServer();
@@ -21,7 +21,7 @@ export async function GET(
   }
 
   try {
-    const { threadId } = params;
+    const { threadId } = await params;
     const { searchParams } = new URL(req.url);
     
     // Check if this is a retrieve request (has run_id parameter)
