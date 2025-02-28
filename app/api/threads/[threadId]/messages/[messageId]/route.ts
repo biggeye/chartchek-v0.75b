@@ -1,7 +1,11 @@
 // app/api/threads/[threadId]/messages/[messageId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
-import { openai } from '@/utils/openai'
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);

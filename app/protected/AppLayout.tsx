@@ -229,7 +229,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 overflow-hidden">
           <main className="w-full h-full">
               {children}
-              <ChatStoreWidget />
+
           </main>
 
           {/* Right sidebar for thread list, etc. (conditionally shown) */}

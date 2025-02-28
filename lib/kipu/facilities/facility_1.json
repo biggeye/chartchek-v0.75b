@@ -145,25 +145,241 @@
       {
         "id": "evaluation_1",
         "patient_id": "patient_1",
-        "evaluation_type": "detox intake",
-        "notes": "Patient requires monitoring for withdrawal symptoms. Vitals stable.",
+        "evaluation_type": "Detox Intake",
+        "notes": "Patient requires monitoring for withdrawal symptoms. Vitals stable. BP 120/80, HR 78.",
         "created_at": "2023-01-07T10:00:00Z",
         "patient_evaluation_item_base": {}
       },
       {
         "id": "evaluation_2",
         "patient_id": "patient_2",
-        "evaluation_type": "detox intake",
-        "notes": "Patient exhibits mild withdrawal. Recommend vitamin supplementation.",
+        "evaluation_type": "Detox Intake",
+        "notes": "Patient exhibits mild withdrawal. Recommend vitamin supplementation. BP 135/85, HR 92.",
         "created_at": "2023-01-07T10:15:00Z",
         "patient_evaluation_item_base": {}
       },
       {
         "id": "evaluation_3",
         "patient_id": "patient_3",
-        "evaluation_type": "detox intake",
-        "notes": "Patient shows signs of dehydration. Increase fluids.",
+        "evaluation_type": "Detox Intake",
+        "notes": "Patient shows signs of dehydration. Increase fluids. BP 118/75, HR 84.",
         "created_at": "2023-01-07T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_4",
+        "patient_id": "patient_1",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "Score: 12 - Moderate withdrawal symptoms. Prescribed diazepam as needed.",
+        "created_at": "2023-01-08T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_5",
+        "patient_id": "patient_2",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "Score: 8 - Mild to moderate withdrawal. Monitoring closely.",
+        "created_at": "2023-01-08T09:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_6",
+        "patient_id": "patient_3",
+        "evaluation_type": "COWS",
+        "notes": "Score: 10 - Moderate opioid withdrawal. Started buprenorphine induction.",
+        "created_at": "2023-01-08T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_7",
+        "patient_id": "patient_1",
+        "evaluation_type": "Mental Status Exam",
+        "notes": "Patient alert and oriented. No suicidal ideation. Some anxiety present.",
+        "created_at": "2023-01-09T11:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_8",
+        "patient_id": "patient_2",
+        "evaluation_type": "Psychosocial Assessment",
+        "notes": "Strong family support identified. Housing stable. Employment history consistent.",
+        "created_at": "2023-01-09T13:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_9",
+        "patient_id": "patient_3",
+        "evaluation_type": "Biopsychosocial Assessment",
+        "notes": "History of trauma identified. Recommending trauma-focused therapy alongside addiction treatment.",
+        "created_at": "2023-01-09T14:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_10",
+        "patient_id": "patient_1",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "Score: 7 - Symptoms improving. Continuing with medication protocol.",
+        "created_at": "2023-01-10T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_11",
+        "patient_id": "patient_2",
+        "evaluation_type": "Nutrition Assessment",
+        "notes": "BMI: 24.2. Vitamin deficiencies noted. Starting supplementation protocol.",
+        "created_at": "2023-01-10T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_12",
+        "patient_id": "patient_3",
+        "evaluation_type": "COWS",
+        "notes": "Score: 6 - Withdrawal symptoms improving. Continuing with buprenorphine maintenance.",
+        "created_at": "2023-01-10T11:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_13",
+        "patient_id": "patient_1",
+        "evaluation_type": "Group Therapy Progress Note",
+        "notes": "Active participation in group. Sharing experiences and engaging with peers positively.",
+        "created_at": "2023-01-12T14:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_14",
+        "patient_id": "patient_2",
+        "evaluation_type": "Individual Therapy Session",
+        "notes": "Exploring triggers and developing coping strategies. Good insight demonstrated.",
+        "created_at": "2023-01-12T15:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_15",
+        "patient_id": "patient_3",
+        "evaluation_type": "Medical Review",
+        "notes": "Liver function tests improving. Continuing with medication regimen.",
+        "created_at": "2023-01-13T09:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_16",
+        "patient_id": "patient_1",
+        "evaluation_type": "Physical Therapy Assessment",
+        "notes": "Mild muscle weakness noted. Starting gentle exercise regimen.",
+        "created_at": "2023-01-15T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_17",
+        "patient_id": "patient_2",
+        "evaluation_type": "Family Therapy Session",
+        "notes": "Family members engaged in recovery process. Communication patterns improving.",
+        "created_at": "2023-01-15T13:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_18",
+        "patient_id": "patient_3",
+        "evaluation_type": "Psychiatric Evaluation",
+        "notes": "Dual diagnosis confirmed. Starting antidepressant alongside addiction treatment.",
+        "created_at": "2023-01-16T11:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_19",
+        "patient_id": "patient_1",
+        "evaluation_type": "Relapse Prevention Planning",
+        "notes": "Identified high-risk situations. Developed specific strategies for each scenario.",
+        "created_at": "2023-01-20T14:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_20",
+        "patient_id": "patient_2",
+        "evaluation_type": "Life Skills Assessment",
+        "notes": "Needs assistance with budgeting and time management. Referred to life skills group.",
+        "created_at": "2023-01-21T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_21",
+        "patient_id": "patient_3",
+        "evaluation_type": "Medication Management",
+        "notes": "Medication compliance good. Side effects minimal. Continuing current regimen.",
+        "created_at": "2023-01-22T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_22",
+        "patient_id": "patient_1",
+        "evaluation_type": "Discharge Planning",
+        "notes": "Outpatient treatment arranged. Housing secure. Follow-up appointments scheduled.",
+        "created_at": "2023-01-25T11:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_23",
+        "patient_id": "patient_2",
+        "evaluation_type": "Vocational Rehabilitation Assessment",
+        "notes": "Career interests identified. Referred to job training program.",
+        "created_at": "2023-01-26T14:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_24",
+        "patient_id": "patient_3",
+        "evaluation_type": "Aftercare Planning",
+        "notes": "Transitioning to intensive outpatient program. Recovery support groups identified.",
+        "created_at": "2023-01-27T13:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_25",
+        "patient_id": "patient_1",
+        "evaluation_type": "Follow-up Assessment",
+        "notes": "One week post-discharge. Maintaining sobriety. Attending all scheduled appointments.",
+        "created_at": "2023-02-02T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_26",
+        "patient_id": "patient_2",
+        "evaluation_type": "Substance Use Disorder Reassessment",
+        "notes": "Reduced cravings reported. Using learned coping skills effectively.",
+        "created_at": "2023-02-03T11:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_27",
+        "patient_id": "patient_3",
+        "evaluation_type": "Trauma Therapy Progress Note",
+        "notes": "Beginning to process traumatic events. Utilizing grounding techniques effectively.",
+        "created_at": "2023-02-04T14:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_28",
+        "patient_id": "patient_1",
+        "evaluation_type": "Case Management",
+        "notes": "Medicaid application approved. Transportation arrangements for appointments made.",
+        "created_at": "2023-02-10T09:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_29",
+        "patient_id": "patient_2",
+        "evaluation_type": "Recovery Milestone Assessment",
+        "notes": "30 days continuous sobriety achieved. Celebrating progress and setting new goals.",
+        "created_at": "2023-02-12T13:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_30",
+        "patient_id": "patient_3",
+        "evaluation_type": "Holistic Health Assessment",
+        "notes": "Incorporating meditation and yoga into recovery plan. Reporting improved sleep quality.",
+        "created_at": "2023-02-15T10:15:00Z",
         "patient_evaluation_item_base": {}
       }
     ],

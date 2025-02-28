@@ -419,3 +419,64 @@ export const getRecentConversations = (facilityId?: string) => {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 };
+
+// lib/kipu/index.ts - Add these functions if they don't exist
+
+
+export async function createOrUpdatePatientEvaluation(
+  evaluationData: Omit<PatientEvaluation, 'id' | 'created_at'>,
+  evaluationId: string | undefined,
+  facilityId: string
+): Promise<PatientEvaluation> {
+  // Get facility data
+  const facilityData = getFacilityData(facilityId);
+  if (!facilityData) {
+    throw new Error('Facility not found');
+  }
+  
+  const timestamp = new Date().toISOString();
+  
+  if (evaluationId) {
+    // Update existing evaluation
+    const evaluationIndex = facilityData.data.evaluations.findIndex(
+      (e: any) => e.id === evaluationId
+    );
+    
+    if (evaluationIndex === -1) {
+      throw new Error('Evaluation not found');
+    }
+    
+    // Update the evaluation
+    const updatedEvaluation = {
+      ...facilityData.data.evaluations[evaluationIndex],
+      ...evaluationData,
+      updated_at: timestamp,
+      patient_evaluation_item_base: {},
+      notes: evaluationData.notes || '' // Ensure notes is never undefined
+    };
+
+    facilityData.data.evaluations[evaluationIndex] = updatedEvaluation;
+    
+    // Save the updated facility data (in a real app, this would be an API call)
+    // For testing, we're just updating the in-memory object
+    
+    return updatedEvaluation;
+  } else {
+    // Create new evaluation
+const newEvaluation = {
+  ...evaluationData,
+  id: `eval_${Date.now()}`,
+  created_at: timestamp,
+  updated_at: timestamp,
+  patient_evaluation_item_base: {},
+  notes: evaluationData.notes || '' // Ensure notes is never undefined
+};
+    // Add to evaluations array
+    facilityData.data.evaluations.push(newEvaluation);
+    
+    // Save the updated facility data (in a real app, this would be an API call)
+    // For testing, we're just updating the in-memory object
+    
+    return newEvaluation;
+  }
+}

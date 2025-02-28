@@ -1,7 +1,11 @@
 // app/api/threads/[threadId]/merged-documents/route.ts
 import { NextResponse } from 'next/server';
-import { openai } from '@/utils/openai';
+import OpenAI from 'openai';
 import { createServer } from '@/utils/supabase/server';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function GET(request: Request) {
   const { pathname } = new URL(request.url);

@@ -1,16 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { chatStore } from '@/store/chatStore';
-import { useStreamingStore } from '@/store/streamingStore';
+import { useNewStreamingStore } from '@/store/newStreamStore';
 import { ScrollArea } from './ui/scroll-area';
 
 const ChatStoreWidget: React.FC = () => {
 
   const chatState = chatStore.getState();
-  const streamingState = useStreamingStore.getState();
+  const newStreamingState = useNewStreamingStore.getState();
 
-  const streamingActive = streamingState.isStreamingActive;
-  const formKey = streamingState.currentFormKey;
-  const [logs, setLogs] = useState<string[]>([]);
+  const streamingActive = newStreamingState.isStreamingActive;
+   const [logs, setLogs] = useState<string[]>([]);
   const [filenames, setFilenames] = useState<string[]>([]);
   const prevStateRef = useRef(chatState);
   const currentThreadId = chatState.currentThread?.thread_id;

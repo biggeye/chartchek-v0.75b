@@ -9,8 +9,7 @@ import {
   FormField,
 } from '@/lib/forms/formDefinitions';
 import { chatStore } from '@/store/chatStore';
-import { useStreamingStore } from '@/store/streamingStore';
-import { createFallbackForm } from './fallbackForm';
+import { useNewStreamingStore } from '@/store/newStreamStore';
 
 interface DynamicFormProps {
   formKey: string;
@@ -19,7 +18,6 @@ interface DynamicFormProps {
 const DynamicForm: React.FC<DynamicFormProps> = ({ formKey }) => {
   const [notFoundReported, setNotFoundReported] = useState(false);
   const form: FormDefinition | undefined = formDefinitions[formKey];
-  const fallbackForm = createFallbackForm(formKey);
   
   // Initialize local state for form inputs.
   const [formData, setFormData] = useState<Record<string, any>>({
@@ -46,7 +44,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formKey }) => {
     setFormData((prev: Record<string, any>) => ({ ...prev, [name]: updatedValue }));
   };
   
-  const activeForm = form || fallbackForm;
+  const activeForm = form
 
   return (
     <form className="dynamic-form">

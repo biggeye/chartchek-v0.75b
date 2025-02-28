@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
 import OpenAI from "openai";
 
@@ -8,13 +8,15 @@ const openai = new OpenAI({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { threadId: string } }
-): Promise<Response> {
+  context: { params: { threadId: string } }
+): Promise<NextResponse> {
   const supabase = await createServer();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
+   
+  const { threadId } = context.params;
+
   if (authError || !user) {
-    return new Response(JSON.stringify({ 
+    return new NextResponse(JSON.stringify({ 
       error: 'Unauthorized',
       code: 'AUTH_REQUIRED'
     }), { 
@@ -23,12 +25,8 @@ export async function PATCH(
     });
   }
 
-  const { threadId } = params;
-  
-  console.log('[API] threadId:', threadId)
-  
   if (!threadId) {
-    return new Response(JSON.stringify({ 
+    return new NextResponse(JSON.stringify({ 
       error: 'Thread ID is required',
       code: 'VALIDATION_ERROR'
     }), { 
@@ -43,7 +41,7 @@ export async function PATCH(
     const { metadata } = body;
     
     if (!metadata) {
-      return new Response(JSON.stringify({ 
+      return new NextResponse(JSON.stringify({ 
         error: 'Metadata is required',
         code: 'VALIDATION_ERROR'
       }), { 
@@ -58,7 +56,7 @@ export async function PATCH(
     });
 
     // Return the updated thread
-    return new Response(JSON.stringify({ 
+    return new NextResponse(JSON.stringify({ 
       success: true,
       thread: updatedThread
     }), { 
@@ -67,7 +65,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error(`[/api/threads/${threadId}/metadata] Error updating thread metadata:`, error);
-    return new Response(JSON.stringify({ 
+    return new NextResponse(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Failed to update thread metadata',
       code: 'INTERNAL_ERROR'
     }), {

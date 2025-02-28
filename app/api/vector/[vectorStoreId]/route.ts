@@ -44,7 +44,11 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { openai } from '@/utils/openai';
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createServer();
-    const openaiClient = await awaitOpenai();
+
 
     // Authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -67,7 +71,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const vectorStore = await openaiClient.beta.vectorStores.retrieve(vectorStoreId);
+    const vectorStore = await openai.beta.vectorStores.retrieve(vectorStoreId);
     return NextResponse.json(vectorStore);
   } catch (error) {
     console.error('[Retrieve Vector Store] Error:', error);
@@ -90,13 +94,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const openaiClient = await awaitOpenai();
     const formData = await request.formData();
     const name = formData.get('name') as string | null;
     const expiresAfter = formData.get('expires_after') ? JSON.parse(formData.get('expires_after') as string) : undefined;
     const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
 
-    const updatedVectorStore = await openaiClient.beta.vectorStores.update(vectorStoreId, {
+    const updatedVectorStore = await openai.beta.vectorStores.update(vectorStoreId, {
       name,
       expires_after: expiresAfter,
       metadata

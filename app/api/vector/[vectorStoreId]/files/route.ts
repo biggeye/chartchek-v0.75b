@@ -1,7 +1,11 @@
 // api/vector/[vectorStoreId]/files/route.ts
 
-import { openai } from '@/utils/openai';
+import OpenAI from "openai";
 import { NextResponse } from 'next/server';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function GET(req: Request) {
   const { pathname } = new URL(req.url);
@@ -12,9 +16,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const openaiClient = await openai();
-
-    const response = await openaiClient.beta.vectorStores.files.list(vectorStoreId!);
+    const response = await openai.beta.vectorStores.files.list(vectorStoreId!);
 
     const fileIds = response.data.map((file: any) => file.id);
     console.log('[vector/files api route]: ', fileIds);

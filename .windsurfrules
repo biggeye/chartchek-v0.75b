@@ -1,20 +1,708 @@
 You are development assistance for chartChek
 **a project that uses NextJS 15 and OpenAI's Assistants API to provide instant, accurate, and actionable insights for behavioral health facilities.**
 
-Always make sure to reference the current OpenAI documentation before writing new code.  Especially with regards to the Assistant API (v2 beta).
 Ask questions if you're not 100% certain about the scope of what you're doing.  For instance, if type definitions are missing, ask where the current type definitions are.  Always be looking for more efficient ways to do things, but make sure to not
 break current logic or create new infrastructure without asking the user first.
-
-when refactoring always consider the source of truth hierarchy:
-
-**Source of truth hierarchy**:
-1) supabase table schema
-2) type definitions (/types/store/ * -> /types/database/index.ts, types/store/document/index.ts, types/store/chat.ts, types/store/streaming.ts)
-3) zustand state store (/store/chatStore.ts & /store/streamingStore.ts & /store/documentStore.ts)
 
 ** WE have introduced the KIPU test environment, located in:
  /lib/kipu/index.ts (logic for simulating KIPU API)
  /lib/kipu/types.ts (type definitions for KIPU API)
  /lib/kipu/facilities/ * (data for testing KIPU API)
  /lib/kipu/ref/ * (reference documentation for KIPU API including schema, endpoints and general information)
-**Always make sure to reference the current OpenAI documentation before writing new code.  Especially with regards to the Assistant API (v2 beta).**
+
+here are the important schema to consider:
+
+
+// KIPU SCHEMA -- OBJECTS
+    "patient_order_object": {
+      "id": "integer",
+      "name": "string",
+      "medication": "string",
+      "route": "string",
+      "dosage_form": "string",
+      "dispense_amount": "string",
+      "refills": "integer",
+      "justification": "string",
+      "no_substitutions": "boolean",
+      "warnings": "string",
+      "note": "string",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_start_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "mar_end_time": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "user_name": "string",
+      "user_id": "integer",
+      "discontinued": "boolean",
+      "discontinue_reason": "string",
+      "discontinued_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "discontinued_user_name": "string",
+      "discontinued_user_id": "integer",
+      "discontinue_physician_id": "integer",
+      "original_patient_order_id": "integer",
+      "instructed_by": "string",
+      "ordered_by": "string",
+      "instructed_via": "string",
+      "medical_necessity_note": "string",
+      "prn": "boolean",
+      "erx": "boolean",
+      "patient_id": "integer",
+      "canceled": "boolean",
+      "canceled_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "diagnosis_code": "string",
+      "status": "string",
+      "interaction_check_error": "string",
+      "is_erx": "boolean",
+      "is_prn": "boolean",
+      "nurse_reviewed_by": "string",
+      "nurse_reviewed_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "schedule_prn": "boolean",
+      "fdb_data": "[...]"
+    },
+
+
+    "vital_sign_object": {
+      "id": "integer",
+      "interval_timestamp": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "blood_pressure_systolic": "integer",
+      "blood_pressure_diastolic": "integer",
+      "temperature": "number",
+      "pulse": "integer",
+      "respirations": "integer",
+      "o2_saturation": "integer",
+      "patient_id": "integer",
+      "user_name": "string"
+    },
+      "patient_basic_info_object": {
+      "casefile_id": {
+        "type": "string",
+        "format": "$casefile",
+        "pattern": "^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "first_name": "string",
+      "middle_name": "string",
+      "last_name": "string",
+      "dob": "string",
+      "admission_date": "string",
+      "discharge_date": "string",
+      "mr_number": "string"
+    },
+
+
+   "evaluation_item_object": {
+      "id": "integer",
+      "field_type": "string",
+      "name": "string",
+      "record_names": "string",
+      "column_names": "string",
+      "label": "string",
+      "enabled": "boolean",
+      "optional": "boolean",
+      "evaluation_id": "integer",
+      "default_value": "string",
+      "divider_below": "boolean",
+      "rule": "string",
+      "placeholder": "string",
+      "pre_populate_with_id": "integer",
+      "parent_item_id": "string",
+      "conditions": "string",
+      "label_width": "string",
+      "item_group": "string",
+      "show_string": "string",
+      "show_string_css": "string",
+      "matrix_default_records": "integer",
+      "css_style": "string",
+      "image": "string",
+      "skip_validations": "boolean"
+    },  "evaluation_items_map": {
+      "type": "array",
+      "items": {
+        "evaluation_item_object": {
+          "id": "integer",
+          "field_type": "string",
+          "name": "string",
+          "record_names": "string",
+          "column_names": "string",
+          "label": "string",
+          "enabled": "boolean",
+          "optional": "boolean",
+          "evaluation_id": "integer",
+          "default_value": "string",
+          "divider_below": "boolean",
+          "rule": "string",
+          "placeholder": "string",
+          "pre_populate_with_id": "integer",
+          "parent_item_id": "string",
+          "conditions": "string",
+          "label_width": "string",
+          "item_group": "string",
+          "show_string": "string",
+          "show_string_css": "string",
+          "matrix_default_records": "integer",
+          "css_style": "string",
+          "image": "string",
+          "skip_validations": "boolean"
+        }
+      }
+    },
+
+    
+      "ciwa_b_object": {
+      "id": "integer",
+      "interval_label": "string",
+      "interval": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "irritable_label": "string",
+      "irritable": "integer",
+      "fatigued_label": "string",
+      "fatigued": "integer",
+      "tensed_label": "string",
+      "tensed": "integer",
+      "difficulty_concentrating_label": "string",
+      "difficulty_concentrating": "integer",
+      "loss_of_appetite_label": "string",
+      "loss_of_appetite": "integer",
+      "numbness_label": "string",
+      "numbness": "integer",
+      "heart_racing_label": "string",
+      "heart_racing": "integer",
+      "head_full_achy_label": "string",
+      "head_full_achy": "integer",
+      "muscle_ache_label": "string",
+      "muscle_ache": "integer",
+      "anxiety_label": "string",
+      "anxiety": "integer",
+      "upset_label": "string",
+      "upset": "integer",
+      "restful_sleep_label": "string",
+      "restful_sleep": "integer",
+      "weakness_label": "string",
+      "weakness": "integer",
+      "enough_sleep_label": "string",
+      "enough_sleep": "integer",
+      "visual_disturbances_label": "string",
+      "visual_disturbances": "integer",
+      "fearful_label": "string",
+      "fearful": "integer",
+      "possible_misfortunes_label": "string",
+      "possible_misfortunes": "integer",
+      "sweating_agitation_label": "string",
+      "sweating_agitation": "integer",
+      "tremors_label": "string",
+      "tremors": "integer",
+      "feel_palms_label": "string",
+      "feel_palms": "integer",
+      "score": "integer",
+      "patient_id": "integer",
+      "username": "string"
+    },
+
+     "ciwa_ar_object": {
+      "id": "integer",
+      "interval_label": "string",
+      "interval": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "agitation_label": "string",
+      "agitation": "integer",
+      "anxiety_label": "string",
+      "anxiety": "integer",
+      "auditory_disturbances_label": "string",
+      "auditory_disturbances": "integer",
+      "clouding_of_sensorium_label": "string",
+      "clouding_of_sensorium": "integer",
+      "headache_label": "string",
+      "headache": "integer",
+      "nausea_label": "string",
+      "nausea": "integer",
+      "paroxysmal_sweats_label": "string",
+      "paroxysmal_sweats": "integer",
+      "tactile_disturbances_label": "string",
+      "tactile_disturbances": "integer",
+      "tremor_label": "string",
+      "tremor": "integer",
+      "visual_disturbances_label": "string",
+      "visual_disturbances": "integer",
+      "score": "integer",
+      "patient_id": "integer",
+      "username": "string"
+    },
+
+    // KIPU SCHEMA - PATIENT EVALUATIONS
+
+
+     "patient_evaluation_item_base": {
+      "id": "integer",
+      "name": "string",
+      "evaluation_item_id": "integer",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "field_type": {
+        "type": "string",
+        "enum": [
+          "auto_complete",
+          "patient.admission_datetime",
+          "patient.allergies",
+          "patient.attendances",
+          "patient.bed",
+          "patient.bmi",
+          "patient.brought_in_medication",
+          "patient.diagnosis_code",
+          "patient.diagnosis_code_current",
+          "patient.diets",
+          "patient.discharge_datetime",
+          "patient.electronic_devices",
+          "patient.employer",
+          "patient.ethnicity",
+          "patient.height_weight",
+          "patient.height_weight_current",
+          "patient.level_of_care_clinical",
+          "patient.level_of_care_ur",
+          "patient.locker",
+          "patient.marital_status",
+          "patient.medication_current",
+          "patient.occupation",
+          "patient.recurring_forms",
+          "patient.vital_signs",
+          "patient.orthostatic_vitals",
+          "patient.ciwa_ar",
+          "patient.ciwa_b",
+          "patient.cows",
+          "patient.ciwa_ar_current",
+          "patient.ciwa_b_current",
+          "patient.cows_current",
+          "patient.vital_signs_current",
+          "patient.orthostatic_vital_signs_current",
+          "patient.glucose_log",
+          "patient.drug_of_choice",
+          "patient.toggle_mars_generation",
+          "treatment_plan_column_titles",
+          "treatment_plan_item",
+          "create_evaluation",
+          "image",
+          "image_with_canvas",
+          "matrix",
+          "timestamp",
+          "treatment_plan_master_plan",
+          "patient.discharge_type",
+          "treatment_plan_problem",
+          "problem_list",
+          "progress_note",
+          "golden_thread_tag",
+          "treatment_plan_goal",
+          "treatment_plan_objective",
+          "patient.anticipated_discharge_date",
+          "patient.discharge_medications",
+          "points_item",
+          "title",
+          "drop_down_list",
+          "string",
+          "check_box_first_value_none",
+          "text",
+          "radio_buttons",
+          "check_box",
+          "patient.medication_inventory",
+          "points_total",
+          "evaluation_start_and_end_time",
+          "evaluation_datetime",
+          "datestamp",
+          "evaluation_name",
+          "evaluation_date",
+          "evaluation_name_drop_down",
+          "formatted_text",
+          "conditional_question",
+          "care_team.Primary_Therapist",
+          "care_team.Case_Manager",
+          "care_team.Peer_Support_Specialist",
+          "care_team.Intake_Technician",
+          "care_team.Peer_Support_Specialist_Swing",
+          "care_team.Peer_Support_Specialist_Off_Day",
+          "care_team.Other_Case_Manager",
+          "care_team.Peer_Support",
+          "care_team.intake_specialist",
+          "care_team.Other_therapist",
+          "drop_down_list",
+          "evaluation_date",
+          "evaluation_datetime",
+          "evaluation_name",
+          "formatted_text",
+          "check_box",
+          "text",
+          "radio_buttons",
+          "title",
+          "string",
+          "points_item",
+          "points_total",
+          "matrix"
+        ]
+      },
+      "label": "string",
+      "optional": "boolean",
+      "divider_below": "boolean"
+    }, "patient_evaluation_field_type_enumstring": {
+      "type": "string",
+      "enum": [96]
+    },
+    
+
+    "patient_evaluation_item": {
+      "id": "integer",
+      "name": "string",
+      "evaluation_name": "string",
+      "evaluation_item_id": "integer",
+      "created_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "$datetime"
+      },
+      "field_type": {
+        "type": "string",
+        "enum": [
+          "auto_complete",
+          "patient.admission_datetime",
+          "patient.allergies",
+          "patient.attendances",
+          "patient.bed",
+          "patient.bmi",
+          "patient.brought_in_medication",
+          "patient.diagnosis_code",
+          "patient.diagnosis_code_current",
+          "patient.diets",
+          "patient.discharge_datetime",
+          "patient.electronic_devices",
+          "patient.employer",
+          "patient.ethnicity",
+          "patient.height_weight",
+          "patient.height_weight_current",
+          "patient.level_of_care_clinical",
+          "patient.level_of_care_ur",
+          "patient.locker",
+          "patient.marital_status",
+          "patient.medication_current",
+          "patient.occupation",
+          "patient.recurring_forms",
+          "patient.vital_signs",
+          "patient.orthostatic_vitals",
+          "patient.ciwa_ar",
+          "patient.ciwa_b",
+          "patient.cows",
+          "patient.ciwa_ar_current",
+          "patient.ciwa_b_current",
+          "patient.cows_current",
+          "patient.vital_signs_current",
+          "patient.orthostatic_vital_signs_current",
+          "patient.glucose_log",
+          "patient.drug_of_choice",
+          "patient.toggle_mars_generation",
+          "treatment_plan_column_titles",
+          "treatment_plan_item",
+          "create_evaluation",
+          "image",
+          "image_with_canvas",
+          "matrix",
+          "timestamp",
+          "treatment_plan_master_plan",
+          "patient.discharge_type",
+          "treatment_plan_problem",
+          "problem_list",
+          "progress_note",
+          "golden_thread_tag",
+          "treatment_plan_goal",
+          "treatment_plan_objective",
+          "patient.anticipated_discharge_date",
+          "patient.discharge_medications",
+          "points_item",
+          "title",
+          "drop_down_list",
+          "string",
+          "check_box_first_value_none",
+          "text",
+          "radio_buttons",
+          "check_box",
+          "patient.medication_inventory",
+          "points_total",
+          "evaluation_start_and_end_time",
+          "evaluation_datetime",
+          "datestamp",
+          "evaluation_name",
+          "evaluation_date",
+          "evaluation_name_drop_down",
+          "formatted_text",
+          "conditional_question",
+          "care_team.Primary_Therapist",
+          "care_team.Case_Manager",
+          "care_team.Peer_Support_Specialist",
+          "care_team.Intake_Technician",
+          "care_team.Peer_Support_Specialist_Swing",
+          "care_team.Peer_Support_Specialist_Off_Day",
+          "care_team.Other_Case_Manager",
+          "care_team.Peer_Support",
+          "care_team.intake_specialist",
+          "care_team.Other_therapist",
+          "drop_down_list",
+          "evaluation_date",
+          "evaluation_datetime",
+          "evaluation_name",
+          "formatted_text",
+          "check_box",
+          "text",
+          "radio_buttons",
+          "title",
+          "string",
+          "points_item",
+          "points_total",
+          "matrix"
+        ]
+      },
+      "label": "string",
+      "optional": "boolean",
+      "divider_below": "boolean",
+      "description": "string",
+      "timestamp": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "start_time": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "end_time": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "duration": {
+        "type": "string",
+        "nullable": true
+      },
+      "record_names": "string",
+      "bed_name": "string",
+      "bmi": "string",
+      "primary_therapist": "string",
+      "assigned_on": {
+        "type": "string",
+        "format": "$date",
+        "nullable": true
+      },
+      "key": "string",
+      "diag_code": {
+        "type": "string",
+        "nullable": true
+      },
+      "diets": "string",
+      "other_restrictions": "string",
+      "discharge_type": "string",
+      "employer": "string",
+      "race": "string",
+      "ethnicity": "string",
+      "option_text": "string",
+      "points": "string",
+      "height": "float",
+      "weight": "float",
+      "height_units": "string",
+      "weight_units": "string",
+      "blood_pressure": { "...": "..." },
+      "respirations": "string",
+      "temperature": "string",
+      "pulse": "string",
+      "o2_saturation": "string",
+      "loc_label": "string",
+      "loc_value": "string",
+      "date_of_change": {
+        "type": "string",
+        "format": "$date",
+        "nullable": true
+      },
+      "transition_to_level_of_care": {
+        "type": "string",
+        "nullable": true
+      },
+      "blood_pressure_systolic_lying": "string",
+      "blood_pressure_diastolic_lying": "string",
+      "blood_pressure_systolic_sitting": "string",
+      "blood_pressure_diastolic_sitting": "string",
+      "blood_pressure_systolic_standing": "string",
+      "blood_pressure_diastolic_standing": "string",
+      "pulse_lying": "string",
+      "pulse_sitting": "string",
+      "pulse_standing": "string",
+      "ciwa_ar_interval_label": "string",
+      "ciwa_ar_interval": {
+        "type": "string",
+        "format": "$datetime",
+        "nullable": true
+      },
+      "ciwa_ar_agitation_label": "string",
+      "ciwa_ar_agitation": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_anxiety_label": "string",
+      "ciwa_ar_anxiety": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_auditory_disturbances_label": "string",
+      "ciwa_ar_auditory_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_clouding_of_sensorium_label": "string",
+      "ciwa_ar_clouding_of_sensorium": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_headache_label": "string",
+      "ciwa_ar_headache": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_nausea_label": "string",
+      "ciwa_ar_nausea": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_paroxysmal_sweats_label": "string",
+      "ciwa_ar_paroxysmal_sweats": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_tactile_disturbances_label": "string",
+      "ciwa_ar_tactile_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_tremor_label": "string",
+      "ciwa_ar_tremor": {
+        "type": "string",
+        "nullable": true
+      },
+      "ciwa_ar_visual_disturbances_label": "string",
+      "ciwa_ar_visual_disturbances": {
+        "type": "string",
+        "nullable": true
+      },
+      "score": "integer",
+      "ciwa_b_interval_label": "string",
+      "ciwa_b_irritable_label": "string",
+      "ciwa_b_fatigued_label": "string",
+      "ciwa_b_tensed_label": "string",
+      "ciwa_b_difficulty_concentrating_label": "string",
+      "ciwa_b_loss_of_appetite_label": "string",
+      "ciwa_b_numbness_label": "string",
+      "ciwa_b_heart_racing_label": "string",
+      "ciwa_b_head_full_achy_label": "string",
+      "ciwa_b_muscle_ache_label": "string",
+      "ciwa_b_anxiety_label": "string",
+      "ciwa_b_upset_label": "string",
+      "ciwa_b_restful_sleep_label": "string",
+      "ciwa_b_enough_sleep_label": "string",
+      "ciwa_b_visual_disturbances_label": "string",
+      "ciwa_b_fearful_label": "string",
+      "ciwa_b_possible_misfortunes_label": "string",
+      "ciwa_b_sweating_agitation_label": "string",
+      "ciwa_b_tremors_label": "string",
+      "ciwa_b_feel_palms_label": "string",
+      "nullable": true
+    },
+
+
+// ENDPOINTS:
+  "evaluations": {
+      "GET": [
+        "/evaluations",
+        "/evaluations/{evaluation_id}",
+        "/patient_evaluations",
+        "/patient_evaluations/{patient_evaluation_id}",
+        "/patients/{patient_id}/patient_evaluations"
+      ]
+    },
+      "patient": {
+      "GET": [
+        "/patients/{patient_id}/allergies",
+        "/patients/{patient_id}/appointments",
+        "/patients/{patient_id}/care_team",
+        "/patients/{patient_id}/ciwa_ars",
+        "/patients/{patient_id}/ciwa_bs",
+        "/patients/{patient_id}/cows",
+        "/patients/{patient_id}/diagnosis_history",
+        "/patients/{patient_id}/glucose_logs",
+        "/patients/{patient_id}/group_sessions",
+        "/patients/{patient_id}/group_sessions/{id}",
+        "/patients/{patient_id}/orthostatic_vital_signs",
+        "/patients/{patient_id}/patient_diets",
+        "/patients/{patient_id}/patient_evaluations",
+        "/patients/{patient_id}/patient_orders",
+        "/patients/{patient_id}/program_history",
+        "/patients/{patient_id}/ur",
+        "/patients/{patient_id}/vital_signs",
+        "/patients/{patient_id}"
+      ],
+        "patient_evaluation": {
+      "GET": [
+        "/patient_evaluations/{patient_evaluation_id}",
+        "/patients/{patient_id}/patient_evaluations"
+      ],
+      "POST": "/patients/{patient_id}/patient_evaluations"
+    },
+    "patient_evaluations": {
+      "GET": [
+        "/patient_evaluations",
+        "/patient_evaluations/{patient_evaluation_id}",
+        "/patients/{patient_id}/patient_evaluations"
+      ],
+      "POST": "/patients/{patient_id}/patient_evaluations"
+    },
+        "ur": {
+      "GET": "/patients/{patient_id}/ur"
+    },
+     "vital_sign": {
+      "POST": "/patients/{patient_id}/vital_signs"
+    },
+    "vital_signs": {
+      "GET": [
+        "/patients/{patient_id}/vital_signs",
+        "/vital_signs"
+      ],
+      "POST": "/patients/{patient_id}/vital_signs"
+    }
+       "utilization_reviews": {
+      "GET": "/utilization_reviews/latest"
+    },

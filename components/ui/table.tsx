@@ -34,8 +34,8 @@ export function Table({
   )
 }
 
-export function TableHead({ className, ...props }: React.ComponentPropsWithoutRef<'thead'>) {
-  return <thead {...props} className={clsx(className, 'text-zinc-500 dark:text-zinc-400')} />
+export function TableHead({ className, ...props }: React.ComponentPropsWithoutRef<'th'>) {
+  return <th {...props} className={clsx(className, 'text-zinc-500 dark:text-zinc-400')} />
 }
 
 export function TableBody(props: React.ComponentPropsWithoutRef<'tbody'>) {
@@ -53,6 +53,7 @@ export function TableRow({
   target,
   title,
   className,
+  children, // Add this line to destructure children
   ...props
 }: { href?: string; target?: string; title?: string } & React.ComponentPropsWithoutRef<'tr'>) {
   let { striped } = useContext(TableContext)
@@ -69,25 +70,15 @@ export function TableRow({
           href && striped && 'hover:bg-zinc-950/5 dark:hover:bg-white/5',
           href && !striped && 'hover:bg-zinc-950/[2.5%] dark:hover:bg-white/[2.5%]'
         )}
-      />
+      >
+        {children}
+      </tr>
     </TableRowContext.Provider>
   )
 }
 
-export function TableHeader({ className, ...props }: React.ComponentPropsWithoutRef<'th'>) {
-  let { bleed, grid } = useContext(TableContext)
-
-  return (
-    <th
-      {...props}
-      className={clsx(
-        className,
-        'border-b border-b-zinc-950/10 px-4 py-2 font-medium first:pl-(--gutter,--spacing(2)) last:pr-(--gutter,--spacing(2)) dark:border-b-white/10',
-        grid && 'border-l border-l-zinc-950/5 first:border-l-0 dark:border-l-white/5',
-        !bleed && 'sm:first:pl-1 sm:last:pr-1'
-      )}
-    />
-  )
+export function TableHeader({ className, ...props }: React.ComponentPropsWithoutRef<'thead'>) {
+  return <thead {...props} className={clsx(className)} />
 }
 
 export function TableCell({ className, children, ...props }: React.ComponentPropsWithoutRef<'td'>) {

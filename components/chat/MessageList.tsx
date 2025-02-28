@@ -7,6 +7,7 @@ import { chatStore } from '@/store/chatStore'
 import MessageContent from './MessageContent'
 import { MessageContent as MessageContentType } from '@/types/api/openai'
 import DynamicForm from '@/lib/forms/DynamicForm'
+import { renderContent } from '@/lib/chat/renderServices'
 
 interface MessageListProps {
   isAssistantLoading?: boolean
@@ -72,7 +73,7 @@ export const MessageList = React.memo(({
                message.content.map((content, i) =>  (
                   <React.Fragment key={`${message.id}-content-${i}`}>
                   {content.type === 'text' && content.text && (
-                    <div>{content.text.value}</div>
+                    <div>{renderContent(content.text.value)}</div>
                   )}
                   {content.type === 'image_file' && content.image_file && (
                     <div>
@@ -85,7 +86,7 @@ export const MessageList = React.memo(({
                   )}
                 </React.Fragment>
                 ))) : (
-                  <div>{message.content}</div>
+                  <div>{renderContent(message.content)}</div>
                 )}
               </div>
             </div>
@@ -104,7 +105,7 @@ export const MessageList = React.memo(({
                 Assistant is typing...
               </div>
               <div className="text-sm opacity-90">
-                {streamingContent || '...'}
+                {renderContent(streamingContent || '...')}
               </div>
             </div>
           </div>

@@ -6,7 +6,7 @@ import DocumentsTable from '@/components/datatable-card';
 import { useRouter } from 'next/navigation';
 
 export default function DocumentsPage() {
-  const { documents, isLoading, error, fetchDocuments, uploadAndProcessDocument, retryProcessingDocuments } = useDocumentStore();
+  const { documents, isLoading, error, fetchDocuments, uploadAndProcessDocument } = useDocumentStore();
   const router = useRouter();
 
   const handleFileSelect = async (file: File) => {
@@ -28,23 +28,6 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleRetryProcessing = async () => {
-    try {
-      const result = await retryProcessingDocuments();
-      if (result.succeeded.length > 0) {
-        alert(`Successfully processed ${result.succeeded.length} documents that were stuck.`);
-      }
-      if (result.failed.length > 0) {
-        alert(`Failed to process ${result.failed.length} documents. Check the console for details.`);
-      }
-      if (result.succeeded.length === 0 && result.failed.length === 0) {
-        alert('No documents needed processing.');
-      }
-    } catch (error) {
-      console.error('Error retrying document processing:', error);
-      alert('An error occurred while retrying document processing. See console for details.');
-    }
-  };
 
   const handleEditDocument = (documentId: string) => {
     router.push(`/protected/documents/${documentId}`);
@@ -70,13 +53,7 @@ export default function DocumentsPage() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Documents</h1>
-        <button 
-          onClick={handleRetryProcessing}
-          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80 transition-colors"
-        >
-          Retry Processing Stuck Documents
-        </button>
-      </div>
+       </div>
       <DocumentsTable 
         documents={documents} 
         onEditDocument={handleEditDocument}

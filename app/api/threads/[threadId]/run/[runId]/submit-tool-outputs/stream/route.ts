@@ -1,8 +1,11 @@
 // app/api/threads/[threadId]/run/[runId]/submit-tool-outputs/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { openai } from '@/utils/openai';
+import OpenAI from "openai";
 import { NextRequest, NextResponse } from 'next/server';
 
+const openai = new OpenAI({ 
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 

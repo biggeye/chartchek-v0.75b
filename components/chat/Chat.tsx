@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { MessageList } from './MessageList';
 import ChatInputArea from './ChatInputArea';
 import RunStatusIndicator from './RunStatusIndicator';
-import ToolOutputForm from './ToolOutputForm';
 import { chatStore } from '@/store/chatStore';
 import { useNewStreamingStore } from '@/store/newStreamStore';
 import { ChatMessageAttachment } from '@/types/database';
@@ -142,19 +141,6 @@ export default function Chat({ assistantId }: ChatProps) {
         streamingContent={currentStreamContent}
       />
 
-      {activeRunStatus?.requiresAction && activeRunStatus?.requiredAction?.toolCalls && (
-        <div className="absolute bottom-20 left-0 right-0 z-10 mx-auto w-[80%]">
-          <ToolOutputForm
-            onSubmitSuccess={() => {
-              setLocalError(null);
-              if (currentThread?.thread_id) {
-                chatStore.getState().checkActiveRun(currentThread.thread_id);
-              }
-            }}
-            onCancel={handleCancelRun}
-          />
-        </div>
-      )}
 
       <div className="absolute bottom-4 left-0 right-0 mx-auto w-[80%]">
         <ChatInputArea onMessageSubmit={handleMessageSubmit} isSubmitting={isLoading || isStreamingActive} />

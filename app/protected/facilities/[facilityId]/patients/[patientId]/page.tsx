@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { getFacilityData } from '@/lib/kipu';
-import { Loader2, MessageSquare, Send } from 'lucide-react';
+import { Loader2, MessageSquare, Send, PlusCircle } from 'lucide-react';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -109,8 +109,11 @@ export default function PatientPage({ params }: PatientPageProps) {
     
     // Create a new thread if needed
     try {
-      const threadId = await createThread();
+      const threadId = await createThread(assistantId);
+      /*
+
       
+      */
       if (!threadId) {
         console.error('Failed to create thread');
         return;
@@ -221,7 +224,7 @@ export default function PatientPage({ params }: PatientPageProps) {
           onClick={() => setIsDialogOpen(true)}
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
         >
-          <MessageSquare className="h-5 w-5" />
+          <MessageSquare className="h-5 w-5 p-2" />
           Ask Assistant
         </Button>
       </div>
@@ -285,6 +288,15 @@ export default function PatientPage({ params }: PatientPageProps) {
         <Card>
           <CardHeader>
             <CardTitle>Recent Evaluations</CardTitle>
+            {/* button for "new evaluation, onClick should open a modal with the evaluation form which is wired up to the simulated api */}
+            <Button 
+              color="purple"
+              onClick={() => setIsDialogOpen(true)}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+            >
+              <PlusCircle className="h-5 w-5 p-2" />
+              New Evaluation
+            </Button>
           </CardHeader>
           <CardContent>
             {evaluations.length === 0 ? (
@@ -342,7 +354,7 @@ export default function PatientPage({ params }: PatientPageProps) {
         <DialogBody>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              What would you like to know about this patient?
+              How can I help?
             </p>
                 
             <div className="grid grid-cols-2 gap-4 mt-2">
