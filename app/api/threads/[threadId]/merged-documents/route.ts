@@ -1,6 +1,6 @@
 // app/api/threads/[threadId]/merged-documents/route.ts
 import { NextResponse } from 'next/server';
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 import { createServer } from '@/utils/supabase/server';
 
 export async function GET(request: Request) {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const threadId = pathname.split('/').slice(-2, -1)[0];
 
   const supabase = await createServer();
-  const openai = await awaitOpenai();
+  
 
   try {
     // Retrieve the thread object from OpenAI using the threadId.

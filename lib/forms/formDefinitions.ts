@@ -13,12 +13,14 @@ export interface FormSection {
 }
 
 export interface FormDefinition {
+  formKey: string;
   title: string;
   sections: FormSection[];
 }
 
 export const formDefinitions: Record<string, FormDefinition> = {
   application_orientation_verification: {
+    formKey: 'application_orientation_verification',
     title: "Application and Orientation Verification Form",
     sections: [
       {
@@ -54,6 +56,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   orientation_checklist: {
+    formKey: 'orientation_checklist',
     title: "Staff Orientation Checklist",
     sections: [
       {
@@ -109,6 +112,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   application_orientation_form: {
+    formKey: 'application_orientation_form',
     title: "Application and Orientation Form",
     sections: [
       {
@@ -135,6 +139,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   intake_form_hp_dolorosa: {
+    formKey: 'intake_form_hp_dolorosa',
     title: "Intake Form HP Dolorosa",
     sections: [
       {
@@ -175,6 +180,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   flu_declination: {
+    formKey: 'flu_declination',
     title: "Flu Declination Form (2021-2022)",
     sections: [
       {
@@ -191,6 +197,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   suspected_adr_report: {
+    formKey: 'suspected_adr_report',
     title: "Suspected Adverse Drug Reaction Report Form",
     sections: [
       {
@@ -236,6 +243,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   record_voluntary_admission: {
+    formKey: 'record_voluntary_admission',
     title: "Record of Voluntary Admission/Consent to Care & Treatment/Agreement to Comply with Medical Care",
     sections: [
       {
@@ -257,6 +265,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   length_of_stay_acknowledgement: {
+    formKey: 'length_of_stay_acknowledgement',
     title: "Length of Stay Acknowledgement Form",
     sections: [
       {
@@ -272,6 +281,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   intake_checklist: {
+    formKey: 'intake_checklist',
     title: "Intake Checklist",
     sections: [
       {
@@ -290,6 +300,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   competency_chef: {
+    formKey: 'competency_chef',
     title: "Competency Evaluation - Chef",
     sections: [
       {
@@ -307,6 +318,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   competency_tech: {
+    formKey: 'competency_tech',
     title: "Competency Evaluation - Tech",
     sections: [
       {
@@ -324,6 +336,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   orientation_chef: {
+    formKey: 'orientation_chef',
     title: "Orientation Form - Chef",
     sections: [
       {
@@ -337,6 +350,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   orientation_counselor: {
+    formKey: 'orientation_counselor',
     title: "Orientation Form - Counselor",
     sections: [
       {
@@ -350,6 +364,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   orientation_lvn: {
+    formKey: 'orientation_lvn',
     title: "Orientation Form - LVN",
     sections: [
       {
@@ -363,6 +378,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   orientation_tech: {
+    formKey: 'orientation_tech',
     title: "Orientation Form - Tech",
     sections: [
       {
@@ -376,6 +392,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   task_list_joint_commission: {
+    formKey: 'task_list_joint_commission',
     title: "Task List - Joint Commission",
     sections: [
       {
@@ -389,6 +406,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   patient_intake: {
+    formKey: 'patient_intake',
     title: "Patient Intake Form",
     sections: [
       {

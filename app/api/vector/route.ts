@@ -1,9 +1,9 @@
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 import { createServer } from '@/utils/supabase/server';
 
 export async function POST(req: Request) {
   const supabase = await createServer();
-  const openai = await awaitOpenai();
+  
   const { fileId, name, expires_after, chunking_strategy, metadata } = await req.json();
 
   try {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const supabase = await createServer();
-  const openai = await awaitOpenai();
+  
 
   try {
     // Authentication check

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,10 @@ import {
 import { getFacilityData, PatientEvaluation } from '@/lib/kipu';
 
 interface EvaluationsPageProps {
-  params: {
+  params: Promise<{
     facilityId: string;
     patientId: string;
-  };
+  }>;
 }
 
 // Custom card components to replace missing exports
@@ -73,8 +73,8 @@ const DialogDescription = ({ children, className, ...props }: React.HTMLAttribut
 );
 
 export default function EvaluationsPage({ params }: EvaluationsPageProps) {
-  // Access params directly since it's properly typed
-  const { facilityId, patientId } = params;
+  // Unwrap the Promise containing params
+  const { facilityId, patientId } = use(params);
   
   const [loading, setLoading] = useState(true);
   const [evaluations, setEvaluations] = useState<any[]>([]);

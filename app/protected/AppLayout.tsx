@@ -29,30 +29,30 @@ import {
 } from '@heroicons/react/24/outline'
 import { 
   ShieldCheckIcon, 
-  CreditCardIcon, 
   BuildingOffice2Icon, 
-  ChatBubbleLeftIcon,
-  ChevronDownIcon,
-  UserCircleIcon
-} from '@heroicons/react/20/solid'
+  UserCircleIcon, 
+  CreditCardIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  ArrowLeftStartOnRectangleIcon,
+  ChatBubbleLeftRightIcon
+} from '@heroicons/react/24/outline'
 
-import { ThreadList } from '@/components/chat/ThreadList'
-import UserStats from '@/components/user-stats';
+import ChevronDownIcon from '@heroicons/react/24/solid/ChevronDownIcon';
+import { signOutAction } from '../actions';
 import Modal from '@/components/modal';
-import DropdownMenu from '@/components/dropdown-menu';
-
-import { signOutAction } from "@/app/actions";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import ChatStoreWidget from "@/components/ChatStoreWidget";
-import { createClient } from '@/utils/supabase/client';
+import { ThemeSwitcher } from '@/components/theme-switcher';
+import { ThreadList } from '@/components/chat/ThreadList';
+import Link from 'next/link';
+import ChatStoreWidget from '@/components/ChatStoreWidget';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
-  const [routeTitle, setRouteTitle] = useState('');
-  const router = useRouter();
   const pathname = usePathname();
   
+  // Initialize stores
+    
   // Navigation items
   const navigation = [
     { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon },
@@ -86,9 +86,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       break;
     case '/protected/compliance':
       asideContent = <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />;
-      break;
-    case '/protected':
-      asideContent = <UserStats />;
       break;
     default:
       asideContent = null;
@@ -177,11 +174,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </a>
             </div>
             
-            {/* Mobile route title */}
-            <div className="lg:hidden text-center font-medium">
-              {routeTitle}
-            </div>
-            
+             
             {/* Desktop nav */}
             <PopoverGroup className="hidden lg:flex lg:gap-x-6">
               {navigation.map((item) => (
@@ -236,6 +229,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 overflow-hidden">
           <main className="w-full h-full">
               {children}
+              <ChatStoreWidget />
           </main>
 
           {/* Right sidebar for thread list, etc. (conditionally shown) */}

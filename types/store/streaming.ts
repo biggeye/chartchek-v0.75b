@@ -8,28 +8,43 @@ export interface StreamingState {
   streamError: string | null;
   currentFormKey: string | null;  // Added for form handling
   currentMessageId: string | null; // Added to store OpenAI message ID
+  currentRunId: string | null; // Added to store the current run ID
+  isFormProcessing: boolean;
+  formData: Record<string, any>;
+  userId: string | null; // Add userId to the state
   
   // Streaming operations
-  startStream: () => void;
+  startStream: (threadId: string, assistantId: string) => Promise<void>;
   appendStream: (delta: string) => void;
-  cancelStream: () => void;
-  endStream: () => void;
-  setStreamError: (error: string) => void;
-  handleToolCall: (toolData: OpenAIStreamingEvent) => void;
+  cancelStream: (threadId: string, runId: string) => Promise<boolean>;
+  endStream: (savedMessageId?: string) => void;
+  setStreamError: (error: string | null) => void;
+  // In StreamingState interface
+abortController: AbortController | null;
+  // Initialization
+  initialize: () => Promise<void>; // New initialization function
   
-  // Form handling operations moved from chatStore
+  // Form handling
   setCurrentFormKey: (formKey: string | null) => void;
-  processAssistantResponse: (response: any) => void;
+  determineFormKey: (description: string) => Promise<string>;
+  updateFormData: (data: Record<string, any>) => void;
+  clearFormData: () => void;
+  setFormProcessing: (isProcessing: boolean) => void;
+  submitForm: (threadId: string, runId: string, toolCallId: string, formData: Record<string, any>) => Promise<boolean>;
   
-  // Run management operations moved from chatStore
-  cancelRun: (threadId: string, runId: string) => Promise<boolean>;
-  storeRunData: (run: any) => Promise<any>;
+  // Stream content management
+  updateStreamContent: (content: string) => void;
+  processStreamEvent: (event: OpenAIStreamingEvent, threadId: string) => Promise<void>;
   
-  // Function submission operations moved from chatStore
-  submitNewFunction: (params: any) => Promise<void>;
-  submitEobSummary: (params: any) => Promise<void>;
-  submitToolOutputs: (threadId: string, runId: string, toolOutputs: any[]) => Promise<boolean>;
+  // Run management
+  setCurrentRunId: (runId: string | null) => void;
+  processFormToolCall: (toolCallId: string, functionName: string, parameters: any, threadId: string, runId: string) => Promise<void>;
   
-  // New operation to set the message ID
-  setCurrentMessageId: (id: string) => void;
+  // Utility functions
+  toggleStreamEnabled: () => void;
+  handleStreamError: (error: any) => void;
+  
+  // Tool handling
+  handleToolCall: (toolData: any) => void;
+  setCurrentMessageId: (messageId: string | null) => void;
 }

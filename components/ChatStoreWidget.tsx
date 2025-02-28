@@ -1,28 +1,26 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useChatStore } from '@/store/chatStore';
+import { chatStore } from '@/store/chatStore';
 import { useStreamingStore } from '@/store/streamingStore';
 import { ScrollArea } from './ui/scroll-area';
 
 const ChatStoreWidget: React.FC = () => {
-  const { fetchFileNames } = useChatStore();
-  const chatState = useChatStore.getState();
+
+  const chatState = chatStore.getState();
   const streamingState = useStreamingStore.getState();
 
   const streamingActive = streamingState.isStreamingActive;
-
+  const formKey = streamingState.currentFormKey;
   const [logs, setLogs] = useState<string[]>([]);
   const [filenames, setFilenames] = useState<string[]>([]);
   const prevStateRef = useRef(chatState);
   const currentThreadId = chatState.currentThread?.thread_id;
   const currentThreadTitle = chatState.currentThread?.title;
   const vectorStoreId = chatState.currentThread?.tool_resources?.file_search?.vector_store_ids?.[0];
-  const threadTitles = chatState.historicalThreads.map((t) => t.title);
-  const threadIds = chatState.historicalThreads.map((t) => t.thread_id);
-  const activeRunStatus = useChatStore.getState().activeRunStatus;
+  const activeRunStatus = chatStore.getState().activeRunStatus;
   
   useEffect(() => {
     // Subscribe to chatStore updates and log changes
-    const unsubscribe = useChatStore.subscribe((newState) => {
+    const unsubscribe = chatStore.subscribe((newState) => {
       const diffs: string[] = [];
       const typedNewState = newState as Record<string, any>;
       const typedPrevState = prevStateRef.current as Record<string, any>;
@@ -41,21 +39,6 @@ const ChatStoreWidget: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (vectorStoreId) {
-      fetchFileNames(vectorStoreId)
-        .then((fetchedFileNames: string[]) => {
-          setFilenames(fetchedFileNames);
-        })
-        .catch((err) => {
-          console.error('Error fetching file names:', err);
-          setFilenames([]);
-        });
-    } else {
-      setFilenames([]);
-    }
-  }, [vectorStoreId]);
-
   return (
     <div
       style={{
@@ -72,17 +55,17 @@ const ChatStoreWidget: React.FC = () => {
       }}
     > 
 
-      <h4 style={{ margin: '0 0 10px 0' }}>current:  {currentThreadTitle ?? currentThreadId}</h4>
-      <h6 style={{ margin: '0 0 10px 0' }}>threads:  {threadIds[0]}</h6>
+      <h5 style={{ margin: '0 0 10px 0' }}>{currentThreadId?.slice(6, 15)}</h5>
+      <h6 style={{ margin: '0 0 10px 0' }}>{currentThreadTitle? currentThreadTitle : null}</h6>
       <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-        {streamingActive ? 'Streaming Active' : 'Streaming Inactive'}
-        Run Status: {activeRunStatus?.isActive ? 'Active' : 'Inactive'}
+        <span>Streaming: {streamingActive ? 'Active' : 'Inactive'}</span>
+        <br />
+        <span>Run Status: {activeRunStatus?.isActive ? 'Active' : 'Inactive'}</span>
         
       </pre>
-      {vectorStoreId && filenames.length > 0 && (
+      {vectorStoreId  && (
         <div style={{ fontSize: '12px', whiteSpace: 'pre-wrap', marginTop: '5px' }}>
-           Vector Store ID: {vectorStoreId}
-          File Names: {filenames.join(', ')}
+           <span>Vector Store ID: {vectorStoreId.slice(0, 6)}...{vectorStoreId.slice(-4)}</span> // display vectorStoreId, only first 6 characters '...' and last 4 characters
         </div>
       )}
 

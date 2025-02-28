@@ -1,7 +1,11 @@
 // app/api/threads/[threadId]/run/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { openai as awaitOpenai } from '@/utils/openai';
+import OpenAI from "openai";
 import { NextRequest, NextResponse } from 'next/server';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export const maxDuration = 60;
 
@@ -10,7 +14,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ threadId: string }> }
 ) {
-  const openai = await awaitOpenai();
+  
   const supabase = await createServer();
 
   // Authenticate user
@@ -62,6 +66,52 @@ export async function GET(
     console.error('[API] Error retrieving run(s):', error);
     return NextResponse.json(
       { success: false, error: error.message || "Error retrieving runs" },
+      { status: error.status || 500 }
+    );
+  }
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ threadId: string }> }
+) {
+  const supabase = await createServer();
+
+  // Authenticate user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error('[API] Unauthorized access', authError);
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { threadId } = await params;
+    const body = await req.json();
+    const { assistant_id, settings, messages } = body;
+    
+    console.log(`[API] Creating run for thread ${threadId}`);
+    
+    if (!threadId || !assistant_id || !settings || !messages) {
+      console.error('[API] Missing or invalid required parameters:', { threadId, assistant_id, settings, messages });
+      return NextResponse.json(
+        { success: false, error: "Missing or invalid required parameters" },
+        { status: 400 }
+      );
+    }
+
+    // Create run
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id
+    });
+    
+    if (run) {
+      console.log('[API] Run created:', run)
+    }
+    return NextResponse.json({ run });
+  } catch (error: any) {
+    console.error('[API] Error creating run:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Error creating run" },
       { status: error.status || 500 }
     );
   }

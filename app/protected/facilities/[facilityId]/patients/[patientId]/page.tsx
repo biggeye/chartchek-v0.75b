@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { getFacilityData } from '@/lib/kipu';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { Dialog, DialogTitle, DialogBody, DialogActions } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { useChatStore } from '@/store/chatStore';
+import { chatStore } from '@/store/chatStore';
 
 interface PatientPageProps {
-  params: {
+  params: Promise<{
     facilityId: string;
     patientId: string;
-  };
+  }>;
 }
 
 // Custom card components to replace missing exports
@@ -30,8 +30,8 @@ const CardDescription = ({ className, children, ...props }: React.HTMLAttributes
 );
 
 export default function PatientPage({ params }: PatientPageProps) {
-  // Access params directly since it's properly typed
-  const { facilityId, patientId } = params;
+  // Unwrap the Promise containing params
+  const { facilityId, patientId } = use(params);
   
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<any>(null);
@@ -46,13 +46,13 @@ export default function PatientPage({ params }: PatientPageProps) {
   const [userPrompt, setUserPrompt] = useState('');
   
   // Access chat store for sending messages
-  const { createThread, sendMessage, setCurrentAssistantId } = useChatStore();
+  const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
   
   useEffect(() => {
-    const fetchData = () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const facilityData = getFacilityData(facilityId);
+        const facilityData = await getFacilityData(facilityId);
         
         if (!facilityData) {
           console.error('Facility not found');

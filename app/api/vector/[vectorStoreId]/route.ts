@@ -44,7 +44,7 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);

@@ -3,15 +3,19 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { openai as awaitOpenai } from '@/utils/openai';
+import OpenAI from "openai"
 import type { MessagePayload } from '@/types/store/document/index';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+}); 
+
 
 export async function POST(req: NextRequest) {
   const { pathname } = new URL(req.url);
   const threadId = pathname.split('/').slice(-2, -1)[0];
 
   const supabase = await createServer();
-  const openai = await awaitOpenai();
 
   console.log(`[/api/threads/${threadId}/messages] Received request to create message `);
 
@@ -49,44 +53,36 @@ export async function POST(req: NextRequest) {
     // If attachments exist, map them into the expected structure.
     if (attachments && Array.isArray(attachments) && attachments.length > 0) {
       payload.attachments = attachments.map((attachment: any) => {
-        const fileId = typeof attachment === 'object' && attachment.file_id ? attachment.file_id : attachment;
         return {
-          file_id: fileId,
-          tools: [{ type: "file_search" as const }],
+          file_id: attachment.file_id,
+          tools: attachment.tools || [{ type: 'file_search' }]
         };
       });
     }
 
-    console.log('[/api/threads/[threadId]/messages] Creating message in OpenAI with payload:', payload);
-    const message = await openai.beta.threads.messages.create(threadId, payload);
-    console.log(`[/api/threads/${threadId}/messages] Message created in OpenAI:`, message.id);
-
-    // Save the message to Supabase.
-    console.log(`[/api/threads/${threadId}/messages] Storing message in Supabase`);
-    const { data: dbMessage, error: dbError } = await supabase
+    // Create the message in OpenAI.
+    const openAIMessage = await openai.beta.threads.messages.create(
+      threadId,
+      payload
+    );
+    const messageId = openAIMessage.id;
+    // Store a minimal reference in Supabase
+    const { error: insertError } = await supabase
       .from('chat_messages')
       .insert({
-        user_id: userId,
         thread_id: threadId,
-        content: { text: content },
-        attachments: message.attachments || [],
+        user_id: userId,
+        message_id: messageId,
         role: 'user',
-        message_id: message.id,
-      })
-      .select()
-      .single();
+        attachments: payload.attachments
+      });
 
-    if (dbError) {
-      console.error(`[/api/threads/${threadId}/messages] Supabase error:`, dbError);
-      throw dbError;
+    if (insertError) {
+      console.error('[POST] Error storing message reference:', insertError);
+      // Continue anyway since the message was created in OpenAI
     }
-    
-    console.log(`[/api/threads/${threadId}/messages] Message stored in Supabase:`, dbMessage.id);
 
-    return NextResponse.json({
-      messageId: message.id,
-      message: dbMessage
-    });
+    return NextResponse.json(openAIMessage);
   } catch (error) {
     console.error('[POST] Error during message creation:', error);
     return NextResponse.json(
@@ -97,13 +93,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // ... existing GET handler code remains unchanged ...
-
   const { pathname } = new URL(request.url);
   const threadId = pathname.split('/').slice(-2, -1)[0];
 
   const supabase = await createServer();
-  const openai = await awaitOpenai();
 
   console.log('[GET] Received request to list messages for thread:', threadId);
 
@@ -126,7 +119,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const limit = parseInt(searchParams.get('limit') || '100', 10);
     const order = searchParams.get('order') || 'desc';
     const after = searchParams.get('after');
     const before = searchParams.get('before');
@@ -134,28 +127,25 @@ export async function GET(request: NextRequest) {
 
     console.log('[GET] Query parameters:', { limit, order, after, before, runId });
 
-    const messages = await openai.beta.threads.messages.list(threadId);
-    console.log('[GET] Retrieved messages:', messages);
-
-    // Extract and update attachments for each message
-    for (const message of messages.data) {
-      if (message.attachments && message.attachments.length > 0) {
-        const attachments = message.attachments.map(file_id => ({
-          file_id,
-          tools: [
-            { type: 'code_interpreter' },
-            { type: 'file_search' }
-          ]
-        }));
-
-        await supabase
-          .from('chat_messages')
-          .update({ attachments })
-          .eq('message_id', message.id);
-      }
-    }
-
-    return NextResponse.json(messages);
+    // Fetch messages from OpenAI using pagination options correctly
+    // Note: The SDK only accepts valid options through its query parameter
+    let queryOptions = {};
+    
+    // Only add parameters that are defined and valid for the OpenAI API
+    if (after) queryOptions = { ...queryOptions, after };
+    if (before) queryOptions = { ...queryOptions, before };
+    if (runId) queryOptions = { ...queryOptions, run_id: runId };
+    
+    // Get messages from OpenAI
+    const messagesResponse = await openai.beta.threads.messages.list(
+      threadId,
+      Object.keys(queryOptions).length > 0 ? queryOptions : undefined
+    );
+    
+    console.log('[GET] Retrieved messages:', messagesResponse.data.length);
+    
+    // Return the OpenAI messages directly
+    return NextResponse.json(messagesResponse);
   } catch (error) {
     console.error('[GET] Error during message listing:', error);
     return NextResponse.json(

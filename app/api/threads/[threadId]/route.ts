@@ -1,34 +1,30 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { openai } from '@/utils/openai'
+import OpenAI from "openai"
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
-import fetch from 'node-fetch';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function GET(request: NextRequest): Promise<Response> {
-
-
-  
-  
-   const supabase = await createServer()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return new Response(JSON.stringify({ 
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED'
-      }), { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
-      })
-    }
+  const supabase = await createServer()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return new Response(JSON.stringify({ 
+      error: 'Unauthorized',
+      code: 'AUTH_REQUIRED'
+    }), { 
+      status: 401, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+  }
     
-    // Get pagination params
-    try{
-    const { searchParams } = request.nextUrl;
+  try {
     const urlParts = request.nextUrl.pathname.split('/');
     const threadId = urlParts[urlParts.length - 1]; // Extract threadId from the URL path
 
     if (!threadId || threadId === '[threadId]') {
-
       return new Response(JSON.stringify({ 
         error: 'Thread ID is required',
         code: 'INVALID_REQUEST'
@@ -38,35 +34,31 @@ export async function GET(request: NextRequest): Promise<Response> {
       });
     }
 
+    // Verify user has access to this thread
+    const { data: threadData } = await supabase
+      .from('chat_threads')
+      .select('thread_id')
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id)
+      .single();
 
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': "assistants=v2"
-      },
-    });
-
-    if (!response.ok) {
-      console.log('Failed to fetch from OpenAI API with status:', response.status);
-      const errorData = await response.json().catch(() => ({}));
+    if (!threadData) {
       return new Response(JSON.stringify({ 
-        error: errorData.error?.message || 'Failed to fetch from OpenAI API',
-        code: 'EXTERNAL_API_ERROR',
-        status: response.status
+        error: 'Thread not found or access denied',
+        code: 'NOT_FOUND'
       }), { 
-        status: response.status, 
+        status: 404, 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
 
-    const data = await response.json();
+    // Fetch thread directly from OpenAI
+    const openaiThread = await openai.beta.threads.retrieve(threadId);
 
-    return new Response(JSON.stringify(data), { 
+    return new Response(JSON.stringify(openaiThread), { 
       status: 200, 
       headers: { 'Content-Type': 'application/json' } 
-    })
+    });
   } catch (error) {
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Failed to retrieve thread',
@@ -74,13 +66,14 @@ export async function GET(request: NextRequest): Promise<Response> {
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
-    })
+    });
   }
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
   const supabase = await createServer();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
   if (authError || !user) {
     return new Response(JSON.stringify({ 
       error: 'Unauthorized',
@@ -90,24 +83,58 @@ export async function POST(request: NextRequest): Promise<Response> {
       headers: { 'Content-Type': 'application/json' } 
     });
   }
-  const threadId = request.nextUrl.pathname.split('/').pop();
-
-  const threadPosted = await supabase.from('chat_threads').insert({
-    user_id: user.id,
-    thread_id: threadId
-  })
-  .single();  
-
-  return new Response(JSON.stringify(threadPosted), { 
-    status: 200, 
-    headers: { 'Content-Type': 'application/json' } 
-  })
+  
+  try {
+    const urlParts = request.nextUrl.pathname.split('/');
+    const threadId = urlParts[urlParts.length - 1];
+    const { metadata } = await request.json();
+    
+    if (!threadId || threadId === '[threadId]') {
+      return new Response(JSON.stringify({ 
+        error: 'Thread ID is required',
+        code: 'INVALID_REQUEST'
+      }), { 
+        status: 400, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    // Update thread in OpenAI
+    const updatedThread = await openai.beta.threads.update(threadId, {
+      metadata
+    });
+    
+    // Keep reference in Supabase up to date (but we don't return this data)
+    const { error: updateError } = await supabase
+      .from('chat_threads')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id);
+    
+    if (updateError) {
+      console.error('Error updating thread reference in Supabase:', updateError);
+      // Continue anyway since OpenAI update succeeded
+    }
+    
+    return new Response(JSON.stringify(updatedThread), { 
+      status: 200, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Failed to update thread',
+      code: 'INTERNAL_ERROR'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
 
 export async function DELETE(request: NextRequest): Promise<Response> {
-   const newOpenAI = await openai();
-   const supabase = await createServer();
+  const supabase = await createServer();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
   if (authError || !user) {
     return new Response(JSON.stringify({ 
       error: 'Unauthorized',
@@ -117,32 +144,47 @@ export async function DELETE(request: NextRequest): Promise<Response> {
       headers: { 'Content-Type': 'application/json' } 
     });
   }
-  const threadId = request.nextUrl.pathname.split('/').pop();
   
-  if (!threadId) {
-    return new Response(JSON.stringify({ 
-      error: 'Thread ID is required',
-      code: 'THREAD_ID_REQUIRED'
-    }), { 
-      status: 400, 
+  try {
+    const urlParts = request.nextUrl.pathname.split('/');
+    const threadId = urlParts[urlParts.length - 1];
+    
+    if (!threadId || threadId === '[threadId]') {
+      return new Response(JSON.stringify({ 
+        error: 'Thread ID is required',
+        code: 'INVALID_REQUEST'
+      }), { 
+        status: 400, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    // Delete thread from OpenAI
+    const openaiThread = await openai.beta.threads.retrieve(threadId);
+    
+    // Delete thread reference from Supabase
+    const { error: deleteError } = await supabase
+      .from('chat_threads')
+      .delete()
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id);
+    
+    if (deleteError) {
+      console.error('Error deleting thread reference from Supabase:', deleteError);
+      // Continue anyway since OpenAI deletion succeeded
+    }
+    
+    return new Response(JSON.stringify({ success: true }), { 
+      status: 200, 
       headers: { 'Content-Type': 'application/json' } 
     });
-  }
-  
-  const threadDeletedFromOpenAI = await newOpenAI.beta.threads.del(threadId);
-  if (!threadDeletedFromOpenAI) {
+  } catch (error) {
     return new Response(JSON.stringify({ 
-      error: 'Failed to delete thread from OpenAI',
-      code: 'DELETE_THREAD_OPENAI_FAILED'
-    }), { 
-      status: 500, 
-      headers: { 'Content-Type': 'application/json' } 
+      error: error instanceof Error ? error.message : 'Failed to delete thread',
+      code: 'INTERNAL_ERROR'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
-  const threadDeleted = await supabase.from('chat_threads').delete().eq('thread_id', threadId).single();  
-  return new Response(JSON.stringify(threadDeleted), { 
-    status: 200, 
-    headers: { 'Content-Type': 'application/json' } 
-  })
-
 }

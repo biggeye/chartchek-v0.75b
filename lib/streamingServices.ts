@@ -70,7 +70,7 @@ export async function streamAssistantResponse(
                       // After a short delay, check the run status to see if it requires action
                       setTimeout(async () => {
                         console.log('[streamAssistantResponse] Checking run status after tool call:', { threadId });
-                        const chatStore = (await import('@/store/chatStore')).useChatStore.getState();
+                        const chatStore = (await import('@/store/chatStore')).chatStore.getState();
                         const runStatus = await chatStore.checkActiveRun(threadId);
                         console.log('[streamAssistantResponse] Updated run status:', runStatus);
                       }, 500);

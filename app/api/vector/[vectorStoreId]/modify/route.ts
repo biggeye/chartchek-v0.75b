@@ -76,7 +76,7 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 
 export async function POST(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const supabase = await createServer();
-    const openai = await awaitOpenai();
+    
 
     // Authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();

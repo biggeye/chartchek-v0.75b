@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useChatStore } from '@/store/chatStore'
+import { chatStore } from '@/store/chatStore'
 import { useStreamingStore } from '@/store/streamingStore'
 import { ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
@@ -11,7 +11,7 @@ interface ToolOutputFormProps {
 }
 
 export default function ToolOutputForm({ onSubmitSuccess, onCancel }: ToolOutputFormProps) {
-  const { activeRunStatus, currentThread, checkActiveRun } = useChatStore()
+  const { activeRunStatus, currentThread, checkActiveRun } = chatStore()
   const { submitToolOutputs } = useStreamingStore()
   const [toolOutputValues, setToolOutputValues] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)

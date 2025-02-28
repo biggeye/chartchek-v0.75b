@@ -1,7 +1,7 @@
 // app/api/threads/[threadId]/messages/[messageId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
-import { openai as awaitOpenai } from '@/utils/openai'
+import { openai } from '@/utils/openai'
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const messageId = pathSegments[pathSegments.length - 1];
 
   const supabase = await createServer();
-  const openai = await awaitOpenai();
+  
 
   try {
     // Authentication check

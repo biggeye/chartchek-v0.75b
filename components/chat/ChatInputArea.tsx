@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
 import { PaperClipIcon } from '@heroicons/react/20/solid'
 import { useDocumentStore } from '@/store/documentStore'
-import { useChatStore } from '@/store/chatStore'
+import { chatStore } from '@/store/chatStore'
 import { Document } from '@/types/store/document'
 
 export default function ChatInputArea({
@@ -22,7 +22,7 @@ export default function ChatInputArea({
     addFileToQueue, 
     removeFileFromQueue, 
     currentThread
-  } = useChatStore()
+  } = chatStore()
 
   // Use documentStore for fetching the global list of documents.
   const { uploadFileToOpenAI, documents, isLoading: isDocumentsLoading, fetchDocuments } = useDocumentStore()

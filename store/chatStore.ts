@@ -2,708 +2,474 @@
 'use client';
 
 import { create } from 'zustand';
-import { Thread, ChatStoreState, UserChatMessage, RunStatusResponse, SendMessageResult } from '@/types/store/chat';
-import { Document } from '@/types/store/document';
-import { ChatMessage, ChatMessageAttachment } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
-import { StreamingState } from '@/types/store/streaming';
-import { Run } from '@/types/api/openai';
-import { useStreamingStore } from './streamingStore';
+import { ChatStoreState, SendMessageResult, Thread } from '@/types/store/chat';
+import { Document } from '@/types/store/document';
+import { ChatMessage } from '@/types/database';
+import { Run, ThreadMessage } from '@/types/api/openai';
+import { RunStatusResponse } from '@/types/store/chat';
 
-// Initialize a single Supabase client instance
+// Initialize Supabase client
 const supabase = createClient();
 
-// Export the chat store
-export const useChatStore = create<ChatStoreState>((set, get) => ({
+// Create a function to get the user ID that doesn't use top-level await
+const getUserId = async () => {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id || 'anonymous';
+};
+
+// Create Zustand store for chat state
+const useChatStore = create<ChatStoreState>((set, get) => ({
   // --- CORE STATE ---
   currentThread: null,
   historicalThreads: [],
-  transientFileQueue: [] as Document[],
+  transientFileQueue: [],
   isLoading: false,
   error: null,
   activeRunStatus: null,
 
-  // -------------------------------------------------
-  // THREAD MANAGEMENT
-  // -------------------------------------------------
-  // Creates a new thread (merged functionality from ensureThread and createThread)
-  createThread: async (): Promise<string> => {
+  // --- THREAD MANAGEMENT ---
+  createThread: async (assistantId: string): Promise<string> => {
     try {
-      console.log('[chatStore] Creating new thread...');
-      const response = await fetch('/api/threads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      set({ isLoading: true, error: null });
+    
+      // Get user ID
+      const userId = await getUserId();
+      
+      // Create thread in OpenAI
+      console.log('[chatStore:createThread] Creating new thread in OpenAI');
+      const response = await fetch('/api/threads', { method: 'POST' });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[chatStore] Thread creation failed:', errorData);
-        throw new Error(`Failed to create thread: ${errorData.error || response.statusText}`);
+        throw new Error(`Failed to create thread: ${response.status}`);
       }
       
-      const data = await response.json();
-      console.log('[chatStore] Thread creation API response:', data);
+      const { threadId } = await response.json();
       
-      // Ensure we have a thread_id
-      if (!data.threadId && !data.thread_id) {
-        console.error('[chatStore] Thread creation response missing thread ID');
-        throw new Error('Thread creation response missing thread ID');
+      if (!threadId) {
+        throw new Error('No thread ID returned from API');
       }
+
+      // update OpenAI Thread Metadata
+      const updatedThread = await fetch(`/api/threads/${threadId}/metadata`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metadata: {
+            user_id: userId,
+            assistant_id: assistantId
+          }
+        })
+      });
+
       
-      const threadId = data.threadId || data.thread_id;
-      
-      const newThread: Thread = {
-        thread_id: threadId,
-        messages: [],
-        tool_resources: null,
-        title: data.title || 'Untitled', // optional field
-      };
-      
-      // Update both currentThread and historicalThreads
-      set((state: ChatStoreState) => {
-        console.log('[chatStore] Setting state with new thread:', newThread);
-        return {
-          currentThread: newThread,
-          historicalThreads: [newThread, ...state.historicalThreads],
-        };
+      // Set as current thread
+      set({
+        currentThread: { thread_id: threadId, messages: [], tool_resources: null },
+        isLoading: false
       });
       
-      console.log('[chatStore] Created and set new thread:', newThread);
       return threadId;
     } catch (error: any) {
-      console.error('[chatStore] Thread creation error:', error);
-      set({ error: error.message || 'Failed to create thread' });
+      console.error('[chatStore:createThread] Error:', error);
+      set({ error: error.message || 'Failed to create thread', isLoading: false });
       throw error;
     }
   },
-
-  // Fetches historical threads via API
+  // Fetches historical threads from Supabase
   fetchHistoricalThreads: async (): Promise<Thread[]> => {
-    set({ isLoading: true });
     try {
-        const response = await fetch(`/api/threads`, { method: 'GET' });
-      if (!response.ok) {
-        console.error('[chatStore:fetchHistoricalThreads] Failed to fetch threads, status:', response.status);
-        throw new Error('Failed to fetch threads');
+      set({ isLoading: true, error: null });
+      // Fetch thread IDs from Supabase
+      const { data: threads, error } = await supabase
+        .from('chat_threads')
+        .select('*')
+        .eq('user_id', await getUserId())
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
       }
-      const threads: Thread[] = await response.json();
-      set({ historicalThreads: threads, isLoading: false });
-      return threads;
+      // Convert to Thread objects
+      const historicalThreads: Thread[] = threads.map((thread: any) => ({
+        thread_id: thread.thread_id,
+        assistant_id: thread.assistant_id,
+        title: thread.title || 'New Chat',
+        metadata: thread.metadata,
+        messages: [],
+        tool_resources: thread.tool_resources
+      }));
+      
+      set({ historicalThreads, isLoading: false });
+      return historicalThreads;
     } catch (error: any) {
-      console.error('[chatStore:fetchHistoricalThreads] Error fetching threads:', error);
+      console.error('[chatStore:fetchHistoricalThreads] Error:', error);
       set({ error: error.message || 'Failed to fetch threads', isLoading: false });
       throw error;
     }
   },
-
   // Updates a thread's title
   updateThreadTitle: async (threadId: string, newTitle: string): Promise<void> => {
     try {
-      const update = await supabase
+      set({ isLoading: true, error: null });
+      const updatedTitle = await fetch(`/api/threads/${threadId}/metadata`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metadata: {
+            'title': newTitle
+          }
+        })
+      });
+       if (!updatedTitle) {
+        throw new Error('Failed to update thread title with OpenAI');
+      }
+      // Update title in Supabase
+      const { error } = await supabase
         .from('chat_threads')
         .update({ title: newTitle })
         .eq('thread_id', threadId)
-        .single();
-      if (!update) {
-        throw new Error('Failed to update thread title');
+        .eq('user_id', await getUserId());
+      
+      if (error) {
+        throw error;
       }
-      set((state: ChatStoreState) => {
-        const updatedThreads = state.historicalThreads.map((t: Thread) =>
-          t.thread_id === threadId ? { ...t, title: newTitle } : t
-        );
-        const updatedCurrentThread =
-          state.currentThread && state.currentThread.thread_id === threadId
-            ? { ...state.currentThread, title: newTitle }
-            : state.currentThread;
-        return { historicalThreads: updatedThreads, currentThread: updatedCurrentThread };
-      });
+      
+      // Update state
+      const { currentThread, historicalThreads } = get();
+      
+      // Update in historical threads
+      const updatedHistoricalThreads = historicalThreads.map(thread => 
+        thread.thread_id === threadId 
+          ? { ...thread, title: newTitle } 
+          : thread
+      );
+      
+      // Update current thread if it's the one being modified
+      if (currentThread && currentThread.thread_id === threadId) {
+        set({
+          currentThread: { ...currentThread, title: newTitle },
+          historicalThreads: updatedHistoricalThreads,
+          isLoading: false
+        });
+      } else {
+        set({
+          historicalThreads: updatedHistoricalThreads,
+          isLoading: false
+        });
+      }
     } catch (error: any) {
-      set({ error: error.message || 'Failed to update thread title' });
+      console.error('[chatStore:updateThreadTitle] Error:', error);
+      set({ error: error.message || 'Failed to update thread title', isLoading: false });
       throw error;
     }
   },
-
   // Deletes a thread via API and updates local history
   deleteThread: async (threadId: string): Promise<void> => {
     try {
-      const threadDeleted = await fetch(`/api/threads/${threadId}`, {
-        method: 'DELETE',
-      });
-      if (!threadDeleted.ok) {
-        throw new Error('Failed to delete thread');
+      set({ isLoading: true, error: null });
+      
+      // Delete from OpenAI via API
+      const response = await fetch(`/api/threads/${threadId}`, { method: 'DELETE' });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete thread: ${response.status}`);
       }
-      set((state: ChatStoreState) => ({
-        historicalThreads: state.historicalThreads.filter((t: Thread) => t.thread_id !== threadId),
-        currentThread:
-          state.currentThread && state.currentThread.thread_id === threadId ? null : state.currentThread,
-      }));
+      
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('chat_threads')
+        .delete()
+        .eq('thread_id', threadId)
+        .eq('user_id', await getUserId());
+      
+      if (error) {
+        console.error('[chatStore:deleteThread] Error deleting from Supabase:', error);
+        throw error;
+      }
+      
+      // Update state
+      const { currentThread, historicalThreads } = get();
+      const updatedHistoricalThreads = historicalThreads.filter(
+        thread => thread.thread_id !== threadId
+      );
+      
+      // If current thread is being deleted, set to null
+      if (currentThread && currentThread.thread_id === threadId) {
+        set({
+          currentThread: null,
+          historicalThreads: updatedHistoricalThreads,
+          isLoading: false
+        });
+      } else {
+        set({
+          historicalThreads: updatedHistoricalThreads,
+          isLoading: false
+        });
+      }
     } catch (error: any) {
-      set({ error: error.message || 'Failed to delete thread' });
+      console.error('[chatStore:deleteThread] Error:', error);
+      set({ error: error.message || 'Failed to delete thread', isLoading: false });
       throw error;
     }
   },
-
   // Sets the current thread
   setCurrentThread: (thread: Thread | null) => {
     set({ currentThread: thread });
   },
 
-  // -------------------------------------------------
-  // MESSAGE MANAGEMENT
-  // -------------------------------------------------
-
-  // Check if there's an active run for the thread
-  checkActiveRun: async (threadId: string): Promise<RunStatusResponse> => {
-    try {
-      console.log(`[chatStore:checkActiveRun] Checking for active runs in thread ${threadId}`);
-      
-      const response = await fetch(`/api/threads/${threadId}/run?limit=1&order=desc`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`[chatStore:checkActiveRun] API error:`, errorData);
-        // If we can't check, assume there is no active run
-        return { isActive: false };
-      }
-      
-      const data = await response.json();
-      
-      // If there are no runs or the most recent run is in a terminal state, return false
-      if (!data.data || !data.data.length) {
-        console.log(`[chatStore:checkActiveRun] No runs found for thread ${threadId}`);
-        return { isActive: false };
-      }
-      
-      const latestRun = data.data[0];
-      
-      // If the latest run is not in a terminal state, return true (there is an active run)
-      const isActive = !isTerminalState(latestRun.status);
-      console.log(`[chatStore:checkActiveRun] Latest run status: ${latestRun.status}, isActive: ${isActive}`);
-      
-      // If the run is in a terminal state, update the chat_threads table
-      if (!isActive) {
-        try {
-          const updateResult = await supabase
-            .from('chat_threads')
-            .update({
-              last_run: latestRun.id,
-              last_run_status: latestRun.status
-            })
-            .eq('thread_id', threadId);
-          
-          console.log(`[chatStore:checkActiveRun] Updated thread with run status: ${latestRun.status}`, updateResult);
-          
-          // Use the streamingStore to store run data
-          const streamingStore = useStreamingStore.getState();
-          
-          // If the run has required_action data, also store it in the thread_runs table
-          if (latestRun.status === 'requires_action' && latestRun.required_action) {
-            await streamingStore.storeRunData(latestRun);
-          } else if (isTerminalState(latestRun.status)) {
-            // Also store terminal state runs for historical tracking
-            await streamingStore.storeRunData(latestRun);
-          }
-        } catch (updateError) {
-          console.error(`[chatStore:checkActiveRun] Failed to update thread run status:`, updateError);
-        }
-      }
-      
-      // Prepare a more detailed response about the run state
-      const result: RunStatusResponse = {
-        isActive,
-        status: latestRun.status,
-        runId: latestRun.id // Include the run ID in the response
-      };
-      
-      // If the run requires action, include that information
-      if (latestRun.status === 'requires_action' && latestRun.required_action) {
-        result.requiresAction = true;
-        result.requiredAction = {
-          type: latestRun.required_action.type,
-        };
-        
-        // Handle tool_calls based on the API response structure
-        // The OpenAI API may have one of these structures depending on the version
-        if (latestRun.required_action.submit_tool_outputs?.tool_calls) {
-          // Standard structure
-          result.requiredAction.toolCalls = latestRun.required_action.submit_tool_outputs.tool_calls;
-        } else if (latestRun.required_action.tool_calls) {
-          // Alternative structure (direct tool_calls property)
-          result.requiredAction.toolCalls = latestRun.required_action.tool_calls;
-        }
-        
-        console.log(`[chatStore:checkActiveRun] Run requires action:`, {
-          type: result.requiredAction.type,
-          toolCallsCount: result.requiredAction.toolCalls?.length || 0,
-          toolCalls: result.requiredAction.toolCalls
-        });
-      }
-      
-      // Update the active run status in the store
-      get().updateActiveRunStatus(result);
-      
-      return result;
-    } catch (err: any) {
-      console.error(`[chatStore:checkActiveRun] Error:`, err);
-      // If we encounter an error, assume there is no active run
-      return { isActive: false };
-    }
-  },
-
-  // Update the active run status in the store
-  updateActiveRunStatus: (status: RunStatusResponse | null) => {
-    console.log(`[chatStore:updateActiveRunStatus] Updating active run status:`, status);
-    
-    // If the status is a terminal state, ensure isActive is set to false
-    if (status && status.status && isTerminalState(status.status)) {
-      status.isActive = false;
-    }
-    
-    set({ activeRunStatus: status });
-  },
-
-  // Sends a user message and clears the file queue
+  // --- MESSAGE MANAGEMENT ---
+  // Sends a user message to OpenAI and clears the file queue
   sendMessage: async (
     assistantId: string,
     threadId: string,
     content: string,
-    attachments: ChatMessageAttachment[] = []
+    attachments = []
   ): Promise<SendMessageResult> => {
-    set({ isLoading: true, error: null });
     try {
-      console.log(`[chatStore:sendMessage] Sending message to thread ${threadId}:`, {
-        contentPreview: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-        attachments: attachments.length
-      });
-      
-      // Check if there's an active run for this thread
-      const runStatus = get().activeRunStatus;
-      
-      // If there's an active run, update the state and return error info
-      if (runStatus && runStatus.isActive) {
-        console.log(`[chatStore:sendMessage] Active run detected with status: ${runStatus.status}`);
-        
-        // Check the run status again to make sure it's up-to-date
-        await get().checkActiveRun(threadId);
-        
-        // Set loading to false and return an error object
-        set({ isLoading: false });
-        return { 
-          success: false, 
-          error: `Cannot send message while run is active (status: ${runStatus.status})` 
-        };
-      }
-      
-      const message: UserChatMessage = {
+      console.log(`[chatStore:sendMessage] Starting send message flow for thread: ${threadId}`);
+      set({ isLoading: true, error: null });
+      const { transientFileQueue } = get();
+      const fileIds = transientFileQueue
+        .filter(doc => doc.openai_file_id)
+        .map(doc => doc.openai_file_id as string);
+      const payload: any = {
         role: 'user',
-        content,
-        attachments,
+        content: content,
+        assistant_id: assistantId
       };
-      
+      if (attachments.length > 0) {
+        payload.attachments = attachments;
+      }
       const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message),
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`[chatStore:sendMessage] Error from API: ${error}`);
+        throw new Error(`Failed to send message: ${response.status}`);
+      }
+      set({ 
+        transientFileQueue: [],
+      });
+     /* const nonStreamRun = await fetch(`/api/threads/${threadId}/run`, {
+        method: 'POST',
+        body: JSON.stringify({
+          assistant_id: assistantId,
+        })
+      }); 
+      if (!nonStreamRun.ok) {
+        throw new Error(`Failed to create non-stream run: ${nonStreamRun.status}`);
+      } */
+      console.log('[chatStore:sendMessage] Message sent');
+      return { success: true };
+    } catch (error: any) {
+      console.error('[chatStore:sendMessage] Error:', error);
+      set({ error: error.message || 'Failed to send message', isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+  
+    // --- ACTIVE RUN MANAGEMENT ---
+    addStreamingMessage(message) {
+     
+    },
+  // Check the status of an active run
+  checkActiveRun: async (threadId: string) => {
+    try {
+      console.log(`[chatStore:checkActiveRun] Checking active run for thread: ${threadId}`);
+      const response = await fetch(`/api/threads/${threadId}/run/check`, {
+        method: 'GET'
       });
       
+      if (!response.ok) {
+        console.error(`[chatStore:checkActiveRun] Error checking run status: ${response.status}`);
+        return { isActive: false };
+      }
+      
+      const runStatus = await response.json();
+      console.log('[chatStore:checkActiveRun] Run status:', runStatus);
+      return runStatus;
+    } catch (error) {
+      console.error('[chatStore:checkActiveRun] Error:', error);
+      return { isActive: false };
+    }
+  },
+  // Update the active run status in the store
+  updateActiveRunStatus: (status: RunStatusResponse | null) => {
+    console.log(`[chatStore:updateActiveRunStatus] Updating active run status:`, status);
+    
+    // Don't continue if run is completed or failed
+    if (status?.status && isTerminalState(status.status)) {
+      console.log(`[chatStore:updateActiveRunStatus] Run reached terminal state: ${status.status}`);
+    }
+    
+    set({ activeRunStatus: status });
+  },
+  // Fetch messages directly from OpenAI
+  fetchOpenAIMessages: async (threadId: string): Promise<ThreadMessage[] | undefined> => {
+    if (!threadId) {
+      console.error('[fetchOpenAIMessages] No threadId provided');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/threads/${threadId}/messages`, {
+        method: 'GET'
+      });
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`[chatStore:sendMessage] API error:`, errorData);
-        throw new Error(`Failed to send message: ${errorData.error || response.statusText}`);
+        console.error('[fetchOpenAIMessages] Failed to fetch messages:', errorData);
+        return;
       }
-      
-      const data = await response.json();
-      console.log(`[chatStore:sendMessage] Message sent successfully:`, data);
-      addAssistantIdToThread(assistantId, threadId);
-      // Add this message to the current thread's messages immediately
-      // This gives immediate feedback to the user before real-time updates arrive
-      set((state: ChatStoreState) => {
-        if (state.currentThread && state.currentThread.thread_id === threadId) {
-          console.log(`[chatStore:sendMessage] Updating current thread with new message`);
-          return {
-            currentThread: {
-              ...state.currentThread,
-              messages: [...(state.currentThread.messages || []), data.message]
-            }
-          };
-        }
-        return state; // No changes if we're not viewing this thread
-      });
-      
-      // After sending the message, we should start a run
-      // Refresh the active run status after starting a run
-      setTimeout(() => {
-        get().checkActiveRun(threadId);
-      }, 1000);
-      
-      return { success: true };
-    } catch (err: any) {
-      console.error(`[chatStore:sendMessage] Error:`, err);
-      set({ error: err.message });
-      return { success: false, error: err.message };
-    } finally {
-      set({ isLoading: false });
-    }
-  },
 
-  // Fetches current messages for the given thread
-  fetchCurrentMessages: async (threadId: string) => {
-    console.log(`[chatStore:fetchCurrentMessages] Starting to fetch messages for thread: ${threadId}`);
-    set({ isLoading: true });
-    try {
-      console.log(`[chatStore:fetchCurrentMessages] Making API request to /api/threads/${threadId}/messages`);
-      const response = await fetch(`/api/threads/${threadId}/messages`);
-      
-      console.log('[chatStore:fetchCurrentMessages] API response status:', response.status, response.statusText);
-      if (!response.ok) {
-        console.error(`[chatStore:fetchCurrentMessages] Failed to fetch messages, status: ${response.status}`);
-        throw new Error('Failed to fetch messages');
-      }
-      
-      const data = await response.json();
-      const messages = data?.data || data || [];
-      console.log(`[chatStore:fetchCurrentMessages] Successfully fetched ${messages.length} messages`);
-      console.log('[chatStore:fetchCurrentMessages] Messages data:', messages);
-      
-      set((state: ChatStoreState) => {
-        const currentThread = state.currentThread;
-        if (currentThread && currentThread.thread_id === threadId) {
-          console.log(`[chatStore:fetchCurrentMessages] Updating current thread with fetched messages`);
-          return {
-            currentThread: { ...currentThread, messages },
-            isLoading: false
-          };
-        }
-        return { ...state, isLoading: false };
+      const messagesResponse = await response.json();
+      const messages = messagesResponse.data || [];
+
+      console.log('[fetchOpenAIMessages] Retrieved messages:', messages.length);
+
+      set((state) => {
+        const currentThreadId = state.currentThread?.thread_id;
+        if (currentThreadId !== threadId) return state;
+        return {
+          currentThread: state.currentThread
+            ? {
+                ...state.currentThread,
+                // Merge new messages with existing messages (deduplicating by id)
+                messages: mergeMessages(state.currentThread.messages || [], messages),
+
+                has_more: messagesResponse.has_more || false,
+                next_page: messagesResponse.next_page
+              }
+            : null,
+        };
       });
+
       return messages;
     } catch (error) {
-      console.error('[chatStore:fetchCurrentMessages] Error fetching messages:', error);
-      set({ error: error instanceof Error ? error.message : 'Failed to fetch messages', isLoading: false });
-      throw error;
+      console.error('[fetchOpenAIMessages] Error fetching messages:', error);
+      return undefined;
     }
   },
-
-  // Adds an assistant message (delegated to Supabase)
-  addAssistantMessage: (content: StreamingState['currentStreamContent'], messageId: string): Promise<string> => {
+  
+  // Add a reference to a message in Supabase (minimal tracking)
+  addMessageReference: async (messageId: string, threadId: string, role: string, content: string): Promise<void> => {
     try {
-      const threadId = get().currentThread?.thread_id;
-      if (!threadId) {
-        throw new Error('No thread ID');
-      }
-      const data = addAssistantMessageToSupabase(threadId, content, messageId);
-      return data;
-    } catch (error: any) {
-      set({ error: error.message || 'Failed to add message' });
-      throw error;
-    }
-  },
-
-  // Replaces the messages in the current thread
-  setCurrentMessages: (messages: ChatMessage[]) => {
-    const thread = get().currentThread;
-    if (thread) {
-      set({ currentThread: { ...thread, messages } });
-    }
-  },
-
-  // Sets up a realtime subscription for new messages and appends them to the current thread.
-  subscribeToRealtimeMessages: (threadId: string) => {
-    const channel = supabase
-      .channel('realtime-chat')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `thread_id=eq.${threadId}`,
-        },
-        (payload: any) => {
-          console.log('[subscribeToRealtimeMessages] New message:', payload);
-          const newMessage = payload.new;
-          set((state: ChatStoreState) => {
-            if (state.currentThread && state.currentThread.thread_id === threadId) {
-              return {
-                currentThread: {
-                  ...state.currentThread,
-                  messages: [...(state.currentThread.messages || []), newMessage],
-                },
-              };
-            }
-            return {};
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  },
-
-  // -------------------------------------------------
-  // FILE / DOCUMENT MANAGEMENT
-  // -------------------------------------------------
-  addFileToQueue: (doc: Document) => {
-    set((state: ChatStoreState) => ({
-      transientFileQueue: [...state.transientFileQueue, doc],
-    }));
-  },
-
-  removeFileFromQueue: (doc: Document) => {
-    set((state: ChatStoreState) => ({
-      transientFileQueue: state.transientFileQueue.filter(
-        (d: Document) => d.document_id !== doc.document_id
-      ),
-    }));
-  },
-
-  clearFileQueue: () => {
-    set({ transientFileQueue: [] });
-  },
-
-  // Stub for file upload; replace with your actual implementation.
-  uploadFile: async (file: Document): Promise<string> => {
-    if (file.openai_file_id) return file.openai_file_id;
-    const simulatedId = `uploaded-file-id-${file.document_id}`;
-    return simulatedId;
-  },
-
-  // Fetch file names given a vector store ID
-  fetchFileNames: async (vectorStoreId: string): Promise<string[]> => {
-    console.log(`[chatStore:fetchFileNames] Starting to fetch file names for vector store: ${vectorStoreId}`);
-    set({ isLoading: true });
-    try {
-      console.log(`[chatStore:fetchFileNames] Making API request to /api/vector/${vectorStoreId}/files`);
-      const response = await fetch(`/api/vector/${vectorStoreId}/files`, { method: 'GET' });
+      console.log(`[chatStore:addMessageReference] Adding message reference: ${messageId}`);
       
-      console.log('[chatStore:fetchFileNames] API response status:', response.status, response.statusText);
-      if (!response.ok) {
-        console.error(`[chatStore:fetchFileNames] Failed to fetch file IDs, status: ${response.status}`);
-        throw new Error('Failed to fetch file IDs');
-      }
+      // Store minimal reference in Supabase
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          message_id: messageId,
+          thread_id: threadId,
+          user_id: await getUserId(),
+          role: role,
+          content: content
+        });
       
-      const { fileIds } = await response.json();
-      console.log(`[chatStore:fetchFileNames] Successfully fetched ${fileIds?.length || 0} file IDs:`, fileIds);
-      
-      if (!fileIds?.length) {
-        console.log('[chatStore:fetchFileNames] No file IDs found, returning empty array');
-        set({ isLoading: false });
-        return [];
-      }
-      
-      console.log('[chatStore:fetchFileNames] Querying Supabase for file names with IDs:', fileIds);
-      const { data: documents, error } = await supabase
-        .from('documents')
-        .select('file_name')
-        .in('openai_file_id', fileIds);
-        
       if (error) {
-        console.error('[chatStore:fetchFileNames] Supabase error:', error);
-        set({ isLoading: false });
+        console.error('[chatStore:addMessageReference] Error storing message reference:', error);
         throw error;
       }
       
-      const fileNames = documents?.map((doc: any) => doc.file_name) || [];
-      console.log(`[chatStore:fetchFileNames] Successfully fetched ${fileNames.length} file names:`, fileNames);
-      set({ isLoading: false });
-      return fileNames;
-    } catch (error) {
-      console.error('[chatStore:fetchFileNames] Error fetching file names:', error);
-      set({ error: error instanceof Error ? error.message : 'Failed to fetch file names', isLoading: false });
-      throw error;
-    }
-  },
-
-  // Fetches documents via API
-  fetchDocuments: async (): Promise<Document[]> => {
-    console.log('[chatStore:fetchDocuments] Starting to fetch documents');
-    set({ isLoading: true });
-    try {
-      console.log('[chatStore:fetchDocuments] Making API request to /api/documents');
-      const response = await fetch('/api/documents', { method: 'GET' });
-      
-      console.log('[chatStore:fetchDocuments] API response status:', response.status, response.statusText);
-      if (!response.ok) {
-        console.error(`[chatStore:fetchDocuments] Failed to fetch documents, status: ${response.status}`);
-        throw new Error('Failed to fetch documents');
-      }
-      
-      const docs: Document[] = await response.json();
-      console.log(`[chatStore:fetchDocuments] Successfully fetched ${docs.length} documents`);
-      console.log('[chatStore:fetchDocuments] Documents data:', docs);
-      
-      set({ isLoading: false });
-      return docs;
+      console.log(`[chatStore:addMessageReference] Successfully added message reference: ${messageId}`);
     } catch (error: any) {
-      console.error('[chatStore:fetchDocuments] Error fetching documents:', error);
-      set({ error: error.message || 'Failed to fetch documents', isLoading: false });
+      console.error('[chatStore:addMessageReference] Error:', error);
       throw error;
     }
   },
-
-  // -------------------------------------------------
-  // USER / ERROR MANAGEMENT
-  // -------------------------------------------------
-  // Update current assistant ID in the active thread
-  setCurrentAssistantId: (assistantId: string) => {
-    const thread = get().currentThread;
-    if (thread) {
-      set({ currentThread: { ...thread, assistant_id: assistantId } });
+  
+  // Sets current messages in the state
+  setCurrentMessages: (messages: ThreadMessage[]) => {
+    const { currentThread } = get();
+    
+    if (currentThread) {
+      set({ currentThread: { ...currentThread, messages } });
     }
   },
-
+  
+  // Set current assistant ID
+  setCurrentAssistantId: (assistantId: string) => {
+    const { currentThread } = get();
+    
+    if (currentThread) {
+      set({ currentThread: { ...currentThread, assistant_id: assistantId } });
+    }
+  },
+  
   // Set a global error message
   setError: (error: string | null) => {
     set({ error });
   },
-
+  
   // Get the latest run for a thread
   getLatestRun: async (threadId: string): Promise<Run | null> => {
     try {
-      console.log(`[chatStore:getLatestRun] Getting latest run for thread ${threadId}`);
+      console.log(`[chatStore:getLatestRun] Fetching latest run for thread: ${threadId}`);
       
-      const response = await fetch(`/api/threads/${threadId}/run?limit=1&order=desc`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`/api/threads/${threadId}/runs`, {
+        method: 'GET'
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`[chatStore:getLatestRun] API error:`, errorData);
-        return null;
+        throw new Error(`Failed to fetch runs: ${response.status}`);
       }
       
-      const data = await response.json();
+      const { data } = await response.json();
       
-      if (!data.data || !data.data.length) {
-        console.log(`[chatStore:getLatestRun] No runs found for thread ${threadId}`);
-        return null;
+      if (data && data.length > 0) {
+        console.log(`[chatStore:getLatestRun] Latest run: ${data[0].id}, status: ${data[0].status}`);
+        return data[0];
       }
       
-      return data.data[0];
-    } catch (err: any) {
-      console.error(`[chatStore:getLatestRun] Error:`, err);
+      console.log('[chatStore:getLatestRun] No runs found');
+      return null;
+    } catch (error: any) {
+      console.error('[chatStore:getLatestRun] Error:', error);
       return null;
     }
   },
+  
+  // --- FILE QUEUE MANAGEMENT ---
+  // Add a document to the transient file queue
+  addFileToQueue: (doc: Document) => {
+    const { transientFileQueue } = get();
+    set({ transientFileQueue: [...transientFileQueue, doc] });
+  },
+  
+  // Remove a document from the transient file queue
+  removeFileFromQueue: (doc: Document) => {
+    const { transientFileQueue } = get();
+    set({
+      transientFileQueue: transientFileQueue.filter(d => d.document_id !== doc.document_id)
+    });
+  },
+  
+  // Clear the transient file queue
+  clearFileQueue: () => {
+    set({ transientFileQueue: [] });
+  }
+
+  
 }));
+
+function mergeMessages(existing: ThreadMessage[], incoming: ThreadMessage[]): ThreadMessage[] {
+  const map = new Map<string, ThreadMessage>();
+  existing.forEach((msg) => map.set(msg.id, msg));
+  incoming.forEach((msg) => map.set(msg.id, msg));
+  // Return sorted messages by created_at
+  return Array.from(map.values()).sort((a, b) => a.created_at - b.created_at);
+}
 
 // Helper to check if a run status is in a terminal state
 export function isTerminalState(status: string | undefined): boolean {
   if (!status) return false;
-  
   // Terminal states in the OpenAI Assistants API
   const terminalStates = ['completed', 'failed', 'cancelled', 'expired'];
   return terminalStates.includes(status);
 }
 
-// --- HELPER FUNCTIONS ---
-
-export async function fetchUserIdFromSupabase(): Promise<string> {
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) throw new Error('User not authenticated');
-  return data.user.id;
-}
-
-export async function addAssistantIdToThread(assistantId: string, threadId: string): Promise<void> {
-  try {
-    console.log(`[chatStore:addAssistantIdToThread] Updating assistant ID for thread: ${threadId}`);
-    
-    // In the Supabase schema, the OpenAI thread ID is stored in the 'thread_id' column
-    // and the auto-generated UUID is in the 'id' column
-    const { error: updateError } = await supabase
-      .from('chat_threads')
-      .update({ assistant_id: assistantId })
-      .eq('thread_id', threadId);
-    
-    if (updateError) {
-      console.error(`[chatStore:addAssistantIdToThread] Error updating thread:`, updateError);
-      throw new Error(updateError.message);
-    }
-    
-    console.log(`[chatStore:addAssistantIdToThread] Successfully updated assistant ID to: ${assistantId}`);
-  } catch (error: any) {
-    console.error(`[chatStore:addAssistantIdToThread] Error:`, error);
-    throw error;
-  }
-}
-
-export async function addAssistantMessageToSupabase(
-  threadId: string,
-  content: any,
-  messageId: string
-): Promise<string> {
-  try {
-    console.log(`[chatStore:addAssistantMessageToSupabase] Adding assistant message to thread: ${threadId}`);
-    
-    const userId = await fetchUserIdFromSupabase();
-
-    const { data: addedMessage, error } = await supabase
-      .from('chat_messages')
-      .insert({ 
-        message_id: messageId,
-        user_id: userId,
-        thread_id: threadId, 
-        content, 
-        role: 'assistant' 
-      })
-      .select('id')
-      .single();
-      
-    if (error) {
-      console.error(`[chatStore:addAssistantMessageToSupabase] Error:`, error);
-      throw new Error(error.message);
-    }
-    
-    console.log(`[chatStore:addAssistantMessageToSupabase] Successfully added message with ID: ${addedMessage.id}`);
-    return addedMessage.id;
-  } catch (error: any) {
-    console.error(`[chatStore:addAssistantMessageToSupabase] Error:`, error);
-    throw error;
-  }
-}
-
-export async function updateMessageMetadata(msgId: string, metadata: any) {
-  try {
-    console.log(`[chatStore:updateMessageMetadata] Updating message ${msgId} metadata:`, metadata);
-    
-    // First get existing metadata (if any)
-    const { data: existingMessage, error: fetchError } = await supabase
-      .from('chat_messages')
-      .select('metadata')
-      .eq('id', msgId)
-      .single();
-      
-    if (fetchError) {
-      console.error(`[chatStore:updateMessageMetadata] Error fetching existing metadata:`, fetchError);
-      throw fetchError;
-    }
-    
-    // Merge existing metadata with new metadata
-    const mergedMetadata = {
-      ...(existingMessage?.metadata || {}),
-      ...metadata
-    };
-    
-    // Update with merged metadata
-    const { error: updateError } = await supabase
-      .from('chat_messages')
-      .update({ metadata: mergedMetadata })
-      .eq('id', msgId);
-    
-    if (updateError) {
-      console.error(`[chatStore:updateMessageMetadata] Error updating metadata:`, updateError);
-      throw updateError;
-    }
-    
-    console.log(`[chatStore:updateMessageMetadata] Successfully updated metadata for message: ${msgId}`);
-  } catch (error: any) {
-    console.error('[chatStore:updateMessageMetadata] Error:', error);
-    throw error;
-  }
-}
+export const chatStore = useChatStore;

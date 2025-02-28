@@ -1,11 +1,15 @@
-import { openai as awaitOpenai } from "@/utils/openai";
+import OpenAI from "openai"
 import { createServer } from "@/utils/supabase/server";
+
+const openai = new OpenAI({
+    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+}); 
 
 export async function POST(req: Request) {
     const supabase = await createServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     const userId = user?.id;
-    const openai = await awaitOpenai();
+    
 
     try {
         const contentType = req.headers.get('Content-Type') || '';

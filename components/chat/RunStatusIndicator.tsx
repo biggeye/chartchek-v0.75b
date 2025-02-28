@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useChatStore } from '@/store/chatStore'
+import { chatStore } from '@/store/chatStore'
 import { XCircleIcon, ClockIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { RunStatusResponse } from '@/types/store/chat'
 
@@ -10,7 +10,7 @@ interface RunStatusIndicatorProps {
 }
 
 export default function RunStatusIndicator({ onCancel }: RunStatusIndicatorProps) {
-  const { activeRunStatus, currentThread } = useChatStore()
+  const { activeRunStatus, currentThread } = chatStore()
 
   // Get run information
   const runInfo = useMemo(() => {

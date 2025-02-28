@@ -23,6 +23,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/chat/renderServices.tsx", "store/assistantStore.bak", "store/clientStore.old", "store/threadStore.old"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/chat/renderServices.tsx", "store/assistantStore.bak", "store/clientStore.old", "store/threadStore.old", "store/streamingStore.old"],
   "exclude": ["node_modules"]
 }

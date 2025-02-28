@@ -1,11 +1,15 @@
 import { createServer } from '@/utils/supabase/server'
 import { NextRequest } from 'next/server'
-import { openai as awaitOpenai } from '@/utils/openai'
+import OpenAI from "openai"
 import type { AssistantCreateRequest, AssistantCreateResponse, ApiResponse } from '@/types/api/routes'
 import type { UserAssistant } from '@/types/database'
 import type { Assistant } from '@/types/api/openai'
 import type { ToolType } from '@/types/database'
 import { checkAuth } from '@/utils/auth/checkAuth'
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -15,7 +19,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       return authResult;
     }
     const userId = authResult as string;
-    const openai = await awaitOpenai();
+    
     
     const formData = await request.formData()
     const requestData: AssistantCreateRequest = {

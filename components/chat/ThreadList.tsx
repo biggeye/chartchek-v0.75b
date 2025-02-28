@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
 import Tooltip from '@/components/ui/Tooltip'
-import { useChatStore } from '@/store/chatStore'
+import { chatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
 
 export function ThreadList({ assistantId }: { assistantId?: string }) {
@@ -12,14 +12,13 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     currentThread,
     setCurrentThread,
     fetchHistoricalThreads,
-    fetchCurrentMessages,
     deleteThread,
     createThread,
     setError,
     error,
     isLoading,
     updateThreadTitle,
-  } = useChatStore()
+  } = chatStore()
 
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
@@ -36,7 +35,6 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     const selectedThread = historicalThreads.find((t: Thread) => t.thread_id === threadId)
     if (selectedThread) {
       setCurrentThread(selectedThread);
-      fetchCurrentMessages(threadId);
     }
   }
 
@@ -65,7 +63,12 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
   }
 
   const handleAddThread = () => {
-    createThread()
+    // Ensure assistantId is provided, otherwise use a default ID or show an error
+    if (!assistantId) {
+      setError('No assistant ID provided for new thread creation');
+      return;
+    }
+    createThread(assistantId)
   }
 
   const handleRefreshThreads = () => {

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 
 export async function POST(request: NextRequest) {
   const { pathname } = new URL(request.url);
   const threadId = pathname.split('/').slice(-2, -1)[0];
 
   const supabase = await createServer();
-  const openai = await awaitOpenai();
+  
 
   try {
     // Authentication check

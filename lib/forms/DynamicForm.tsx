@@ -8,7 +8,7 @@ import {
   FormSection,
   FormField,
 } from '@/lib/forms/formDefinitions';
-import { useChatStore } from '@/store/chatStore';
+import { chatStore } from '@/store/chatStore';
 import { useStreamingStore } from '@/store/streamingStore';
 import { createFallbackForm } from './fallbackForm';
 

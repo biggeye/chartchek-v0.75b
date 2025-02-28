@@ -49,7 +49,7 @@ interface FileSearchTool extends Tool {
 
 export interface ChatMessageAttachment {
   file_id: string;
-  tools?: (CodeInterpreterTool | FileSearchTool)[];
+  tools: (CodeInterpreterTool | FileSearchTool)[];
 }
 
 interface FileCitation {

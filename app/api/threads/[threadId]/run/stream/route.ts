@@ -1,19 +1,23 @@
 // app/api/threads/[threadId]/run/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { openai as awaitOpenai } from '@/utils/openai';
+import OpenAI from "openai";
 import { NextRequest } from 'next/server';
 
-// Define interface for Text object from OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
+
+// Define interface for the text object coming from OpenAI
 interface OpenAIText {
   id?: string;
   value: string;
-  [key: string]: any; // Allow for other properties
+  annotations?: any[];
+  [key: string]: any;
 }
 
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
-  const openai = await awaitOpenai();
+export async function POST(req: NextRequest, { params }: { params: { threadId: string } }) {
   const supabase = await createServer();
 
   // Authenticate user
@@ -27,207 +31,123 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Extract threadId from URL pathname
-    const { pathname } = new URL(req.url);
-    const threadId = pathname.split('/')[3]; // Get the threadId from the URL path segments
     const body = await req.json();
-    const assistant_id: string = body.assistantId;
+    const assistant_id: string = body.assistant_id;
+    const threadId = params.threadId;
 
     console.log(`[API] Starting stream request to thread ${threadId} with assistantId ${assistant_id}`);
-    // Fetch assistant_id using threadId from Supabase
- /*   const { data, error } = await supabase
-      .from('chat_threads')
-      .select('assistant_id')
-      .eq('thread_id', threadId)
-      .single();
-    if (error || !data) {
-      console.error('[API] Error fetching assistant_id:', error);
-      return new Response('Error fetching assistant_id', { status: 500 });
-    }
-    const assistant_id = data.assistant_id;
-   */ 
 
-    
-    if (!threadId || !assistant_id) {
-      console.error('[API] Missing required parameters:', { threadId, assistant_id });
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing required parameters" }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Variable to keep track of the latest curated content
+    let lastCuratedContent: Array<{ text: { value: string; annotations: any[] } }> = [];
 
-    // Create a new ReadableStream for SSE events.
+    // Create a new ReadableStream for SSE events
     const stream = new ReadableStream({
       async start(controller) {
-        console.log('[API]', assistant_id, 'Stream started');
         try {
-          let currentRunId: string | null = null;
-          let lastStepId: string | null = null;
-
-          const run = openai.beta.threads.runs.stream(threadId, {
+          // Create the live assistant stream
+          const runStream = openai.beta.threads.runs.stream(threadId, {
             assistant_id: assistant_id,
-            stream: true
+            stream: true,
           });
 
-          // Text event: textCreated
-          run.on('textCreated', (text: OpenAIText) => {
+          // Handle initial text creation
+          runStream.on('textCreated', (text: OpenAIText) => {
+            const curatedContent = [
+              {
+                text: {
+                  value: text.value,
+                  annotations: text.annotations || [],
+                },
+              },
+            ];
+            lastCuratedContent = curatedContent;
+
+            // Emit a "textCreated" event with the curated content
             controller.enqueue(`data: ${JSON.stringify({
               type: 'textCreated',
-              data: text
+              data: { content: curatedContent },
             })}\n\n`);
-            
-            // Also emit a messageCreated event with the message ID
+
+            // If an ID is provided, also emit a "messageCreated" event
             if (text.id) {
-              console.log('[API]', new Date().toISOString(), 'Message created with ID:', text.id);
               controller.enqueue(`data: ${JSON.stringify({
                 type: 'messageCreated',
-                data: { id: text.id, thread_id: threadId }
+                data: {
+                  id: text.id,
+                  thread_id: threadId,
+                  content: curatedContent,
+                },
               })}\n\n`);
             }
           });
 
-          // Text event: textDelta
-          run.on('textDelta', (textDelta, snapshot) => {
+          // Handle text delta events
+          runStream.on('textDelta', (delta: any, snapshot: any) => {
+            const curatedDelta = [
+              {
+                text: {
+                  value: delta.value,
+                  annotations: delta.annotations || [],
+                },
+              },
+            ];
+            const curatedSnapshot = [
+              {
+                text: {
+                  value: snapshot.value,
+                  annotations: snapshot.annotations || [],
+                },
+              },
+            ];
+            // Update last known content with the latest snapshot
+            lastCuratedContent = curatedSnapshot;
+
             controller.enqueue(`data: ${JSON.stringify({
-              type: 'textDelta',
-              data: { delta: textDelta, snapshot }
+              type: 'messageDelta',
+              data: {
+                delta: { content: curatedDelta },
+                snapshot: { content: curatedSnapshot },
+              },
             })}\n\n`);
           });
 
-          // Tool call event: toolCallCreated
-          run.on('toolCallCreated', async (toolCall: any) => {
-            console.log('[API]', new Date().toISOString(), 'Event received: toolCallCreated', toolCall);
-            if (!currentRunId && toolCall.run_id) {
-              currentRunId = toolCall.run_id;
-              console.log('[API]', new Date().toISOString(), 'Set currentRunId:', currentRunId);
-            }
-
+          // On stream end, send the final message content
+          runStream.on('end', () => {
             controller.enqueue(`data: ${JSON.stringify({
-              type: 'toolCallCreated',
-              data: toolCall
+              type: 'messageCompleted',
+              data: { content: lastCuratedContent },
             })}\n\n`);
-
-            // Fetch and stream run step details
-            if (currentRunId) {
-              try {
-                const steps = await openai.beta.threads.runs.steps.list(
-                  threadId,
-                  currentRunId,
-                  { limit: 1, order: 'desc' }
-                );
-                if (steps.data[0] && steps.data[0].id !== lastStepId) {
-                  lastStepId = steps.data[0].id;
-                  console.log('[API]', new Date().toISOString(), 'New run step created:', steps.data[0]);
-                  controller.enqueue(`data: ${JSON.stringify({
-                    type: 'stepCreated',
-                    data: steps.data[0]
-                  })}\n\n`);
-                }
-              } catch (error) {
-                console.error('[API]', new Date().toISOString(), 'Error fetching run steps:', error);
-              }
-            }
+            controller.close();
           });
 
-          // Tool call event: toolCallDelta
-          run.on('toolCallDelta', (toolCallDelta, snapshot) => {
-            controller.enqueue(`data: ${JSON.stringify({
-              type: 'toolCallDelta',
-              data: { delta: toolCallDelta, snapshot }
-            })}\n\n`);
-
-            // If code interpreter event, include input and outputs
-            if (toolCallDelta.type === 'code_interpreter' && toolCallDelta.code_interpreter) {
-              const codeInterpreter = toolCallDelta.code_interpreter;
-              if (codeInterpreter.input) {
-                console.log('[API]', new Date().toISOString(), 'Code interpreter input:', codeInterpreter.input);
-                controller.enqueue(`data: ${JSON.stringify({
-                  type: 'codeInput',
-                  data: codeInterpreter.input
-                })}\n\n`);
-              }
-              if (codeInterpreter.outputs) {
-                console.log('[API]', new Date().toISOString(), 'Code interpreter outputs:', codeInterpreter.outputs);
-                controller.enqueue(`data: ${JSON.stringify({
-                  type: 'codeOutput',
-                  data: codeInterpreter.outputs
-                })}\n\n`);
-              }
-            }
-          });
-
-          // Error handling for the stream
-          run.on('error', async (error: Error) => {
-            console.error('[API]', new Date().toISOString(), 'Run event error:', error);
-            if (currentRunId) {
-              await supabase
-                .from("runs")
-                .update({ status: 'failed', error: error.message })
-                .eq('run_id', currentRunId);
-              console.log('[API]', new Date().toISOString(), 'Updated run status to failed for run_id:', currentRunId);
-            }
+          // On error, emit an error event and close the stream
+          runStream.on('error', (error: any) => {
+            console.error('[API] Stream error:', error);
             controller.enqueue(`data: ${JSON.stringify({
               type: 'error',
-              data: error.message
+              data: { message: error.message || 'Unknown error' },
             })}\n\n`);
             controller.close();
           });
-
-          // End event handling
-          run.on('end', async () => {
-            console.log('[API]', new Date().toISOString(), 'Run event: end received');
-            if (currentRunId) {
-              await supabase
-                .from("runs")
-                .update({ status: 'completed', completed_at: new Date().toISOString() })
-                .eq('run_id', currentRunId);
-              console.log('[API]', new Date().toISOString(), 'Updated run status to completed for run_id:', currentRunId);
-              try {
-                const finalSteps = await openai.beta.threads.runs.steps.list(threadId, currentRunId);
-                console.log('[API]', new Date().toISOString(), 'Final run steps fetched:', finalSteps.data);
-                controller.enqueue(`data: ${JSON.stringify({
-                  type: 'finalSteps',
-                  data: finalSteps.data
-                })}\n\n`);
-              } catch (error) {
-                console.error('[API]', new Date().toISOString(), 'Error fetching final run steps:', error);
-              }
-            }
-            console.log('[API]', new Date().toISOString(), 'Enqueuing end event');
-            controller.enqueue(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
-            controller.close();
-          });
-
-          // Wait for completion (or error)
-          await new Promise((resolve, reject) => {
-            run.on('end', () => resolve(null));
-            run.on('error', (error) => reject(error));
-          });
-        } catch (error) {
-          console.error('[API]', new Date().toISOString(), 'Error in stream start:', error);
-          controller.enqueue(`data: ${JSON.stringify({
-            type: 'error',
-            data: error instanceof Error ? error.message : 'Unknown error occurred'
-          })}\n\n`);
-          controller.close();
+        } catch (error: any) {
+          console.error('[API] Error in stream:', error);
+          controller.error(error);
         }
-      }
+      },
     });
 
+    // Return the SSE response with proper headers
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-      }
+      },
     });
-  } catch (error) {
-    console.error("[API]", new Date().toISOString(), "Error:", error);
+  } catch (error: any) {
+    console.error('[API] Error processing stream request:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred"
-      }),
+      JSON.stringify({ success: false, error: error.message || "Error processing request" }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

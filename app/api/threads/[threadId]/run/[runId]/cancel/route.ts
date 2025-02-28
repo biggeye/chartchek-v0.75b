@@ -1,6 +1,6 @@
 // app/api/threads/[threadId]/run/[runId]/cancel/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 30;
@@ -10,7 +10,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ threadId: string; runId: string }> }
 ) {
-  const openai = await awaitOpenai();
+  
   const supabase = await createServer();
 
   // Authenticate user

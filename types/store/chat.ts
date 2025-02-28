@@ -1,13 +1,24 @@
 import { Document } from './document';
 import { ChatMessage, ChatMessageAttachment, ToolResources } from '../database';
+import { ThreadMessage } from '../api/openai';
 
 export interface Thread {
+  id?: string;
   thread_id: string;
+  created_at?: string;
+  last_message_at?: string;
+  deleted_at?: string | null;
+  name?: string;
+  user_id?: string;
   assistant_id?: string;
-  messages: ChatMessage[];
+  metadata?: any;
+  messages?: ThreadMessage[];
   current_files?: Document[];
   title?: string;
-  tool_resources: ToolResources | null;  // this is an object or null
+  tool_resources: ToolResources | null;
+  // Pagination support
+  has_more?: boolean;
+  next_page?: string;
 }
 
 export interface UserChatMessage {
@@ -28,12 +39,13 @@ export interface RunStatusResponse {
     type: string;
     toolCalls?: any[];
   };
-  runId?: string; // Add the runId for tool output submissions
+  runId?: string;
 }
 
 export interface SendMessageResult {
   success: boolean;
   error?: string;
+  messageId?: string;
 }
 
 export interface ChatStoreState {
@@ -46,30 +58,27 @@ export interface ChatStoreState {
   activeRunStatus: RunStatusResponse | null;
 
   // --- THREAD MANAGEMENT ---
-  createThread: () => Promise<string>;
+  createThread: (assistantId: string) => Promise<string>;
   fetchHistoricalThreads: () => Promise<Thread[]>;
   deleteThread: (threadId: string) => Promise<void>;
   updateThreadTitle: (threadId: string, newTitle: string) => Promise<void>;
   setCurrentThread: (thread: Thread | null) => void;
 
   // --- MESSAGE MANAGEMENT ---
-  sendMessage: (assistantId: string,threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<SendMessageResult>;
-  fetchCurrentMessages: (threadId: string) => Promise<ChatMessage[]>;
-  addAssistantMessage: (content: any, messageId: string) => Promise<string>;
-  setCurrentMessages: (messages: ChatMessage[]) => void;
-  addAssistantIdToThread?: (assistantId: string, threadId: string) => Promise<void>;
-  subscribeToRealtimeMessages: (threadId: string) => () => void;
-  
+  sendMessage: (assistantId: string, threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<SendMessageResult>;
+  fetchOpenAIMessages: (threadId: string) => Promise<ThreadMessage[] | undefined>;
+  addMessageReference: (messageId: string, threadId: string, role: string, content: string) => Promise<void>;
+  setCurrentMessages: (messages: ThreadMessage[]) => void;
+
   // --- RUN MANAGEMENT ---
   checkActiveRun: (threadId: string) => Promise<RunStatusResponse>;
   updateActiveRunStatus: (status: RunStatusResponse | null) => void;
   getLatestRun: (threadId: string) => Promise<import('../api/openai').Run | null>;
-  
+  addStreamingMessage: (message: string) => void;
   // --- FILE / DOCUMENT MANAGEMENT ---
   addFileToQueue: (doc: Document) => void;
   removeFileFromQueue: (doc: Document) => void;
   clearFileQueue: () => void;
-  fetchFileNames: (vectorStoreId: string) => Promise<string[]>;
 
   // --- USER / ERROR MANAGEMENT ---
   setCurrentAssistantId: (assistantId: string) => void;

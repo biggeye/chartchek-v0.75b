@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
-import { openai as awaitOpenai } from '@/utils/openai';
+import { openai } from '@/utils/openai';
 import type { ApiResponse } from '@/types/api/routes';
 
 export async function POST(req: NextRequest): Promise<Response> {
-  const openai = await awaitOpenai();
+  
 
   try {
     const supabase = await createServer();

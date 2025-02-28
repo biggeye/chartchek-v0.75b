@@ -105,3 +105,27 @@ export interface ToolResources {
     vector_store_ids: string[];
   };
 }
+
+export interface ThreadMessage {
+  id: string;
+  object: string;
+  created_at: number;
+  thread_id: string;
+  role: 'user' | 'assistant';
+  content: MessageContent[];
+  file_ids: string[];
+  assistant_id: string | null;
+  run_id: string | null;
+  metadata: Record<string, any> | null;
+}
+
+export interface MessageContent {
+  type: 'text' | 'image_file';
+  text?: {
+    value: string;
+    annotations?: any[];
+  };
+  image_file?: {
+    file_id: string;
+  };
+}

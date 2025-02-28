@@ -1,6 +1,6 @@
 import type { ChatMessage } from '@/types/database';
 import { useStreamingStore } from '@/store/streamingStore';
-import { useChatStore } from '@/store/chatStore';
+import { chatStore } from '@/store/chatStore';
 
 interface ApiResponse<T> {
   functionCall?: {
@@ -79,7 +79,7 @@ async function submitNewFunction(params: StoreNewFunctionParams) {
 export async function processDynamicForm(params: FormParameters) {
     try {
         // Set the form key in the chat store
-        const chatStore = useChatStore.getState();
+        const chatStore = chatStore.getState();
         
         // Process the form via API if there's form data to submit
         if (params.form_data) {

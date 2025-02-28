@@ -50,3 +50,4 @@ next-env.d.ts
 #custom
 *.bak
 _codebase.md
+*.old

@@ -25,43 +25,52 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     fileQueue: state.fileQueue.filter((item) => item.document_id !== file.document_id)
   })),
 
-  fetchDocuments: async () => {
+  fetchDocuments: async (): Promise<Document[]> => {
     const store = get();
+    console.log('[documentStore:fetchDocuments] Starting to fetch documents');
+    
     try {
       store.setLoading(true);
       store.setError(null);
+      
 
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*');
+        
+        // Fallback to direct Supabase query
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*');
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const documents = data.map(doc => ({
-        openai_file_id: doc.openai_file_id,
-        document_id: doc.document_id,
-        bucket: doc.bucket,
-        createdAt: doc.created_at,
-        updatedAt: doc.updated_at,
-        fileName: doc.file_name,
-        filePath: doc.file_path,
-        fileType: doc.file_type,
-        fileSize: doc.file_size,
-        userId: doc.user_id,
-        processingStatus: doc.processing_status,
-        processingError: doc.processing_error,
-        metadata: doc.metadata
-      }));
-
-      set({ documents });
-      return documents;
-    } catch (error) {
-      store.setError(error instanceof Error ? error.message : 'Failed to fetch documents');
+        const documents = data.map(doc => ({
+          openai_file_id: doc.openai_file_id,
+          document_id: doc.document_id,
+          bucket: doc.bucket,
+          createdAt: doc.created_at,
+          updatedAt: doc.updated_at,
+          fileName: doc.file_name,
+          filePath: doc.file_path,
+          fileType: doc.file_type,
+          fileSize: doc.file_size,
+          userId: doc.user_id,
+          processingStatus: doc.processing_status,
+          processingError: doc.processing_error,
+          metadata: doc.metadata
+        }));
+        
+        console.log(`[documentStore:fetchDocuments] Successfully fetched ${documents.length} documents via Supabase`);
+        set({ documents, isLoading: false });
+        return documents;
+      
+      
+    } catch (error: any) {
+      console.error('[documentStore:fetchDocuments] Error fetching documents:', error);
+      store.setError(error.message || 'Failed to fetch documents');
+      set({ isLoading: false });
       return [];
-    } finally {
-      store.setLoading(false);
     }
   },
+  
   uploadFileToOpenAI: async (file: Document): Promise<string> => {
     // Maximum number of retries for file downloads
     const MAX_RETRIES = 3;
@@ -387,12 +396,144 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       return null;
     }
   },
+
+  uploadFile: async (file: Document): Promise<string> => {
+    if (file.openai_file_id) return file.openai_file_id;
+    const simulatedId = `uploaded-file-id-${file.document_id}`;
+    return simulatedId;
+  },
+
+  fetchFileNames: async (vectorStoreId: string): Promise<string[]> => {
+    console.log(`[documentStore:fetchFileNames] Starting to fetch file names for vector store: ${vectorStoreId}`);
+    try {
+      console.log(`[documentStore:fetchFileNames] Making API request to /api/vector/${vectorStoreId}/files`);
+      const response = await fetch(`/api/vector/${vectorStoreId}/files`, { method: 'GET' });
+      
+      console.log('[documentStore:fetchFileNames] API response status:', response.status, response.statusText);
+      if (!response.ok) {
+        console.error(`[documentStore:fetchFileNames] Failed to fetch file IDs, status: ${response.status}`);
+        throw new Error('Failed to fetch file IDs');
+      }
+      
+      const { fileIds } = await response.json();
+      console.log(`[documentStore:fetchFileNames] Successfully fetched ${fileIds?.length || 0} file IDs:`, fileIds);
+      
+      if (!fileIds?.length) {
+        console.log('[documentStore:fetchFileNames] No file IDs found, returning empty array');
+        return [];
+      }
+      
+      console.log('[documentStore:fetchFileNames] Querying Supabase for file names with IDs:', fileIds);
+      const { data: documents, error } = await supabase
+        .from('documents')
+        .select('file_name')
+        .in('openai_file_id', fileIds);
+        
+      if (error) {
+        console.error('[documentStore:fetchFileNames] Supabase error:', error);
+        throw error;
+      }
+      
+      const fileNames = documents?.map((doc: any) => doc.file_name) || [];
+      console.log(`[documentStore:fetchFileNames] Successfully fetched ${fileNames.length} file names:`, fileNames);
+      return fileNames;
+    } catch (error) {
+      console.error('[documentStore:fetchFileNames] Error fetching file names:', error);
+      throw error;
+    }
+  },
+
+  retryProcessingDocuments: async (): Promise<{succeeded: string[], failed: string[]}> => {
+    const store = get();
+    const succeeded: string[] = [];
+    const failed: string[] = [];
+
+    try {
+      // Get all documents stuck in processing status
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('processing_status', 'processing');
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.log('[documentStore] No documents stuck in processing state');
+        return { succeeded, failed };
+      }
+
+      console.log(`[documentStore] Found ${data.length} documents stuck in processing status`);
+
+      // Process each stuck document
+      for (const doc of data) {
+        try {
+          // Create a document object from the DB record
+          const docObj: Document = {
+            openai_file_id: doc.openai_file_id,
+            document_id: doc.document_id,
+            bucket: doc.bucket,
+            createdAt: doc.created_at,
+            updatedAt: doc.updated_at,
+            fileName: doc.file_name,
+            filePath: doc.file_path,
+            fileType: doc.file_type,
+            fileSize: doc.file_size,
+            userId: doc.user_id,
+            processingStatus: doc.processing_status,
+            processingError: doc.processing_error
+          };
+
+          // Try to upload to OpenAI
+          console.log(`[documentStore] Retrying upload to OpenAI for document: ${doc.document_id}`);
+          const openaiFileId = await store.uploadFileToOpenAI(docObj);
+          
+          if (!openaiFileId) {
+            throw new Error('No OpenAI file ID returned from retry upload');
+          }
+
+          // Update the database with success status
+          const { error: updateError } = await supabase.from('documents').update({
+            openai_file_id: openaiFileId,
+            processing_status: 'indexed',
+            updated_at: new Date().toISOString()
+          }).eq('document_id', doc.document_id);
+          
+          if (updateError) {
+            console.warn('[documentStore] Failed to update document status after retry:', updateError);
+            failed.push(doc.document_id);
+          } else {
+            console.log(`[documentStore] Successfully processed document ${doc.document_id} after retry`);
+            succeeded.push(doc.document_id);
+          }
+        } catch (docError) {
+          console.error(`[documentStore] Error retrying document ${doc.document_id}:`, docError);
+          
+          // Update status to failed
+          const errorMessage = docError instanceof Error ? docError.message : String(docError);
+          await supabase.from('documents').update({
+            processing_status: 'failed',
+            processing_error: errorMessage,
+            updated_at: new Date().toISOString()
+          }).eq('document_id', doc.document_id);
+          
+          failed.push(doc.document_id);
+        }
+      }
+
+      // Refresh documents list
+      await store.fetchDocuments();
+      return { succeeded, failed };
+    } catch (error) {
+      console.error('[documentStore] Error in retryProcessingDocuments:', error);
+      throw error;
+    }
+  },
 }));
 
 export const documentStore = useDocumentStore;
 export const getFileQueue = () => documentStore.getState().fileQueue;
 
-async function fetchDocumentsCount(): Promise<number> {
+export async function fetchDocumentsCount(): Promise<number> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('documents')
@@ -401,4 +542,3 @@ async function fetchDocumentsCount(): Promise<number> {
   if (error) throw error;
   return data?.length ?? 0;
 }
-export { fetchDocumentsCount };

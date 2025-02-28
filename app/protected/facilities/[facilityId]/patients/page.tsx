@@ -22,15 +22,14 @@ const CardDescription = ({ className, children, ...props }: React.HTMLAttributes
 );
 
 interface PatientsPageProps {
-  params: {
+  params: Promise<{
     facilityId: string;
-  };
+  }>;
 }
 
 export default function PatientsPage({ params }: PatientsPageProps) {
-  // Use type assertion to help TypeScript understand the result of use()
-  const unwrappedParams = use(params as any) as { facilityId: string };
-  const { facilityId } = unwrappedParams;
+  // Unwrap the Promise containing params
+  const { facilityId } = use(params);
   
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<any[]>([]);
