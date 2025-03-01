@@ -4,9 +4,9 @@ import { updatePatientEvaluation } from '@/lib/kipu/evaluations';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { facilityId: string; patientId: string; evaluationId: string } }
+  context: { params: { facilityId: string; patientId: string; evaluationId: string } }
 ) {
-  const { facilityId, evaluationId } = params;
+  const { facilityId, evaluationId } = context.params;
   const data = await request.json();
   
   const updatedEvaluation = await updatePatientEvaluation(
