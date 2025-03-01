@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
         };
       });
     }
+    // check thread for metadata content:
 
     // Create the message in OpenAI.
     const openAIMessage = await openai.beta.threads.messages.create(

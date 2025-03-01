@@ -36,7 +36,14 @@ export async function POST(req: NextRequest, { params }: { params: { threadId: s
     const threadId = params.threadId;
 
     console.log(`[API] Starting stream request to thread ${threadId} with assistantId ${assistant_id}`);
+    const metadata = await supabase
+    .from('chat_threads')
+    .select('metadata')
+    .eq('thread_id', threadId)
+    .single();
 
+
+      const additionalInstructions = metadata?.data?.metadata?.additional_instructions;
     // Variable to keep track of the latest curated content
     let lastCuratedContent: Array<{ text: { value: string; annotations: any[] } }> = [];
 
@@ -45,9 +52,11 @@ export async function POST(req: NextRequest, { params }: { params: { threadId: s
       async start(controller) {
         try {
           // Create the live assistant stream
+          
           const runStream = openai.beta.threads.runs.stream(threadId, {
             assistant_id: assistant_id,
             stream: true,
+            additional_instructions: additionalInstructions
           });
 
           // Handle initial text creation

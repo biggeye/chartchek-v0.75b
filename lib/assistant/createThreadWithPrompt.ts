@@ -46,15 +46,10 @@ export async function createThreadWithPrompt({
   // Add the system message with patient context
   await openai.beta.threads.messages.create(thread.id, {
     role: "user",
-    content: JSON.stringify(patientContext), // later switch to additional_instructions
-  });
-  
-  // Add the user prompt
-  await openai.beta.threads.messages.create(thread.id, {
-    role: "user",
     content: JSON.stringify({ type: "text", text: userPrompt }),
+    metadata: { key: "patientContext", value: JSON.stringify(patientContext) } // later switch to additional_instructions
   });
-  
+
   // Store the thread in Supabase
   const { data, error } = await supabase
     .from("chat_threads")
@@ -64,7 +59,7 @@ export async function createThreadWithPrompt({
       assistant_id: assistantId,
       title: userPrompt.substring(0, 50) + (userPrompt.length > 50 ? "..." : ""),
       metadata: [
-        { key:                          "patientContext", value: JSON.stringify(patientContext) },
+        { key: "patientContext", value: JSON.stringify(patientContext) },
         { key: "user_id", value: await userId() },
         { key: "assistant_id", value: assistantId }
       ]
