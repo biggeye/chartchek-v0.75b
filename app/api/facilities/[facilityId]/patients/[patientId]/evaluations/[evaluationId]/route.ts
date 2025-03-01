@@ -1,4 +1,7 @@
-//export async function PUT(
+import { NextRequest, NextResponse } from 'next/server';
+import { updatePatientEvaluation } from '@/lib/kipu/evaluations';
+
+export async function PUT(
   request: NextRequest,
   { params, searchParams }: { 
     params: { facilityId: string; patientId: string; evaluationId: string }; 
