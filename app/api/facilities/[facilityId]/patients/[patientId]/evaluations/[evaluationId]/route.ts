@@ -1,12 +1,11 @@
-// app/api/facilities/[facilityId]/patients/[patientId]/evaluations/[evaluationId]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { updatePatientEvaluation } from '@/lib/kipu/evaluations';
-
-export async function PUT(
+//export async function PUT(
   request: NextRequest,
-  context: { params: { facilityId: string; patientId: string; evaluationId: string } }
+  { params, searchParams }: { 
+    params: { facilityId: string; patientId: string; evaluationId: string }; 
+    searchParams: URLSearchParams;
+  }
 ) {
-  const { facilityId, evaluationId } = context.params;
+  const { facilityId, evaluationId } = params;
   const data = await request.json();
   
   const updatedEvaluation = await updatePatientEvaluation(
