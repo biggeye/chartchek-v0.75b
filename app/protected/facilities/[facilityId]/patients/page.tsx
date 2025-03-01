@@ -52,7 +52,7 @@ export default function PatientsPage({ params }: PatientsPageProps) {
           name: facilityData.name,
           address: facilityData.address
         });
-        setPatients(facilityData.data.patients);
+        setPatients(facilityData.data.patients || []);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -163,7 +163,7 @@ export default function PatientsPage({ params }: PatientsPageProps) {
                         href={`/protected/facilities/${facilityId}/patients/${patient.id}/evaluations`} 
                         passHref
                       >
-                        <Button className="flex items-center gap-1">
+                        <Button className="btn-primary">
                           <FileText className="h-4 w-4" />
                           Evaluations
                         </Button>

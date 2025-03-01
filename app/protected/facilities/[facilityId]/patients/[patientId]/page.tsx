@@ -8,6 +8,10 @@ import { Dialog, DialogTitle, DialogBody, DialogActions } from '@/components/ui/
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { chatStore } from '@/store/chatStore';
+import { createThreadWithPrompt } from '@/lib/assistant/createThreadWithPrompt';
+
+// inside handleSendPrompt:
+
 
 interface PatientPageProps {
   params: Promise<{
@@ -48,6 +52,37 @@ export default function PatientPage({ params }: PatientPageProps) {
   // Access chat store for sending messages
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
   
+  const handleSendPrompt = async () => {
+    if (!userPrompt.trim()) return;
+    
+    // Determine which assistant to use
+    const assistantId = complianceToggle 
+      ? "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Compliance assistant
+      : "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
+    
+    // Set the active assistant
+    setCurrentAssistantId(assistantId);
+    
+    try {
+      // Create a thread with context and prompt
+      const threadId = await createThreadWithPrompt({
+        assistantId,
+        userPrompt,
+        patient,
+        evaluations,
+        appointments,
+        vitalSigns
+      });
+      
+      
+      // Close the dialog and reset prompt
+      setIsDialogOpen(false);
+      setUserPrompt('');
+    } catch (error) {
+      console.error('Error creating thread:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -61,7 +96,8 @@ export default function PatientPage({ params }: PatientPageProps) {
         }
         
         // Find the patient data
-        const patient = facilityData.data.patients.find(p => p.id === patientId);
+        const patient = facilityData.data.patients?.find(p => p.id === patientId) || null;
+
         
         if (!patient) {
           console.error('Patient not found');
@@ -70,13 +106,12 @@ export default function PatientPage({ params }: PatientPageProps) {
         }
         
         // Get related evaluations
-        const patientEvaluations = facilityData.data.evaluations.filter(e => e.patient_id === patientId);
-        setEvaluations(patientEvaluations);
+        const evaluations = facilityData.data.evaluations?.filter(e => e.patient_id === patientId) || [];
+        setEvaluations(evaluations as any);
         
         // Get related appointments
-        const patientAppointments = facilityData.data.appointments.filter(a => a.patient_id === patientId);
-        setAppointments(patientAppointments);
-        
+        const appointments = facilityData.data.appointments?.filter(a => a.patient_id === patientId) || [];
+setAppointments(appointments);
         // Get vital signs if available
         setVitalSigns(
           facilityData.data.vital_signs ? 
@@ -96,43 +131,6 @@ export default function PatientPage({ params }: PatientPageProps) {
   }, [patientId, facilityId]);
   
   // Handle prompt submission
-  const handleSendPrompt = async () => {
-    if (!userPrompt.trim()) return;
-    
-    // Determine which assistant to use
-    const assistantId = complianceToggle 
-      ? "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Compliance assistant
-      : "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
-    
-    // Set the active assistant
-    setCurrentAssistantId(assistantId);
-    
-    // Create a new thread if needed
-    try {
-      const threadId = await createThread(assistantId);
-      /*
-
-      
-      */
-      if (!threadId) {
-        console.error('Failed to create thread');
-        return;
-      }
-      
-      // Format the patient context data
-      const formattedContext = preparePatientContext();
-      
-      // Send the message with context
-      const message = `${userPrompt}\n\n${formattedContext}`;
-      await sendMessage(assistantId, threadId, message);
-      
-      // Close the dialog
-      setIsDialogOpen(false);
-      setUserPrompt('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
   
   // Prepare a well-formatted patient context
   const preparePatientContext = () => {
@@ -225,7 +223,7 @@ export default function PatientPage({ params }: PatientPageProps) {
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
         >
           <MessageSquare className="h-5 w-5 p-2" />
-          Ask Assistant
+          Send To Assistant
         </Button>
       </div>
       
@@ -345,7 +343,7 @@ export default function PatientPage({ params }: PatientPageProps) {
       {/* Assistant Dialog */}
       <Dialog 
         open={isDialogOpen} 
-        onClose={() => setIsDialogOpen(false)}
+        onOpenChange={() => setIsDialogOpen(false)}
       >
         <DialogTitle>
           Ask Assistant

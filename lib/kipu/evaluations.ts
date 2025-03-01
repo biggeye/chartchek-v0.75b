@@ -122,3 +122,17 @@ export async function updatePatientEvaluation(
     return null;
   }
 }
+
+// Add to the top of the file or update in lib/kipu/evaluations.ts
+interface EvaluationItem {
+    id: string;
+    question: string;
+    answer?: string;
+  }
+  
+  // Update the KipuEvaluation interface to include missing properties
+  interface ExtendedKipuEvaluation extends KipuEvaluation {
+    provider_name?: string;
+    items?: EvaluationItem[];
+    notes?: string;
+  }

@@ -110,7 +110,7 @@ export default function Chat({ assistantId }: ChatProps) {
       console.error('[Chat] Error submitting message:', error);
       setLocalError(error instanceof Error ? error.message : String(error));
     } finally {
-      useNewStreamingStore.setState({ isStreamingActive: false });
+
       setIsLoading(false);
     }
   };

@@ -5,7 +5,29 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { KipuEvaluation } from '@/lib/kipu/evaluations';
+import { Checkbox } from '@/components/ui/checkbox';
+import { fetchPatientEvaluation } from '@/lib/kipu';
+
+// Type definitions based on the existing component
+interface PatientEvaluationItem {
+  id: string;
+  question: string;
+  answer_type: 'text' | 'checkbox' | 'radio' | 'select' | 'number'; // Added number type
+  required: boolean;
+  answer?: string;
+  evaluation_id?: string;
+  options?: { value: string; label: string }[];
+}
+
+interface PatientEvaluation {
+  id: string;
+  patient_id: string;
+  evaluation_type: string;
+  notes: string | ''; // Allow empty string
+  status: string;
+  created_at: string;
+  items?: PatientEvaluationItem[];
+}
 
 interface EvaluationFormProps {
   patientId: string;
@@ -22,77 +44,134 @@ export function EvaluationForm({
   onSuccess,
   onCancel,
 }: EvaluationFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [evaluation, setEvaluation] = useState<PatientEvaluation | null>(null);
+  const [evaluationItems, setEvaluationItems] = useState<PatientEvaluationItem[]>([]);
+
+  // Form fields
+  const [evaluationType, setEvaluationType] = useState('Initial Assessment');
+  const [notes, setNotes] = useState('');
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(!!evaluationId);
-  const [formData, setFormData] = useState({
-    evaluation_type: 'Initial Assessment',
-    notes: '',
-    status: 'Completed',
-    user_name: 'Current User',
-    user_id: 1,
-    form_data: {},
-    patient_id: parseInt(patientId),
-  });
 
   // Load existing evaluation if we're editing
   useEffect(() => {
-    if (evaluationId) {
-      const fetchEvaluation = async () => {
+    const fetchData = async () => {
+      if (evaluationId) {
+        setLoading(true);
         try {
-          const response = await fetch(
-            `/api/facilities/${facilityId}/patients/${patientId}/evaluations`,
-            {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+          const evaluationData = fetchPatientEvaluation(evaluationId, facilityId);
+
+          if (evaluationData) {
+            setEvaluation(evaluationData);
+            setEvaluationType(evaluationData.evaluation_type);
+            setNotes(evaluationData.notes || '');
+
+            // Initialize form values if items exist
+            if (evaluationData.items && evaluationData.items.length > 0) {
+              const initialValues: Record<string, any> = {};
+
+              evaluationData.items.forEach(item => {
+                initialValues[item.id] = item.answer || '';
+              });
+
+              setFormValues(initialValues);
+              setEvaluationItems(evaluationData.items);
             }
-          );
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch evaluation data');
           }
-
-          const data = await response.json();
-          const evaluation = data.evaluations.find(
-            (e: KipuEvaluation) => e.id === parseInt(evaluationId)
-          );
-
-          if (evaluation) {
-            // Populate the form with existing data
-            setFormData({
-              evaluation_type: evaluation.evaluation_type,
-              notes: evaluation.notes || '',
-              status: evaluation.status,
-              user_name: evaluation.user_name,
-              user_id: evaluation.user_id,
-              form_data: evaluation.form_data || {},
-              patient_id: evaluation.patient_id,
-            });
-          }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load evaluation');
+        } catch (error) {
+          console.error('Error fetching evaluation:', error);
+          setError('Failed to load evaluation data');
         } finally {
-          setIsLoading(false);
+          setLoading(false);
         }
-      };
+      }
+    };
 
-      fetchEvaluation();
+    fetchData();
+  }, [evaluationId, facilityId]);
+
+  const handleFormValueChange = (id: string, value: any) => {
+    setFormValues(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const renderFormControl = (item: PatientEvaluationItem) => {
+    switch (item.answer_type) {
+      case 'text':
+        return (
+          <Input
+            id={item.id}
+            value={formValues[item.id] || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormValueChange(item.id, e.target.value)}
+            required={item.required}
+            disabled={loading}
+          />
+        );
+      case 'checkbox':
+        return (
+          <Checkbox
+            id={item.id}
+            checked={!!formValues[item.id]}
+            onChange={(checked: boolean) => handleFormValueChange(item.id, checked)}
+            disabled={loading}
+          />
+        );
+      case 'radio':
+      case 'select':
+        return (
+          <select
+            id={item.id}
+            value={formValues[item.id] || ''}
+            onChange={(e) => handleFormValueChange(item.id, e.target.value)}
+            className="w-full p-2 border rounded-md"
+            required={item.required}
+            disabled={loading}
+          >
+            <option value="">Select an option</option>
+            {item.options?.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      default:
+        return null;
     }
-  }, [evaluationId, facilityId, patientId]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+
+    if (!evaluationType) {
+      setError('Please select an evaluation type');
+      return;
+    }
+
+    setLoading(true);
     setError(null);
 
     try {
+      // Prepare items with answers
+      const items = evaluationItems.map(item => ({
+        ...item,
+        answer: formValues[item.id] !== undefined ? String(formValues[item.id]) : '',
+        evaluation_id: evaluationId || '',
+      }));
+
+      // Create evaluation data
+      const evaluationData = {
+        patient_id: patientId,
+        evaluation_type: evaluationType,
+        notes: notes,
+        status: 'Completed',
+        items: items,
+      };
+
+      // API endpoint and method based on whether we're creating or updating
       const apiUrl = evaluationId
         ? `/api/facilities/${facilityId}/patients/${patientId}/evaluations/${evaluationId}`
         : `/api/facilities/${facilityId}/patients/${patientId}/evaluations`;
@@ -104,7 +183,7 @@ export function EvaluationForm({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(evaluationData),
       });
 
       if (!response.ok) {
@@ -112,15 +191,17 @@ export function EvaluationForm({
         throw new Error(errorData.error || 'Failed to save evaluation');
       }
 
+      // Call the success callback to notify parent component
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error('Error saving evaluation:', err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (loading && evaluationId) {
     return <div className="text-center p-4">Loading evaluation data...</div>;
   }
 
@@ -135,11 +216,13 @@ export function EvaluationForm({
           <Label htmlFor="evaluation_type">Evaluation Type</Label>
           <select
             id="evaluation_type"
-            name="evaluation_type"
-            value={formData.evaluation_type}
-            onChange={handleInputChange}
+            value={evaluationType}
+            onChange={(e) => setEvaluationType(e.target.value)}
             className="w-full p-2 border rounded-md"
+            required
+            disabled={loading}
           >
+            <option value="">Select Evaluation Type</option>
             <option value="Initial Assessment">Initial Assessment</option>
             <option value="Follow-up Assessment">Follow-up Assessment</option>
             <option value="CIWA-Ar">CIWA-Ar</option>
@@ -152,36 +235,36 @@ export function EvaluationForm({
           <Label htmlFor="notes">Notes</Label>
           <textarea
             id="notes"
-            name="notes"
-            value={formData.notes}
-            onChange={handleInputChange}
-            placeholder="Enter any additional notes here..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             className="w-full min-h-[100px] p-2 border rounded-md"
+            placeholder="Enter any additional notes here..."
+            disabled={loading}
           />
         </div>
 
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded-md"
-          >
-            <option value="Completed">Completed</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Pending Review">Pending Review</option>
-          </select>
-        </div>
+        {evaluationItems.length > 0 && (
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-lg font-medium">Form Questions</h3>
+            {evaluationItems.map((item) => (
+              <div key={item.id} className="space-y-2">
+                <Label htmlFor={item.id}>
+                  {item.question}
+                  {item.required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+                {renderFormControl(item)}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end space-x-4">
-        <Button type="button" onClick={onCancel} disabled={isSubmitting}>
+        <Button type="button" onClick={onCancel} disabled={loading} className="bg-gray-100 hover:bg-gray-200 text-gray-800">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : evaluationId ? 'Update' : 'Create'}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : evaluationId ? 'Update Evaluation' : 'Create Evaluation'}
         </Button>
       </div>
     </form>

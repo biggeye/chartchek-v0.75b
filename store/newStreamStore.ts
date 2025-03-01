@@ -6,6 +6,7 @@ import { OpenAIStreamingEvent } from '@/types/api/openai';
 import { createClient } from '@/utils/supabase/client';
 import { chatStore } from './chatStore';
 import { NewStreamingState } from '@/types/store/newStream';
+
 // Initialize Supabase client
 const supabase = createClient();
 
@@ -15,7 +16,6 @@ const getUserId = async () => {
     return data?.user?.id || 'anonymous';
 };
 const addMessageReference = chatStore.getState().addMessageReference;
-
 const newStreamingStore = create<NewStreamingState>((set, get) => ({
     isStreamingActive: false,
     currentStreamContent: '',
@@ -39,16 +39,10 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
         set({ currentStreamContent: get().currentStreamContent + content }),
     // Action: Finalize message (move from stream state to your static chat store)
     finalizeMessage: () => {
-        const { currentStreamContent } = get();
-        if (currentStreamContent.trim()) {
-            // Use chatStore to add the message, not currentThread property
-            chatStore.getState().addStreamingMessage(currentStreamContent);
-        }
-        set({ 
-            isStreamingActive: false,
-            currentStreamContent: ''
-        });
+      chatStore().fetchOpenAIMessages;
+      set({ isStreamingActive: false });
     },
+
     startStream: async (threadId: string, assistantId: string) => {
         if (!threadId || !assistantId) {
             const errorMsg = `Missing required parameter: ${!threadId ? 'threadId' : 'assistantId'}`;
@@ -56,10 +50,10 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
             set({ streamError: errorMsg });
             return;
         }
-
+       
         // Reset streaming state
         useNewStreamingStore.getState().resetStream();
-
+        useNewStreamingStore.getState().setIsStreamingActive(true);
         const controller = new AbortController();
         set({ abortController: controller });
 
@@ -167,7 +161,8 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
             console.error('[streamingStore] Streaming error:', error);
             set({ streamError: error instanceof Error ? error.message : String(error) });
         } finally {
-            set({ isStreamingActive: false, abortController: null });
+            useNewStreamingStore().finalizeMessage;
+            useNewStreamingStore.setState({ isStreamingActive: false, abortController: null });
         }
     },
 
