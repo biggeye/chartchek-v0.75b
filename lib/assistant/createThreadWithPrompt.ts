@@ -1,6 +1,15 @@
 // lib/assistant/createThreadWithPrompt.ts
 import { createClient } from "@/utils/supabase/client";
 import OpenAI from "openai";
+// wrap in a function
+// Initialize Supabase client
+const supabase = createClient();
+
+// Create a function to get the user ID that doesn't use top-level await
+const userId = async () => {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id || 'anonymous';
+};
 
 export async function createThreadWithPrompt({
   assistantId,
@@ -19,6 +28,7 @@ export async function createThreadWithPrompt({
 }) {
   const supabase = createClient();
   const openai = new OpenAI({
+    dangerouslyAllowBrowser: true,
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
   })
   
@@ -47,12 +57,17 @@ export async function createThreadWithPrompt({
   
   // Store the thread in Supabase
   const { data, error } = await supabase
-    .from("threads")
+    .from("chat_threads")
     .insert({
+      user_id: await userId(),
       thread_id: thread.id,
       assistant_id: assistantId,
       title: userPrompt.substring(0, 50) + (userPrompt.length > 50 ? "..." : ""),
-      created_at: new Date().toISOString(),
+      metadata: [
+        { key:                          "patientContext", value: JSON.stringify(patientContext) },
+        { key: "user_id", value: await userId() },
+        { key: "assistant_id", value: assistantId }
+      ]
     })
     .select()
     .single();

@@ -36,33 +36,33 @@ const CardDescription = ({ className, children, ...props }: React.HTMLAttributes
 export default function PatientPage({ params }: PatientPageProps) {
   // Unwrap the Promise containing params
   const { facilityId, patientId } = use(params);
-  
+
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<any>(null);
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [vitalSigns, setVitalSigns] = useState<any[]>([]);
-  
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [complianceToggle, setComplianceToggle] = useState(true);
   const [billingToggle, setBillingToggle] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
-  
+  const [isLoading, setIsLoading] = useState(false);
   // Access chat store for sending messages
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
-  
-  const handleSendPrompt = async () => {
+
+  const handleSendPrompt = async (patientId: string, complianceToggle: boolean, billingToggle: boolean, userPrompt: string) => {
     if (!userPrompt.trim()) return;
-    
+    setIsLoading(true);
     // Determine which assistant to use
-    const assistantId = complianceToggle 
+    const assistantId = complianceToggle
       ? "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Compliance assistant
       : "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
-    
+
     // Set the active assistant
     setCurrentAssistantId(assistantId);
-    
+    await preparePatientContext(patientId);
     try {
       // Create a thread with context and prompt
       const threadId = await createThreadWithPrompt({
@@ -73,9 +73,11 @@ export default function PatientPage({ params }: PatientPageProps) {
         appointments,
         vitalSigns
       });
-      
-      
-      // Close the dialog and reset prompt
+      if (threadId) {
+        alert("Thread created: " + threadId);
+      }
+
+      setIsLoading(false);
       setIsDialogOpen(false);
       setUserPrompt('');
     } catch (error) {
@@ -88,37 +90,37 @@ export default function PatientPage({ params }: PatientPageProps) {
       setLoading(true);
       try {
         const facilityData = await getFacilityData(facilityId);
-        
+
         if (!facilityData) {
           console.error('Facility not found');
           setLoading(false);
           return;
         }
-        
+
         // Find the patient data
         const patient = facilityData.data.patients?.find(p => p.id === patientId) || null;
 
-        
+
         if (!patient) {
           console.error('Patient not found');
           setLoading(false);
           return;
         }
-        
+
         // Get related evaluations
         const evaluations = facilityData.data.evaluations?.filter(e => e.patient_id === patientId) || [];
         setEvaluations(evaluations as any);
-        
+
         // Get related appointments
         const appointments = facilityData.data.appointments?.filter(a => a.patient_id === patientId) || [];
-setAppointments(appointments);
+        setAppointments(appointments);
         // Get vital signs if available
         setVitalSigns(
-          facilityData.data.vital_signs ? 
-          facilityData.data.vital_signs.filter(v => v.patient_id === patientId) : 
-          []
+          facilityData.data.vital_signs ?
+            facilityData.data.vital_signs.filter(v => v.patient_id === patientId) :
+            []
         );
-        
+
         setPatient(patient);
       } catch (error) {
         console.error('Error fetching patient data:', error);
@@ -126,18 +128,18 @@ setAppointments(appointments);
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [patientId, facilityId]);
-  
+
   // Handle prompt submission
-  
+
   // Prepare a well-formatted patient context
-  const preparePatientContext = () => {
+  const preparePatientContext = (patientId: any) => {
     const assistantType = complianceToggle ? "Compliance" : "Billing";
-    
+
     let context = `--- ${assistantType} Assistant Context ---\n`;
-    
+
     // Patient basic info
     context += `\nPATIENT INFORMATION:\n`;
     context += `Name: ${patient.first_name} ${patient.last_name}\n`;
@@ -146,7 +148,7 @@ setAppointments(appointments);
     context += `Address: ${patient.address || 'N/A'}\n`;
     context += `Email: ${patient.contact?.email || 'N/A'}\n`;
     context += `Phone: ${patient.contact?.phone || 'N/A'}\n`;
-    
+
     // Add insurance information if available
     if (patient.insurance) {
       context += `\nINSURANCE INFORMATION:\n`;
@@ -155,7 +157,7 @@ setAppointments(appointments);
       context += `Policy Number: ${insurance.policy_number || 'N/A'}\n`;
       context += `Group Number: ${insurance.group_number || 'N/A'}\n`;
     }
-    
+
     // Recent evaluations
     if (evaluations.length > 0) {
       context += `\nRECENT EVALUATIONS (${evaluations.length}):\n`;
@@ -164,7 +166,7 @@ setAppointments(appointments);
         if (evaluation.notes) context += `   Notes: ${evaluation.notes}\n`;
       });
     }
-    
+
     // Upcoming appointments
     if (appointments.length > 0) {
       context += `\nAPPOINTMENTS (${appointments.length}):\n`;
@@ -172,7 +174,7 @@ setAppointments(appointments);
         context += `${index + 1}. Date: ${new Date(appt.appointment_time).toLocaleString()}, Status: ${appt.status}\n`;
       });
     }
-    
+
     // Recent vital signs
     if (vitalSigns.length > 0) {
       context += `\nRECENT VITAL SIGNS (${vitalSigns.length}):\n`;
@@ -180,10 +182,10 @@ setAppointments(appointments);
         context += `${index + 1}. ${vital.type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}: ${vital.value}\n`;
       });
     }
-    
+
     return context;
   };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -191,7 +193,7 @@ setAppointments(appointments);
       </div>
     );
   }
-  
+
   if (!patient) {
     return (
       <div className="p-6">
@@ -203,7 +205,7 @@ setAppointments(appointments);
       </div>
     );
   }
-  
+
   return (
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
@@ -215,9 +217,9 @@ setAppointments(appointments);
             Patient ID: {patient.id}
           </p>
         </div>
-        
+
         {/* Assistant Button */}
-        <Button 
+        <Button
           color="purple"
           onClick={() => setIsDialogOpen(true)}
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
@@ -226,161 +228,154 @@ setAppointments(appointments);
           Send To Assistant
         </Button>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Patient Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Date of Birth</dt>
-                <dd>{patient.dob}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Gender</dt>
-                <dd>{patient.gender}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Address</dt>
-                <dd>{patient.address}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Email</dt>
-                <dd>{patient.contact?.email}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Phone</dt>
-                <dd>{patient.contact?.phone}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Vital Signs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {vitalSigns.length === 0 ? (
-              <p className="text-muted-foreground">No vital signs recorded</p>
-            ) : (
-              <div className="space-y-4">
-                {vitalSigns.map((vitalSign) => (
-                  <div key={vitalSign.id}>
-                    <div className="flex justify-between items-center">
-                      <dt className="text-sm font-medium">{vitalSign.type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</dt>
-                      <dd className="font-medium">{vitalSign.value}</dd>
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Patient Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Date of Birth</dt>
+                  <dd>{patient.dob}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Gender</dt>
+                  <dd>{patient.gender}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Address</dt>
+                  <dd>{patient.address}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Email</dt>
+                  <dd>{patient.contact?.email}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Phone</dt>
+                  <dd>{patient.contact?.phone}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Vital Signs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {vitalSigns.length === 0 ? (
+                <p className="text-muted-foreground">No vital signs recorded</p>
+              ) : (
+                <div className="space-y-4">
+                  {vitalSigns.map((vitalSign) => (
+                    <div key={vitalSign.id}>
+                      <div className="flex justify-between items-center">
+                        <dt className="text-sm font-medium">{vitalSign.type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</dt>
+                        <dd className="font-medium">{vitalSign.value}</dd>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(vitalSign.timestamp).toLocaleString()}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(vitalSign.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Evaluations</CardTitle>
-            {/* button for "new evaluation, onClick should open a modal with the evaluation form which is wired up to the simulated api */}
-            <Button 
-              color="purple"
-              onClick={() => setIsDialogOpen(true)}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-            >
-              <PlusCircle className="h-5 w-5 p-2" />
-              New Evaluation
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {evaluations.length === 0 ? (
-              <p className="text-muted-foreground">No evaluations found</p>
-            ) : (
-              <div className="space-y-4">
-                {evaluations.map((evaluation) => (
-                  <div key={evaluation.id} className="border-b pb-4 last:border-0 last:pb-0">
-                    <div className="font-medium">{evaluation.evaluation_type}</div>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(evaluation.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm mt-1 line-clamp-2">{evaluation.notes}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {appointments.length === 0 ? (
-              <p className="text-muted-foreground">No appointments scheduled</p>
-            ) : (
-              <div className="space-y-4">
-                {appointments.map((appointment) => (
-                  <div key={appointment.id} className="border-b pb-4 last:border-0 last:pb-0">
-                    <div className="font-medium">
-                      {new Date(appointment.appointment_time).toLocaleString()}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Evaluations</CardTitle>
+              {/* button for "new evaluation, onClick should open a modal with the evaluation form which is wired up to the simulated api */}
+              <Button
+                color="purple"
+                onClick={() => setIsDialogOpen(true)}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+              >
+                <PlusCircle className="h-5 w-5 p-2" />
+                New Evaluation
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {evaluations.length === 0 ? (
+                <p className="text-muted-foreground">No evaluations found</p>
+              ) : (
+                <div className="space-y-4">
+                  {evaluations.map((evaluation) => (
+                    <div key={evaluation.id} className="border-b pb-4 last:border-0 last:pb-0">
+                      <div className="font-medium">{evaluation.evaluation_type}</div>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(evaluation.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm mt-1 line-clamp-2">{evaluation.notes}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Status: {appointment.status}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Assistant Dialog */}
-      <Dialog 
-        open={isDialogOpen} 
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Appointments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appointments.length === 0 ? (
+                <p className="text-muted-foreground">No appointments scheduled</p>
+              ) : (
+                <div className="space-y-4">
+                  {appointments.map((appointment) => (
+                    <div key={appointment.id} className="border-b pb-4 last:border-0 last:pb-0">
+                      <div className="font-medium">
+                        {new Date(appointment.appointment_time).toLocaleString()}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {appointment.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Dialog
+        open={isDialogOpen}
         onOpenChange={() => setIsDialogOpen(false)}
       >
         <DialogTitle>
           Ask Assistant
         </DialogTitle>
-            
+
         <DialogBody>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               How can I help?
             </p>
-                
+
             <div className="grid grid-cols-2 gap-4 mt-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Compliance</label>
-                <Switch 
-                  color="purple" 
-                  checked={complianceToggle} 
+                <Switch
+                  color="purple"
+                  checked={complianceToggle}
                   onChange={(checked) => {
                     setComplianceToggle(checked);
                     if (checked) setBillingToggle(false);
-                  }} 
+                  }}
                 />
               </div>
-                  
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Billing</label>
-                <Switch 
-                  color="green" 
-                  checked={billingToggle} 
-                  onChange={(checked) => {
-                    setBillingToggle(checked);
-                    if (checked) setComplianceToggle(false);
-                  }} 
-                />
-              </div>
+
             </div>
-                
+
             <div className="mt-2">
               <textarea
                 value={userPrompt}
@@ -391,18 +386,18 @@ setAppointments(appointments);
             </div>
           </div>
         </DialogBody>
-            
+
         <DialogActions>
-          <Button 
+          <Button
             outline
             onClick={() => setIsDialogOpen(false)}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             color="purple"
             className="flex items-center gap-2"
-            onClick={handleSendPrompt}
+            onClick={() => handleSendPrompt(patientId, complianceToggle, billingToggle, userPrompt)}
             disabled={!userPrompt.trim()}
           >
             <Send className="h-4 w-4 mr-2" />
