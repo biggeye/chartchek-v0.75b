@@ -233,36 +233,36 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       const fileIds = transientFileQueue
         .filter(doc => doc.openai_file_id)
         .map(doc => doc.openai_file_id as string);
+      
+      // Format the payload according to our standardized message format
       const payload: any = {
         role: 'user',
-        content: content,
+        content: content, // Keep as string for API consistency
         assistant_id: assistantId
       };
+      
       if (attachments.length > 0) {
         payload.attachments = attachments;
       }
+      
+      console.log(`[chatStore:sendMessage] Sending message payload:`, JSON.stringify(payload, null, 2));
+      
       const response = await fetch(`/api/threads/${threadId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       if (!response.ok) {
         const error = await response.text();
         console.error(`[chatStore:sendMessage] Error from API: ${error}`);
         throw new Error(`Failed to send message: ${response.status}`);
       }
+      
       set({ 
         transientFileQueue: [],
       });
-     /* const nonStreamRun = await fetch(`/api/threads/${threadId}/run`, {
-        method: 'POST',
-        body: JSON.stringify({
-          assistant_id: assistantId,
-        })
-      }); 
-      if (!nonStreamRun.ok) {
-        throw new Error(`Failed to create non-stream run: ${nonStreamRun.status}`);
-      } */
+      
       console.log('[chatStore:sendMessage] Message sent');
       return { success: true };
     } catch (error: any) {

@@ -19,7 +19,7 @@ export default async function ProtectedLayout({
   }
   return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
-        <AppLayout>
+        <AppLayout user_id={user.id}>
           {children}
         </AppLayout>
         

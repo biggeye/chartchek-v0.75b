@@ -116,6 +116,10 @@ export interface ChatThread {
   current_files?: Document[];
   title?: string;
   tool_resources: ToolResources | null;  // this is an object or null
+  last_run?: string;
+  last_run_status?: string;
+  metadata?: Record<string, any>;
+  additional_instructions?: string;
 }
 
 export interface Document {

@@ -46,7 +46,18 @@ import { ThreadList } from '@/components/chat/ThreadList';
 import Link from 'next/link';
 import ChatStoreWidget from '@/components/ChatStoreWidget';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+/// Aside Components (Insights)
+ import { FacilityInsights } from '@/components/dashboard/FacilityInsights';
+ import { BillingInsights } from '@/components/dashboard/BillingInsights';
+ import { ComplianceInsights } from '@/components/dashboard/ComplianceInsights';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+  user_id: string;
+}
+
+export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
   const pathname = usePathname();
@@ -67,7 +78,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // User dropdown items
   const userNavigation = [
     { name: 'Chat History', href: '#', onClick: () => setThreadListModalOpen(true) },
-    { name: 'Profile', href: '/protected/profile' },
+    { name: 'Profile', href: `/protected/account/${user_id}` },
     { name: 'Settings', href: '/protected/settings' },
     { name: 'Sign out', href: '#', onClick: async () => await signOutAction() },
   ];
@@ -81,11 +92,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Determine sidebar content based on current route
   let asideContent;
   switch (pathname) {
+    case '/protected/facilities/[facilityId]':
+      asideContent = 
+      <FacilityInsights />
+      break;
     case '/protected/billing':
-      asideContent = <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />;
+      asideContent = 
+      <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />;
+      <BillingInsights />;
       break;
     case '/protected/compliance':
-      asideContent = <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />;
+      asideContent = 
+      <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />;
+      <ComplianceInsights />;
       break;
     default:
       asideContent = null;
@@ -226,7 +245,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1">
+
           <main className="w-full h-full">
               {children}
 

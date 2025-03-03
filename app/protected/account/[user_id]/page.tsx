@@ -3,11 +3,41 @@
 import { useParams } from 'next/navigation'
 import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
+import { useEffect, useState } from 'react'
+import threadService, { ChatThread, ThreadRun } from '@/lib/services/threadService'
+import ThreadsTable from '@/components/ThreadsTable'
+import ThreadRunsTable from '@/components/ThreadRunsTable'
 
 export default function AccountPage() {
   const params = useParams();
-  const userId = params?.user_id;
+  const userId = params?.user_id as string;
+  
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [runs, setRuns] = useState<ThreadRun[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    async function fetchUserData() {
+      if (!userId) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // Fetch all thread data at once using the API endpoint
+        const userData = await threadService.getUserThreadData(userId);
+        setThreads(userData.threads);
+        setRuns(userData.runs);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchUserData();
+  }, [userId]);
 
   return (
     <div className="p-8">
@@ -367,7 +397,10 @@ export default function AccountPage() {
 
               <fieldset>
                 <legend className="text-sm/6 font-semibold text-gray-900">Push notifications</legend>
-                <p className="mt-1 text-sm/6 text-gray-600">These are delivered via SMS to your mobile phone.</p>
+                <p className="mt-1 text-sm/6 text-gray-600">
+                  These are delivered via SMS to your mobile phone.
+                </p>
+
                 <div className="mt-6 space-y-6">
                   <div className="flex items-center gap-x-3">
                     <input
@@ -407,20 +440,41 @@ export default function AccountPage() {
               </fieldset>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex items-center justify-end gap-x-6">
-          <button type="button" className="text-sm/6 font-semibold text-gray-900">
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            Save
-          </button>
+          <div className="mt-6 flex items-center justify-end gap-x-6">
+            <button type="button" className="text-sm font-semibold text-gray-900">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* Thread Data Section */}
+      <div className="mt-12 space-y-10">
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Chat Threads</h2>
+          {error ? (
+            <div className="text-red-500 p-4 bg-red-50 rounded-md">{error}</div>
+          ) : (
+            <ThreadsTable threads={threads} isLoading={isLoading} />
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Thread Runs</h2>
+          {error ? (
+            <div className="text-red-500 p-4 bg-red-50 rounded-md">{error}</div>
+          ) : (
+            <ThreadRunsTable runs={runs} isLoading={isLoading} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

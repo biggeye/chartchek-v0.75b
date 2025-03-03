@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Building, Users, FileText, ArrowRight } from 'lucide-react';
-import { listFacilities, FacilityData } from '@/lib/kipu';
+import { listFacilities } from '@/lib/kipu';
 
 // Custom card components to replace missing exports
 const CardTitle = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -26,17 +26,18 @@ const CardFooter = ({ className, children, ...props }: React.HTMLAttributes<HTML
   </div>
 );
 
-interface Facility {
+interface FacilityUI {
   facility_id: string;
   name: string;
   address: string;
-  phone?: string;
-  patients_count?: number;
-  documents_count?: number;
+  phone: string;
+  email: string;
+  patients_count: number;
+  documents_count: number;
 }
 
 export default function FacilitiesPage() {
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [facilities, setFacilities] = useState<FacilityUI[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,11 +46,12 @@ export default function FacilitiesPage() {
         const facilitiesData = listFacilities();
         
         // Map the data to the format we need for the UI
-        const formattedFacilities = facilitiesData.map((facility: FacilityData) => ({
+        const formattedFacilities = facilitiesData.map((facility) => ({
           facility_id: facility.facility_id,
           name: facility.name,
           address: facility.address,
           phone: facility.phone,
+          email: facility.email,
           patients_count: facility.meta?.patients_count || 0,
           documents_count: facility.meta?.documents_count || 0
         }));

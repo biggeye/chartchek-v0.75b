@@ -39,19 +39,88 @@ export interface OpenAIFile {
     type: string; // Example: "file_search"
   }
   
+  // SSE event types from OpenAI Assistants API
   export interface OpenAIStreamingEvent {
-    type: 'textDelta' | 'textCreated' | 'messageCreated' | 'toolCall' | 'toolCallCreated' | 'toolCallDelta' | 'stepCreated' | 'codeInput' | 'codeOutput' | 'end' | 'error';
+    type: 'thread.created' | 
+          'thread.run.created' | 
+          'thread.run.queued' | 
+          'thread.run.in_progress' | 
+          'thread.run.requires_action' | 
+          'thread.run.completed' | 
+          'thread.run.incomplete' | 
+          'thread.run.failed' | 
+          'thread.run.cancelling' | 
+          'thread.run.cancelled' | 
+          'thread.run.expired' | 
+          'thread.run.step.created' | 
+          'thread.run.step.in_progress' | 
+          'thread.run.step.delta' | 
+          'thread.run.step.completed' | 
+          'thread.run.step.failed' | 
+          'thread.run.step.cancelled' | 
+          'thread.run.step.expired' | 
+          'thread.message.created' | 
+          'thread.message.in_progress' | 
+          'thread.message.delta' | 
+          'thread.message.completed' | 
+          'thread.message.incomplete' | 
+          'error' | 
+          'done' |
+          // SDK event names used for convenience
+          'textDelta' | 
+          'textCreated' | 
+          'messageCreated' | 
+          'messageDelta' | 
+          'toolCall' | 
+          'toolCallCreated' | 
+          'toolCallDelta' | 
+          'stepCreated' | 
+          'codeInput' | 
+          'codeOutput' | 
+          'event' | 
+          'run' | 
+          'end';
     data: any;
   }
   
   export interface OpenAIStreamingResponse {
+    // SDK event handlers
     onTextDelta?: (textDelta: string) => void;
+    onTextCreated?: (text: any) => void;
     onMessageCreated?: (message: any) => void;
+    onMessageDelta?: (delta: any, snapshot: any) => void;
     onToolCall?: (toolCall: any) => void;
     onToolCallCreated?: (toolCall: any) => void;
     onToolCallDelta?: (toolCallDelta: any) => void;
+    onEvent?: (event: any) => void;
+    onRun?: (run: any) => void;
     onEnd?: () => void;
     onError?: (error: Error) => void;
+    
+    // SSE event handlers
+    onThreadCreated?: (thread: any) => void;
+    onThreadRunCreated?: (run: any) => void;
+    onThreadRunQueued?: (run: any) => void;
+    onThreadRunInProgress?: (run: any) => void;
+    onThreadRunRequiresAction?: (run: any) => void;
+    onThreadRunCompleted?: (run: any) => void;
+    onThreadRunIncomplete?: (run: any) => void;
+    onThreadRunFailed?: (run: any) => void;
+    onThreadRunCancelling?: (run: any) => void;
+    onThreadRunCancelled?: (run: any) => void;
+    onThreadRunExpired?: (run: any) => void;
+    onThreadRunStepCreated?: (step: any) => void;
+    onThreadRunStepInProgress?: (step: any) => void;
+    onThreadRunStepDelta?: (delta: any) => void;
+    onThreadRunStepCompleted?: (step: any) => void;
+    onThreadRunStepFailed?: (step: any) => void;
+    onThreadRunStepCancelled?: (step: any) => void;
+    onThreadRunStepExpired?: (step: any) => void;
+    onThreadMessageCreated?: (message: any) => void;
+    onThreadMessageInProgress?: (message: any) => void;
+    onThreadMessageDelta?: (delta: any) => void;
+    onThreadMessageCompleted?: (message: any) => void;
+    onThreadMessageIncomplete?: (message: any) => void;
   }
 
 // Added types to replace old_openai imports
@@ -86,9 +155,20 @@ export interface Run {
   last_error?: any;
   model: string;
   instructions?: string;
+  additional_instructions?: string;
   tools: Tool[];
   file_ids: string[];
   metadata?: Record<string, any>;
+  temperature?: number;
+  top_p?: number;
+  max_prompt_tokens?: number;
+  max_completion_tokens?: number;
+  truncation_strategy?: string;
+  response_format?: any;
+  tool_choice?: any;
+  parallel_tool_calls?: boolean | null;
+  required_action?: any;
+  failed_at?: string;
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system';

@@ -1,80 +1,25 @@
-// Instead, import facility files directly
 import facility1Data from './facilities/facility_1.json';
 import facility2Data from './facilities/facility_2.json';
-
-// Create a base type to reference instead of mockData
-export type Facility = typeof facility1Data;
-
-// Update the type definitions to match facility structure
-export type FacilityData = {
-  facility_id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  created_at: string;
-  data: {
-    patients?: any[];
-    evaluations?: any[];
-    contacts?: any[];
-    glucose_logs?: any[];
-    appointments?: any[];
-    group_sessions?: any[];
-    consent_form_records?: any[];
-    vaults?: any[];
-    vital_signs?: any[];
-    providers?: any[];
-    // Add other data types as needed
-  };
-  patients_count?: number;
-  documents_count?: number;
-  meta?: {
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-    patients_count?: number;
-    documents_count?: number;
-    [key: string]: any;
-  };
-};
-// Define KipuEvaluation based on the structure in facility files
-export type { KipuEvaluation } from './evaluations';
-import type { KipuEvaluation } from './evaluations';
-// Patient Evaluation types
-export interface PatientEvaluationItem {
-  id: string;
-  evaluation_id: string;
-  question: string;
-  answer?: string;
-  answer_type: 'text' | 'number' | 'checkbox' | 'radio' | 'select';
-  options?: { value: string; label: string; }[]; // Changed from string[]
-  required: boolean;
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface PatientEvaluation {
-  id: string;
-  patient_id: string;
-  evaluation_type: string;
-  notes: string; // Changed from notes?: string
-  created_at: string;
-  updated_at?: string;
-  created_by?: string;
-  updated_by?: string;
-  status: 'draft' | 'completed' | 'reviewed';
-  items?: PatientEvaluationItem[];
-}
+import { 
+  FacilityData, 
+  Facility, 
+  PatientEvaluationItem, 
+  PatientEvaluation,
+  KipuEvaluation
+} from './types';
 
 /**
- * Get facility data by facility ID
+ * Fetches facility data by ID
  * @param facilityId - The facility ID to fetch data for
- * @returns FacilityData or null if facility not found
+ * @returns Facility or null if facility not found
  */
-export function getFacilityData(facilityId: string): FacilityData | null {
+export function getFacilityData(facilityId: string): Facility | null {
   try {
-    let facilityData: FacilityData | null = null;
+    let facilityData: Facility | null = null;
+    
+    // The rest of the function remains the same
+    // ...
+
     
     // Try to load the corresponding facility JSON file
     if (facilityId === 'facility_1') {
@@ -84,13 +29,14 @@ export function getFacilityData(facilityId: string): FacilityData | null {
         (facility1Data.data?.contacts ? facility1Data.data.contacts.length : 0);
       
       facilityData = {
+        id: facility1Data.facility_id, // Add id to match Facility interface
         facility_id: facility1Data.facility_id,
         name: facility1Data.name,
         address: facility1Data.address,
         phone: facility1Data.phone,
         email: facility1Data.email,
         created_at: facility1Data.created_at,
-        data: facility1Data.data,
+        data: facility1Data.data as unknown as FacilityData, // Cast to FacilityData
         meta: {
           name: facility1Data.name,
           address: facility1Data.address,
@@ -107,13 +53,14 @@ export function getFacilityData(facilityId: string): FacilityData | null {
         (facility2Data.data?.glucose_logs ? facility2Data.data.glucose_logs.length : 0);
       
       facilityData = {
+        id: facility2Data.facility_id, // Add id to match Facility interface
         facility_id: facility2Data.facility_id,
         name: facility2Data.name,
         address: facility2Data.address,
         phone: facility2Data.phone,
         email: facility2Data.email,
         created_at: facility2Data.created_at,
-        data: facility2Data.data,
+        data: facility2Data.data as unknown as FacilityData, // Cast to FacilityData
         meta: {
           name: facility2Data.name,
           address: facility2Data.address,
@@ -127,16 +74,17 @@ export function getFacilityData(facilityId: string): FacilityData | null {
     
     return facilityData;
   } catch (error) {
-    console.error('Error getting facility data:', error);
+    console.error('Error fetching facility data:', error);
     return null;
   }
 }
 
+
 /**
  * List all available facilities
- * @returns Array of facility data objects
+ * @returns Array of Facility objects
  */
-export function listFacilities(): FacilityData[] {
+export function listFacilities(): Facility[] {
   try {
     // Count patients and documents for facility 1
     const patients1Count = facility1Data.data?.patients ? facility1Data.data.patients.length : 0;
@@ -150,15 +98,16 @@ export function listFacilities(): FacilityData[] {
       (facility2Data.data?.evaluations ? facility2Data.data.evaluations.length : 0) + 
       (facility2Data.data?.glucose_logs ? facility2Data.data.glucose_logs.length : 0);
     
-    const facilities = [
+    const facilities: Facility[] = [
       {
+        id: facility1Data.facility_id,
         facility_id: facility1Data.facility_id,
         name: facility1Data.name,
         address: facility1Data.address,
         phone: facility1Data.phone,
         email: facility1Data.email,
         created_at: facility1Data.created_at,
-        data: facility1Data.data,
+        data: facility1Data.data as unknown as FacilityData,
         meta: {
           name: facility1Data.name,
           address: facility1Data.address,
@@ -169,13 +118,14 @@ export function listFacilities(): FacilityData[] {
         }
       },
       {
+        id: facility2Data.facility_id,
         facility_id: facility2Data.facility_id,
         name: facility2Data.name,
         address: facility2Data.address,
         phone: facility2Data.phone,
         email: facility2Data.email,
         created_at: facility2Data.created_at,
-        data: facility2Data.data,
+        data: facility2Data.data as unknown as FacilityData,
         meta: {
           name: facility2Data.name,
           address: facility2Data.address,
@@ -293,7 +243,7 @@ export function getPatientEvaluations(facilityId: string, patientId: string): Ki
     // Filter evaluations for the specific patient
     return facility.data.evaluations.filter(
       (evaluation: any) => evaluation.patient_id.toString() === patientId
-    );
+    ) as KipuEvaluation[];
   } catch (error) {
     console.error('Error getting patient evaluations:', error);
     return [];
@@ -346,6 +296,30 @@ export async function createOrUpdatePatientEvaluation(
     };
   }
 }
+
+
+/**
+ * Get billing insights for facilities
+ * @param facilityId - Optional facility ID to fetch specific insights
+ * @returns Billing insights data
+ */
+export const getBillingInsights = async (facilityId?: string) => {
+  const data = facilityId ? getFacilityData(facilityId)?.data : facility1Data.data;
+  
+  if (!data || !data.billing_data) {
+    return {
+      insurancePlans: [],
+      totalDaysAuthorized: 0,
+      daysRemaining: 0,
+      upcomingReviews: [],
+      outstandingPayments: 0,
+      activeAppeals: 0,
+      claimsToAppeal: 0
+    };
+  }
+  
+  return data.billing_data;
+};
 
 // Helper functions to get specific metrics
 export const getMetrics = (facilityId?: string) => {
@@ -492,3 +466,67 @@ export const getRecentConversations = (facilityId?: string) => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 };
+
+/**
+ * Get facility insights
+ * @param facilityId - Optional facility ID to fetch specific insights
+ * @returns Facility insights data
+ */
+export function getFacilityInsights(facilityId?: string) {
+  try {
+    // Get the data source
+    let data: FacilityData | null = null;
+    if (facilityId) {
+      const facilityData = getFacilityData(facilityId);
+      if (facilityData) {
+        data = facilityData.data;
+      }
+    } else {
+      // Default to facility 1
+      data = facility1Data.data as unknown as FacilityData;
+    }
+    
+    // If data has facility_insights, return it, otherwise return default values
+    if (data && 'facility_insights' in data) {
+      return data.facility_insights;
+    }
+    
+    // Return default insights data
+    return facility1Data.facility_insights;
+  } catch (error) {
+    console.error('Error getting facility insights:', error);
+    return null;
+  }
+}
+
+/**
+ * Get compliance insights
+ * @param facilityId - Optional facility ID to fetch specific insights
+ * @returns Compliance insights data
+ */
+export function getComplianceInsights(facilityId?: string) {
+  try {
+    // Get the data source
+    let data: FacilityData | null = null;
+    if (facilityId) {
+      const facilityData = getFacilityData(facilityId);
+      if (facilityData) {
+        data = facilityData.data;
+      }
+    } else {
+      // Default to facility 1
+      data = facility1Data.data as unknown as FacilityData;
+    }
+    
+    // If data has compliance_data, return it, otherwise return default values
+    if (data && 'compliance_data' in data) {
+      return data.compliance_data;
+    }
+    
+    // Return default compliance data
+    return facility1Data.compliance_data;
+  } catch (error) {
+    console.error('Error getting compliance insights:', error);
+    return null;
+  }
+}

@@ -16,6 +16,7 @@ const getUserId = async () => {
     return data?.user?.id || 'anonymous';
 };
 const addMessageReference = chatStore.getState().addMessageReference;
+
 const newStreamingStore = create<NewStreamingState>((set, get) => ({
     isStreamingActive: false,
     currentStreamContent: '',
@@ -39,7 +40,8 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
         set({ currentStreamContent: get().currentStreamContent + content }),
     // Action: Finalize message (move from stream state to your static chat store)
     finalizeMessage: () => {
-      chatStore().fetchOpenAIMessages;
+        const threadId = chatStore.getState().currentThread?.thread_id;
+      chatStore.getState().fetchOpenAIMessages(threadId!);
       set({ isStreamingActive: false });
     },
 
@@ -52,8 +54,9 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
         }
        
         // Reset streaming state
-        useNewStreamingStore.getState().resetStream();
-        useNewStreamingStore.getState().setIsStreamingActive(true);
+        const store = get();
+        store.resetStream();
+        set({ isStreamingActive: true });
         const controller = new AbortController();
         set({ abortController: controller });
 
@@ -92,7 +95,7 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
                     if (jsonStr === '[DONE]') {
                         console.log('[streamingStore] Received DONE signal');
                         // Finalize the message when the stream is done
-                        useNewStreamingStore.getState().finalizeMessage();
+                        get().finalizeMessage();
                         // Close the stream (using the reader/controller, not the abort controller)
                         break;
                     }
@@ -103,36 +106,36 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
                         // Handle events based on their type:
                         switch (event.type) {
                             case 'textCreated':
-                                case 'thread.message.created':
-                                    if (
-                                      event.data &&
-                                      Array.isArray(event.data.content) &&
-                                      event.data.content.length > 0 &&
-                                      event.data.content[0].text &&
-                                      typeof event.data.content[0].text.value === 'string'
-                                    ) {
-                                      useNewStreamingStore.getState().setStreamContent(event.data.content[0].text.value);
-                                    } else {
-                                      console.warn("thread.message.created event is missing expected content structure:", event.data);
-                                      // Optionally, set a default or handle the error gracefully.
-                                      useNewStreamingStore.getState().setStreamContent("No content available");
-                                    }
-                                    break;
-                                  
+                            case 'thread.message.created':
+                                if (
+                                  event.data &&
+                                  Array.isArray(event.data.content) &&
+                                  event.data.content.length > 0 &&
+                                  event.data.content[0].text &&
+                                  typeof event.data.content[0].text.value === 'string'
+                                ) {
+                                  get().setStreamContent(event.data.content[0].text.value);
+                                } else {
+                                  console.warn("thread.message.created event is missing expected content structure:", event.data);
+                                  // Optionally, set a default or handle the error gracefully.
+                                  get().setStreamContent("No content available");
+                                }
+                                break;
+                              
                             case 'messageDelta':
                             case 'thread.message.delta':
                                 // Append incremental updates to current content
                                 if (event.data?.delta?.content) {
-                                    useNewStreamingStore.getState().appendStreamContent(event.data.delta.content[0].text.value);
+                                    get().appendStreamContent(event.data.delta.content[0].text.value);
                                 }
                                 break;
                             case 'messageCompleted':
                             case 'thread.message.completed':
                                 // Append any final delta and then finalize the message
                                 if (event.data?.delta?.content) {
-                                    useNewStreamingStore.getState().appendStreamContent(event.data.delta.content[0].text.value);
+                                    get().appendStreamContent(event.data.delta.content[0].text.value);
                                 }
-                                useNewStreamingStore.getState().finalizeMessage();
+                                get().finalizeMessage();
                                 break;
                             // Add additional event types (like run events) as needed:
                             case 'thread.run.created':
@@ -161,8 +164,8 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
             console.error('[streamingStore] Streaming error:', error);
             set({ streamError: error instanceof Error ? error.message : String(error) });
         } finally {
-            useNewStreamingStore().finalizeMessage;
-            useNewStreamingStore.setState({ isStreamingActive: false, abortController: null });
+            get().finalizeMessage();
+            set({ isStreamingActive: false, abortController: null });
         }
     },
 

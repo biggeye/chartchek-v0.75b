@@ -141,248 +141,248 @@
         "created_at": "2023-01-06T10:10:00Z"
       }
     ],
-      "evaluations": [
-        {
-          "id": "evaluation_1",
-          "patient_id": "patient_1",
-          "evaluation_type": "Detox Intake",
-          "notes": "John arrives for detox with a history of heavy alcohol use and occasional opioid misuse. His vitals are deceptively stable (BP 120/80, HR 78), but don’t be fooled—this guy has a legacy of rapidly escalating withdrawal symptoms. Past records show he’s danced on the edge of noncompliance more times than we’d like, so his admission is unquestionably medically necessary. We’re keeping a hawk’s eye on him because, despite his calm “I’m fine” face, the internal storm (and his chronic anxiety) can rear its ugly head at any moment. His history screams that we need rigorous monitoring and an aggressive, yet measured, intervention plan per ASAM guidelines.",
-          "created_at": "2023-01-07T10:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_4",
-          "patient_id": "patient_1",
-          "evaluation_type": "CIWA-Ar",
-          "notes": "John’s CIWA-Ar score hits 12—moderate withdrawal. He’s not exactly breaking any records for self-control, but his previous flares have taught us that “moderate” is a moving target. The decision to prescribe diazepam on an as-needed basis is no surprise given his past struggles with self-regulation. His autonomic signs are flickering in warning, and this note clearly justifies not taking any shortcuts when it comes to benzodiazepine titration. The background here? A life riddled with chaotic episodes and a knack for ignoring sober advice—so we’re playing hardball.",
-          "created_at": "2023-01-08T09:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_7",
-          "patient_id": "patient_1",
-          "evaluation_type": "Mental Status Exam",
-          "notes": "John is alert and oriented, with no suicidal ideation at present—a silver lining in his troubled narrative. But don’t let his alertness fool you: his guarded tone and occasional evasiveness betray years of unaddressed trauma and a history of impulsivity during relapses. This exam, while ticking the 'stable' box, flags the need for ongoing integrated mental health support to help him confront the demons that keep him dancing with disaster.",
-          "created_at": "2023-01-09T11:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_10",
-          "patient_id": "patient_1",
-          "evaluation_type": "CIWA-Ar",
-          "notes": "A week in, John’s CIWA-Ar score drops to 7. Good news, right? Yes—but given his historical pattern of “up and down,” we’re not celebrating prematurely. This improvement is likely a win for our pharmacologic strategy and tight protocol adherence, yet his notorious relapse history makes it clear: continued vigilance is mandatory. We’re sticking to a combination of medication and regular psychosocial check-ins to ensure he doesn’t pull another fast one on us.",
-          "created_at": "2023-01-10T09:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_13",
-          "patient_id": "patient_1",
-          "evaluation_type": "Group Therapy Progress Note",
-          "notes": "In group therapy, John surprisingly opens up, recounting episodes of self-sabotage, familial strife, and the sheer absurdity of his own behavior. His active participation—despite a long-standing resistance to authority—is a big win. Beneath the sarcasm and the self-deprecating humor lies a man finally starting to see the connection between past trauma and his substance use. This session is a turning point, confirming that even a cynic like John can be coaxed into confronting his issues if the environment is structured right (and with a little tough love).",
-          "created_at": "2023-01-12T14:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_16",
-          "patient_id": "patient_1",
-          "evaluation_type": "Physical Therapy Assessment",
-          "notes": "John shows mild muscle weakness, a predictable casualty of years spent oscillating between binge drinking and blackouts. The recommendation is a gentle, yet progressive, exercise regimen—not just to rebuild physical strength but also to instill a sense of bodily control he’s long denied himself. Considering his history of injuries during bouts of intoxication, this intervention isn’t just rehabilitative; it’s absolutely necessary to stave off further physical decline. Think of it as tough love for his muscles.",
-          "created_at": "2023-01-15T10:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_19",
-          "patient_id": "patient_1",
-          "evaluation_type": "Relapse Prevention Planning",
-          "notes": "This session is a masterclass in realism: John identifies his high-risk triggers, from toxic social environments to stressors tied to his erratic job history. Detailed strategies—including mindfulness, emergency call-ins, and a hard stop on risky behaviors—are mapped out. His past relapses, driven by the very scenarios discussed, underscore the absolute necessity of this plan. This isn’t your feel-good pep talk; it’s a rigorous, evidence-based blueprint for staying sober, meeting every ASAM and medical necessity criterion with no fluff.",
-          "created_at": "2023-01-20T14:15:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_22",
-          "patient_id": "patient_1",
-          "evaluation_type": "Discharge Planning",
-          "notes": "John’s discharge plan is meticulous. Stable housing, a schedule lined with follow-ups, and even transportation logistics are all in place. Given his past tendencies to vanish into the abyss of noncompliance, these safeguards are non-negotiable. The plan—crafted to ensure a seamless transition from residential detox to outpatient care—addresses every foreseeable barrier. It’s not just a discharge; it’s a lifeline, designed in accordance with DHCS and Joint Commission guidelines.",
-          "created_at": "2023-01-25T11:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_25",
-          "patient_id": "patient_1",
-          "evaluation_type": "Follow-up Assessment",
-          "notes": "One week out, John is sober and shows up for all his appointments—but don’t let the outward calm fool you. There’s an undercurrent of ambivalence in his 'I’m doing okay' attitude, a vestige of his long history of playing fast and loose with recovery. This follow-up confirms progress but also serves as a stark reminder: the road ahead is fraught with temptations and old habits. We’re not ready to relax our guard yet, no matter how polished his check-in might appear.",
-          "created_at": "2023-02-02T10:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_28",
-          "patient_id": "patient_1",
-          "evaluation_type": "Case Management",
-          "notes": "John’s case management note is a win: Medicaid approved, transportation sorted, and a coordinated effort with community resources in full swing. This evaluation digs into the socioeconomic hurdles that have historically sabotaged his recovery. The detailed plan—ranging from appointment reminders to coordinated community outreach—meets every medical necessity standard. It’s a no-nonsense, robust safety net for a patient who’s been known to miss appointments faster than a bad punchline.",
-          "created_at": "2023-02-10T09:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_2",
-          "patient_id": "patient_2",
-          "evaluation_type": "Detox Intake",
-          "notes": "Jane presents for detox with mild withdrawal symptoms. Her vitals (BP 135/85, HR 92) are stable on paper, but her history of self-medicating chronic pain and anxiety makes this admission a medically necessary intervention. The evaluation flags her past tendency to underplay symptoms—a habit that nearly landed her in trouble more than once. Her treatment plan includes vitamin supplementation to combat nutritional deficits from years of neglecting self-care while riding the opioid rollercoaster.",
-          "created_at": "2023-01-07T10:15:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_5",
-          "patient_id": "patient_2",
-          "evaluation_type": "CIWA-Ar",
-          "notes": "A CIWA-Ar score of 8 signals that Jane’s withdrawal is hovering between mild and moderate. This score might seem unremarkable, but given her well-documented habit of minimizing her discomfort, it’s a red flag. The evaluation emphasizes a low threshold for intervention, given her background of anxiety-fueled escalations. It’s a reminder that even a steady life on the surface can hide a volatile interior—an insight that guides our cautious, proactive treatment approach.",
-          "created_at": "2023-01-08T09:45:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_8",
-          "patient_id": "patient_2",
-          "evaluation_type": "Psychosocial Assessment",
-          "notes": "Jane’s psychosocial assessment paints a picture of relative stability: strong family support, secure housing, and consistent employment. But scratch the surface and you find a history of emotional dysregulation and a tendency to lean on substances during periods of internal turmoil. The evaluation candidly documents her bouts of isolation and past impulsivity. Despite the protective factors, the undercurrent of unresolved anxiety and depression demands a comprehensive support strategy that’s as robust as it is nuanced.",
-          "created_at": "2023-01-09T13:15:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_11",
-          "patient_id": "patient_2",
-          "evaluation_type": "Nutrition Assessment",
-          "notes": "Jane’s nutritional status, with a BMI of 24.2, isn’t alarming—but her history of erratic eating habits during substance use phases leaves her vitamin deficient. The evaluation calls for a strict supplementation protocol to repair the nutritional damage inflicted by years of self-neglect. This isn’t just about numbers on a scale; it’s about correcting a metabolic imbalance that could jeopardize her recovery. The intervention is as medically necessary as it is a wake-up call.",
-          "created_at": "2023-01-10T10:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_14",
-          "patient_id": "patient_2",
-          "evaluation_type": "Individual Therapy Session",
-          "notes": "In one-on-one therapy, Jane dives into her personal triggers and self-sabotaging behaviors with surprising candor—peppered with a wry, almost bitter humor. The session reveals her internal tug-of-war: a genuine desire to overcome her dependency clashing with a deeply ingrained skepticism toward the entire treatment process. Her insights, though laced with sarcasm, are a clear sign that she’s ready to tackle the underlying issues driving her substance use. This session is a pivotal piece of her recovery puzzle, confirming that cognitive-behavioral strategies are both timely and necessary.",
-          "created_at": "2023-01-12T15:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_17",
-          "patient_id": "patient_2",
-          "evaluation_type": "Family Therapy Session",
-          "notes": "Family therapy uncovers both progress and persistent tension. Jane’s relatives are stepping up, but old wounds continue to fester beneath the surface. The session highlights improved communication yet doesn’t shy away from pointing out moments when Jane’s cutting humor serves as a shield against vulnerability. It’s a delicate balance—her family’s involvement is a major asset, but the session makes it clear that unresolved conflicts could still derail her progress if not continually managed.",
-          "created_at": "2023-01-15T13:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_20",
-          "patient_id": "patient_2",
-          "evaluation_type": "Life Skills Assessment",
-          "notes": "Despite her stable living conditions, Jane’s practical life skills (budgeting, time management, stress coping) are sorely lacking—a problem that has historically fueled her substance use during stressful times. The evaluation lays out a no-nonsense referral to a life skills training program, a critical intervention to plug the gaps that have repeatedly left her vulnerable to relapse. This isn’t a side note; it’s a core part of ensuring her long-term stability and is fully in line with insurance and medical necessity criteria.",
-          "created_at": "2023-01-21T10:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_23",
-          "patient_id": "patient_2",
-          "evaluation_type": "Vocational Rehabilitation Assessment",
-          "notes": "Jane’s work history is a tale of unrealized potential, punctuated by sporadic employment due to her substance use. In this assessment, her latent strengths in administrative and creative fields are identified, and a referral to a job training program is initiated. The note doesn’t sugar-coat her past failures—it’s a candid appraisal that her professional instability has been a major stressor. Revamping her career is seen as a vital cog in her recovery machine, reinforcing purpose and self-worth.",
-          "created_at": "2023-01-26T14:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_26",
-          "patient_id": "patient_2",
-          "evaluation_type": "Substance Use Disorder Reassessment",
-          "notes": "Jane’s reassessment reports reduced cravings and improved use of coping strategies—a clear, albeit cautious, win. Yet, her history reminds us that this progress could be fleeting if vigilance isn’t maintained. The evaluation emphasizes the necessity of ongoing pharmacologic and behavioral support, even if the current picture looks brighter. It’s a measured 'good job' that comes with a side of 'don’t get complacent.'",
-          "created_at": "2023-02-03T11:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_29",
-          "patient_id": "patient_2",
-          "evaluation_type": "Recovery Milestone Assessment",
-          "notes": "Celebrating 30 days of continuous sobriety, Jane’s milestone is a hard-won victory. The note is both congratulatory and unflinchingly realistic: while the progress is commendable, the long battle ahead is acknowledged. It’s a moment of validation that doubles as a reminder that past relapses have taught us to never let our guard down. The milestone isn’t an endpoint—it’s a checkpoint in a journey that requires constant reinforcement through structured programs and periodic reassessments.",
-          "created_at": "2023-02-12T13:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_3",
-          "patient_id": "patient_3",
-          "evaluation_type": "Detox Intake",
-          "notes": "Robert shows up for detox with clear signs of dehydration—no surprise given his erratic fluid intake during long periods of opioid use. His vitals (BP 118/75, HR 84) appear acceptable, but the underlying clinical picture is anything but. With a history marred by overdose scares and withdrawal complications, his admission is an urgent medical necessity. Aggressive rehydration and vigilant monitoring of electrolytes are prescribed alongside a full-scale review of his traumatic past.",
-          "created_at": "2023-01-07T10:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_6",
-          "patient_id": "patient_3",
-          "evaluation_type": "COWS",
-          "notes": "Robert’s initial COWS score of 10 confirms moderate opioid withdrawal—a direct consequence of his high-dose, on-and-off usage pattern. He’s started on buprenorphine induction, a decision that’s both evidence-based and fully aligned with ASAM guidelines. Given his notorious cycle of relapse and a penchant for dramatic withdrawal episodes, this intervention is non-negotiable. It’s a clinical 'wake-up call' that we’re dealing with a high-risk patient who demands strict oversight.",
-          "created_at": "2023-01-08T10:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_9",
-          "patient_id": "patient_3",
-          "evaluation_type": "Biopsychosocial Assessment",
-          "notes": "This assessment lays bare Robert’s tragic backstory: a childhood marked by abuse, chronic family instability, and subsequent social isolation. These experiences have not only fueled his opioid dependency but also sabotaged his ability to form trusting relationships. The evaluation calls for trauma-focused therapy as a cornerstone of his recovery plan. It’s an uncompromising look at how deep-seated psychological wounds can underlie—and exacerbate—a substance use disorder, necessitating a dual-pronged treatment strategy.",
-          "created_at": "2023-01-09T14:30:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_12",
-          "patient_id": "patient_3",
-          "evaluation_type": "COWS",
-          "notes": "A follow-up COWS score of 6 is a welcome improvement, reflecting a positive response to the buprenorphine regimen. But, knowing Robert’s history, we’re not celebrating too early—this is just a temporary victory. The note stresses the importance of sustained medication-assisted treatment and frequent monitoring to guard against any resurgence of severe withdrawal symptoms. His chronic nature demands a long-term, aggressive treatment strategy, with no room for complacency.",
-          "created_at": "2023-01-10T11:15:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_15",
-          "patient_id": "patient_3",
-          "evaluation_type": "Medical Review",
-          "notes": "Robert’s medical review notes an improvement in liver function tests—a small silver lining amid years of substance-induced organ stress. However, the review also underscores that his liver has seen better days, thanks to a history of hepatitis and repeated toxic insults. Continued periodic lab testing and strict medication management are mandated to ensure that his recovery isn’t undermined by lingering organ damage. This isn’t a pat on the back; it’s a hard-edged reminder of the cost of his past choices.",
-          "created_at": "2023-01-13T09:45:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_18",
-          "patient_id": "patient_3",
-          "evaluation_type": "Psychiatric Evaluation",
-          "notes": "The psychiatric evaluation confirms what many suspected: Robert is living with a dual diagnosis—opioid use disorder combined with major depressive disorder. His depressive symptoms have long been masked by his substance use, but now they demand equal attention. The initiation of antidepressant therapy alongside his addiction treatment is deemed essential. This integrated approach, aligned with ASAM and LOCUS criteria, is designed to address both the chemical and emotional imbalances that have haunted him for decades.",
-          "created_at": "2023-01-16T11:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_21",
-          "patient_id": "patient_3",
-          "evaluation_type": "Medication Management",
-          "notes": "Robert’s medication management report shows good compliance with his dual regimen—buprenorphine for his opioid dependency and mood stabilizers for his depressive symptoms. Side effects are minimal, a small mercy in his otherwise turbulent treatment history. The evaluation stresses that ongoing adherence is critical, given his past tendency to fall off the wagon. It’s a reminder that even a compliant patient like Robert must be constantly monitored to preclude any backsliding.",
-          "created_at": "2023-01-22T09:00:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_24",
-          "patient_id": "patient_3",
-          "evaluation_type": "Aftercare Planning",
-          "notes": "Aftercare planning for Robert is robust: he’s being transitioned into an intensive outpatient program specifically tailored for patients with severe opioid dependency and mental health challenges. The plan details a network of recovery support groups, community resources, and regular follow-ups. Every potential barrier—from transportation to appointment adherence—is being proactively addressed. This isn’t just planning for discharge; it’s a lifeline designed to keep him anchored in recovery long after he leaves the detox unit.",
-          "created_at": "2023-01-27T13:15:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_27",
-          "patient_id": "patient_3",
-          "evaluation_type": "Trauma Therapy Progress Note",
-          "notes": "In a breakthrough session, Robert begins to confront the traumatic memories that have long fueled his addiction. His use of grounding techniques—albeit delivered with a bitter, sarcastic twist that betrays his inner cynicism—is a promising sign. This note captures the moment when he starts to process, rather than avoid, his past. The progress, while modest, is critical: addressing trauma is the key to breaking the cycle of substance dependence. No sugar-coating here—this is the hard truth that his recovery hinges on embracing painful memories as a step toward healing.",
-          "created_at": "2023-02-04T14:45:00Z",
-          "patient_evaluation_item_base": {}
-        },
-        {
-          "id": "evaluation_30",
-          "patient_id": "patient_3",
-          "evaluation_type": "Holistic Health Assessment",
-          "notes": "Finally, Robert reports improved sleep quality and an overall sense of well-being after integrating meditation and yoga into his daily routine. It’s a surprising yet welcome development from someone whose lifestyle was once the epitome of chaos. The assessment applauds his willingness to embrace holistic practices as essential adjuncts to his medication-assisted treatment. While his life may still be a work in progress, this integrative approach—endorsed by DHCS and emerging best practices—marks a pivotal shift toward sustained, whole-person recovery.",
-          "created_at": "2023-02-15T10:15:00Z",
-          "patient_evaluation_item_base": {}
-        }
-      ],    
+    "evaluations": [
+      {
+        "id": "evaluation_1",
+        "patient_id": "patient_1",
+        "evaluation_type": "Detox Intake",
+        "notes": "John arrives for detox with a history of heavy alcohol use and occasional opioid misuse. His vitals are deceptively stable (BP 120/80, HR 78), but don’t be fooled—this guy has a legacy of rapidly escalating withdrawal symptoms. Past records show he’s danced on the edge of noncompliance more times than we’d like, so his admission is unquestionably medically necessary. We’re keeping a hawk’s eye on him because, despite his calm “I’m fine” face, the internal storm (and his chronic anxiety) can rear its ugly head at any moment. His history screams that we need rigorous monitoring and an aggressive, yet measured, intervention plan per ASAM guidelines.",
+        "created_at": "2023-01-07T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_4",
+        "patient_id": "patient_1",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "John’s CIWA-Ar score hits 12—moderate withdrawal. He’s not exactly breaking any records for self-control, but his previous flares have taught us that “moderate” is a moving target. The decision to prescribe diazepam on an as-needed basis is no surprise given his past struggles with self-regulation. His autonomic signs are flickering in warning, and this note clearly justifies not taking any shortcuts when it comes to benzodiazepine titration. The background here? A life riddled with chaotic episodes and a knack for ignoring sober advice—so we’re playing hardball.",
+        "created_at": "2023-01-08T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_7",
+        "patient_id": "patient_1",
+        "evaluation_type": "Mental Status Exam",
+        "notes": "John is alert and oriented, with no suicidal ideation at present—a silver lining in his troubled narrative. But don’t let his alertness fool you: his guarded tone and occasional evasiveness betray years of unaddressed trauma and a history of impulsivity during relapses. This exam, while ticking the 'stable' box, flags the need for ongoing integrated mental health support to help him confront the demons that keep him dancing with disaster.",
+        "created_at": "2023-01-09T11:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_10",
+        "patient_id": "patient_1",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "A week in, John’s CIWA-Ar score drops to 7. Good news, right? Yes—but given his historical pattern of “up and down,” we’re not celebrating prematurely. This improvement is likely a win for our pharmacologic strategy and tight protocol adherence, yet his notorious relapse history makes it clear: continued vigilance is mandatory. We’re sticking to a combination of medication and regular psychosocial check-ins to ensure he doesn’t pull another fast one on us.",
+        "created_at": "2023-01-10T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_13",
+        "patient_id": "patient_1",
+        "evaluation_type": "Group Therapy Progress Note",
+        "notes": "In group therapy, John surprisingly opens up, recounting episodes of self-sabotage, familial strife, and the sheer absurdity of his own behavior. His active participation—despite a long-standing resistance to authority—is a big win. Beneath the sarcasm and the self-deprecating humor lies a man finally starting to see the connection between past trauma and his substance use. This session is a turning point, confirming that even a cynic like John can be coaxed into confronting his issues if the environment is structured right (and with a little tough love).",
+        "created_at": "2023-01-12T14:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_16",
+        "patient_id": "patient_1",
+        "evaluation_type": "Physical Therapy Assessment",
+        "notes": "John shows mild muscle weakness, a predictable casualty of years spent oscillating between binge drinking and blackouts. The recommendation is a gentle, yet progressive, exercise regimen—not just to rebuild physical strength but also to instill a sense of bodily control he’s long denied himself. Considering his history of injuries during bouts of intoxication, this intervention isn’t just rehabilitative; it’s absolutely necessary to stave off further physical decline. Think of it as tough love for his muscles.",
+        "created_at": "2023-01-15T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_19",
+        "patient_id": "patient_1",
+        "evaluation_type": "Relapse Prevention Planning",
+        "notes": "This session is a masterclass in realism: John identifies his high-risk triggers, from toxic social environments to stressors tied to his erratic job history. Detailed strategies—including mindfulness, emergency call-ins, and a hard stop on risky behaviors—are mapped out. His past relapses, driven by the very scenarios discussed, underscore the absolute necessity of this plan. This isn’t your feel-good pep talk; it’s a rigorous, evidence-based blueprint for staying sober, meeting every ASAM and medical necessity criterion with no fluff.",
+        "created_at": "2023-01-20T14:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_22",
+        "patient_id": "patient_1",
+        "evaluation_type": "Discharge Planning",
+        "notes": "John’s discharge plan is meticulous. Stable housing, a schedule lined with follow-ups, and even transportation logistics are all in place. Given his past tendencies to vanish into the abyss of noncompliance, these safeguards are non-negotiable. The plan—crafted to ensure a seamless transition from residential detox to outpatient care—addresses every foreseeable barrier. It’s not just a discharge; it’s a lifeline, designed in accordance with DHCS and Joint Commission guidelines.",
+        "created_at": "2023-01-25T11:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_25",
+        "patient_id": "patient_1",
+        "evaluation_type": "Follow-up Assessment",
+        "notes": "One week out, John is sober and shows up for all his appointments—but don’t let the outward calm fool you. There’s an undercurrent of ambivalence in his 'I’m doing okay' attitude, a vestige of his long history of playing fast and loose with recovery. This follow-up confirms progress but also serves as a stark reminder: the road ahead is fraught with temptations and old habits. We’re not ready to relax our guard yet, no matter how polished his check-in might appear.",
+        "created_at": "2023-02-02T10:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_28",
+        "patient_id": "patient_1",
+        "evaluation_type": "Case Management",
+        "notes": "John’s case management note is a win: Medicaid approved, transportation sorted, and a coordinated effort with community resources in full swing. This evaluation digs into the socioeconomic hurdles that have historically sabotaged his recovery. The detailed plan—ranging from appointment reminders to coordinated community outreach—meets every medical necessity standard. It’s a no-nonsense, robust safety net for a patient who’s been known to miss appointments faster than a bad punchline.",
+        "created_at": "2023-02-10T09:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_2",
+        "patient_id": "patient_2",
+        "evaluation_type": "Detox Intake",
+        "notes": "Jane presents for detox with mild withdrawal symptoms. Her vitals (BP 135/85, HR 92) are stable on paper, but her history of self-medicating chronic pain and anxiety makes this admission a medically necessary intervention. The evaluation flags her past tendency to underplay symptoms—a habit that nearly landed her in trouble more than once. Her treatment plan includes vitamin supplementation to combat nutritional deficits from years of neglecting self-care while riding the opioid rollercoaster.",
+        "created_at": "2023-01-07T10:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_5",
+        "patient_id": "patient_2",
+        "evaluation_type": "CIWA-Ar",
+        "notes": "A CIWA-Ar score of 8 signals that Jane’s withdrawal is hovering between mild and moderate. This score might seem unremarkable, but given her well-documented habit of minimizing her discomfort, it’s a red flag. The evaluation emphasizes a low threshold for intervention, given her background of anxiety-fueled escalations. It’s a reminder that even a steady life on the surface can hide a volatile interior—an insight that guides our cautious, proactive treatment approach.",
+        "created_at": "2023-01-08T09:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_8",
+        "patient_id": "patient_2",
+        "evaluation_type": "Psychosocial Assessment",
+        "notes": "Jane’s psychosocial assessment paints a picture of relative stability: strong family support, secure housing, and consistent employment. But scratch the surface and you find a history of emotional dysregulation and a tendency to lean on substances during periods of internal turmoil. The evaluation candidly documents her bouts of isolation and past impulsivity. Despite the protective factors, the undercurrent of unresolved anxiety and depression demands a comprehensive support strategy that’s as robust as it is nuanced.",
+        "created_at": "2023-01-09T13:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_11",
+        "patient_id": "patient_2",
+        "evaluation_type": "Nutrition Assessment",
+        "notes": "Jane’s nutritional status, with a BMI of 24.2, isn’t alarming—but her history of erratic eating habits during substance use phases leaves her vitamin deficient. The evaluation calls for a strict supplementation protocol to repair the nutritional damage inflicted by years of self-neglect. This isn’t just about numbers on a scale; it’s about correcting a metabolic imbalance that could jeopardize her recovery. The intervention is as medically necessary as it is a wake-up call.",
+        "created_at": "2023-01-10T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_14",
+        "patient_id": "patient_2",
+        "evaluation_type": "Individual Therapy Session",
+        "notes": "In one-on-one therapy, Jane dives into her personal triggers and self-sabotaging behaviors with surprising candor—peppered with a wry, almost bitter humor. The session reveals her internal tug-of-war: a genuine desire to overcome her dependency clashing with a deeply ingrained skepticism toward the entire treatment process. Her insights, though laced with sarcasm, are a clear sign that she’s ready to tackle the underlying issues driving her substance use. This session is a pivotal piece of her recovery puzzle, confirming that cognitive-behavioral strategies are both timely and necessary.",
+        "created_at": "2023-01-12T15:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_17",
+        "patient_id": "patient_2",
+        "evaluation_type": "Family Therapy Session",
+        "notes": "Family therapy uncovers both progress and persistent tension. Jane’s relatives are stepping up, but old wounds continue to fester beneath the surface. The session highlights improved communication yet doesn’t shy away from pointing out moments when Jane’s cutting humor serves as a shield against vulnerability. It’s a delicate balance—her family’s involvement is a major asset, but the session makes it clear that unresolved conflicts could still derail her progress if not continually managed.",
+        "created_at": "2023-01-15T13:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_20",
+        "patient_id": "patient_2",
+        "evaluation_type": "Life Skills Assessment",
+        "notes": "Despite her stable living conditions, Jane’s practical life skills (budgeting, time management, stress coping) are sorely lacking—a problem that has historically fueled her substance use during stressful times. The evaluation lays out a no-nonsense referral to a life skills training program, a critical intervention to plug the gaps that have repeatedly left her vulnerable to relapse. This isn’t a side note; it’s a core part of ensuring her long-term stability and is fully in line with insurance and medical necessity criteria.",
+        "created_at": "2023-01-21T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_23",
+        "patient_id": "patient_2",
+        "evaluation_type": "Vocational Rehabilitation Assessment",
+        "notes": "Jane’s work history is a tale of unrealized potential, punctuated by sporadic employment due to her substance use. In this assessment, her latent strengths in administrative and creative fields are identified, and a referral to a job training program is initiated. The note doesn’t sugar-coat her past failures—it’s a candid appraisal that her professional instability has been a major stressor. Revamping her career is seen as a vital cog in her recovery machine, reinforcing purpose and self-worth.",
+        "created_at": "2023-01-26T14:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_26",
+        "patient_id": "patient_2",
+        "evaluation_type": "Substance Use Disorder Reassessment",
+        "notes": "Jane’s reassessment reports reduced cravings and improved use of coping strategies—a clear, albeit cautious, win. Yet, her history reminds us that this progress could be fleeting if vigilance isn’t maintained. The evaluation emphasizes the necessity of ongoing pharmacologic and behavioral support, even if the current picture looks brighter. It’s a measured 'good job' that comes with a side of 'don’t get complacent.'",
+        "created_at": "2023-02-03T11:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_29",
+        "patient_id": "patient_2",
+        "evaluation_type": "Recovery Milestone Assessment",
+        "notes": "Celebrating 30 days of continuous sobriety, Jane’s milestone is a hard-won victory. The note is both congratulatory and unflinchingly realistic: while the progress is commendable, the long battle ahead is acknowledged. It’s a moment of validation that doubles as a reminder that past relapses have taught us to never let our guard down. The milestone isn’t an endpoint—it’s a checkpoint in a journey that requires constant reinforcement through structured programs and periodic reassessments.",
+        "created_at": "2023-02-12T13:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_3",
+        "patient_id": "patient_3",
+        "evaluation_type": "Detox Intake",
+        "notes": "Robert shows up for detox with clear signs of dehydration—no surprise given his erratic fluid intake during long periods of opioid use. His vitals (BP 118/75, HR 84) appear acceptable, but the underlying clinical picture is anything but. With a history marred by overdose scares and withdrawal complications, his admission is an urgent medical necessity. Aggressive rehydration and vigilant monitoring of electrolytes are prescribed alongside a full-scale review of his traumatic past.",
+        "created_at": "2023-01-07T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_6",
+        "patient_id": "patient_3",
+        "evaluation_type": "COWS",
+        "notes": "Robert’s initial COWS score of 10 confirms moderate opioid withdrawal—a direct consequence of his high-dose, on-and-off usage pattern. He’s started on buprenorphine induction, a decision that’s both evidence-based and fully aligned with ASAM guidelines. Given his notorious cycle of relapse and a penchant for dramatic withdrawal episodes, this intervention is non-negotiable. It’s a clinical 'wake-up call' that we’re dealing with a high-risk patient who demands strict oversight.",
+        "created_at": "2023-01-08T10:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_9",
+        "patient_id": "patient_3",
+        "evaluation_type": "Biopsychosocial Assessment",
+        "notes": "This assessment lays bare Robert’s tragic backstory: a childhood marked by abuse, chronic family instability, and subsequent social isolation. These experiences have not only fueled his opioid dependency but also sabotaged his ability to form trusting relationships. The evaluation calls for trauma-focused therapy as a cornerstone of his recovery plan. It’s an uncompromising look at how deep-seated psychological wounds can underlie—and exacerbate—a substance use disorder, necessitating a dual-pronged treatment strategy.",
+        "created_at": "2023-01-09T14:30:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_12",
+        "patient_id": "patient_3",
+        "evaluation_type": "COWS",
+        "notes": "A follow-up COWS score of 6 is a welcome improvement, reflecting a positive response to the buprenorphine regimen. But, knowing Robert’s history, we’re not celebrating too early—this is just a temporary victory. The note stresses the importance of sustained medication-assisted treatment and frequent monitoring to guard against any resurgence of severe withdrawal symptoms. His chronic nature demands a long-term, aggressive treatment strategy, with no room for complacency.",
+        "created_at": "2023-01-10T11:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_15",
+        "patient_id": "patient_3",
+        "evaluation_type": "Medical Review",
+        "notes": "Robert’s medical review notes an improvement in liver function tests—a small silver lining amid years of substance-induced organ stress. However, the review also underscores that his liver has seen better days, thanks to a history of hepatitis and repeated toxic insults. Continued periodic lab testing and strict medication management are mandated to ensure that his recovery isn’t undermined by lingering organ damage. This isn’t a pat on the back; it’s a hard-edged reminder of the cost of his past choices.",
+        "created_at": "2023-01-13T09:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_18",
+        "patient_id": "patient_3",
+        "evaluation_type": "Psychiatric Evaluation",
+        "notes": "The psychiatric evaluation confirms what many suspected: Robert is living with a dual diagnosis—opioid use disorder combined with major depressive disorder. His depressive symptoms have long been masked by his substance use, but now they demand equal attention. The initiation of antidepressant therapy alongside his addiction treatment is deemed essential. This integrated approach, aligned with ASAM and LOCUS criteria, is designed to address both the chemical and emotional imbalances that have haunted him for decades.",
+        "created_at": "2023-01-16T11:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_21",
+        "patient_id": "patient_3",
+        "evaluation_type": "Medication Management",
+        "notes": "Robert’s medication management report shows good compliance with his dual regimen—buprenorphine for his opioid dependency and mood stabilizers for his depressive symptoms. Side effects are minimal, a small mercy in his otherwise turbulent treatment history. The evaluation stresses that ongoing adherence is critical, given his past tendency to fall off the wagon. It’s a reminder that even a compliant patient like Robert must be constantly monitored to preclude any backsliding.",
+        "created_at": "2023-01-22T09:00:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_24",
+        "patient_id": "patient_3",
+        "evaluation_type": "Aftercare Planning",
+        "notes": "Aftercare planning for Robert is robust: he’s being transitioned into an intensive outpatient program specifically tailored for patients with severe opioid dependency and mental health challenges. The plan details a network of recovery support groups, community resources, and regular follow-ups. Every potential barrier—from transportation to appointment adherence—is being proactively addressed. This isn’t just planning for discharge; it’s a lifeline designed to keep him anchored in recovery long after he leaves the detox unit.",
+        "created_at": "2023-01-27T13:15:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_27",
+        "patient_id": "patient_3",
+        "evaluation_type": "Trauma Therapy Progress Note",
+        "notes": "In a breakthrough session, Robert begins to confront the traumatic memories that have long fueled his addiction. His use of grounding techniques—albeit delivered with a bitter, sarcastic twist that betrays his inner cynicism—is a promising sign. This note captures the moment when he starts to process, rather than avoid, his past. The progress, while modest, is critical: addressing trauma is the key to breaking the cycle of substance dependence. No sugar-coating here—this is the hard truth that his recovery hinges on embracing painful memories as a step toward healing.",
+        "created_at": "2023-02-04T14:45:00Z",
+        "patient_evaluation_item_base": {}
+      },
+      {
+        "id": "evaluation_30",
+        "patient_id": "patient_3",
+        "evaluation_type": "Holistic Health Assessment",
+        "notes": "Finally, Robert reports improved sleep quality and an overall sense of well-being after integrating meditation and yoga into his daily routine. It’s a surprising yet welcome development from someone whose lifestyle was once the epitome of chaos. The assessment applauds his willingness to embrace holistic practices as essential adjuncts to his medication-assisted treatment. While his life may still be a work in progress, this integrative approach—endorsed by DHCS and emerging best practices—marks a pivotal shift toward sustained, whole-person recovery.",
+        "created_at": "2023-02-15T10:15:00Z",
+        "patient_evaluation_item_base": {}
+      }
+    ],
     "contacts": [
       {
         "id": "contact_1",
@@ -634,6 +634,117 @@
         "end_date": "2023-02-07"
       }
     ],
-    "vaults": []
-  }
-}
+    "vaults": [],
+    "billing_data": {
+      "insurancePlans": [
+        {
+          "type": "Blue Cross / Blue Shield",
+          "count": 15
+        },
+        {
+          "type": "Medicare",
+          "count": 8
+        },
+        {
+          "type": "Medicaid",
+          "count": 12
+        },
+        {
+          "type": "Cigna",
+          "count": 7
+        },
+        {
+          "type": "Aetna",
+          "count": 5
+        },
+        {
+          "type": "UnitedHealthcare",
+          "count": 9
+        }
+      ],
+      "totalDaysAuthorized": 450,
+      "daysRemaining": 287,
+      "upcomingReviews": [
+        {
+          "id": "ur1",
+          "patientName": "John Doe",
+          "date": "2025-03-05",
+          "insuranceProvider": "Blue Cross"
+        },
+        {
+          "id": "ur2",
+          "patientName": "Jane Smith",
+          "date": "2025-03-07",
+          "insuranceProvider": "Aetna"
+        },
+        {
+          "id": "ur3",
+          "patientName": "Robert Johnson",
+          "date": "2025-03-10",
+          "insuranceProvider": "Medicare"
+        }
+      ],
+      "outstandingPayments": 142500,
+      "activeAppeals": 4,
+      "claimsToAppeal": 7
+    }
+  },
+
+  "facility_insights": {
+  "currentCensus": 42,
+  "bedCapacity": 50,
+  "occupancyRate": 84,
+  "recentAdmissions": 8,
+  "recentDischarges": 5,
+  "upcomingAdmissions": 3,
+  "staffOnDuty": 12,
+  "patientToStaffRatio": "3.5:1",
+  "alerts": [
+    "Patient ID 123 needs immediate medication review",
+    "Room 302 maintenance issue reported"
+  ]
+},
+"compliance_data": {
+  "documentationStatus": {
+    "complete": 186,
+    "pending": 24,
+    "overdue": 7
+  },
+  "upcomingDeadlines": [
+    {
+      "title": "Quarterly Joint Commission Report",
+      "date": "2025-03-15"
+    },
+    {
+      "title": "Staff BLS Certification Renewal",
+      "date": "2025-03-10"
+    },
+    {
+      "title": "HIPAA Training Completion",
+      "date": "2025-03-20"
+    }
+  ],
+  "staffCertifications": {
+    "current": 28,
+    "expiringSoon": 4,
+    "expired": 1
+  },
+  "auditReadiness": [
+    {
+      "name": "Patient Records",
+      "score": 92
+    },
+    {
+      "name": "Medication Administration",
+      "score": 87
+    },
+    {
+      "name": "Staff Credentials",
+      "score": 95
+    },
+    {
+      "name": "Safety Protocols",
+      "score": 79
+    }
+  ]
+}}

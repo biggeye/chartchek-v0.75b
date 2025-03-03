@@ -1,20 +1,7 @@
 // lib/kipu/evaluations.ts
 import path from 'path';
 import fs from 'fs/promises';
-
-// Define evaluation types based on your schema
-export interface KipuEvaluation {
-  id: number;
-  evaluation_type: string;
-  created_at: string;
-  updated_at: string;
-  status: string;
-  notes?: string;
-  patient_id: number;
-  user_id: number;
-  user_name: string;
-  form_data: Record<string, any>;
-}
+import { KipuEvaluation } from './types';
 
 /**
  * Retrieves evaluations for a patient from a facility

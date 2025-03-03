@@ -6,8 +6,8 @@ import { EvaluationsList } from '@/components/evaluations/EvaluationsList';
 import { EvaluationForm } from '@/components/evaluations/EvaluationForm';
 // In app/protected/facilities/[facilityId]/patients/[patientId]/evaluations/page.tsx
 // Remove this import and only use the one from index.ts
-// import { KipuEvaluation } from '@/lib/kipu/evaluations';
-import { KipuEvaluation, getPatientEvaluations } from '@/lib/kipu'; // Import the function to get mock data
+import { KipuEvaluation } from '@/lib/kipu/types';
+import { getPatientEvaluations } from '@/lib/kipu'; // Import the function to get mock data
 
 export default function EvaluationsPage() {
   const router = useRouter();

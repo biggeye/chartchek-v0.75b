@@ -30,7 +30,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { content, attachments } = await req.json();
+    const requestData = await req.json();
+    console.log('[POST] Request data:', JSON.stringify(requestData, null, 2));
+    
+    const { content, role = 'user', attachments = [], assistant_id } = requestData;
+    
     if (!content) {
       return NextResponse.json(
         { error: 'Message content required' },
@@ -44,12 +48,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build the payload.
+    // Build the payload according to OpenAI's format requirements
     const payload: MessagePayload = {
       role: "user",
-      content,
+      content: typeof content === 'string' ? content : JSON.stringify(content),
     };
-
+console.log('[POST] ####### Stringified Payload:', JSON.stringify(payload, null, 2));
     // If attachments exist, map them into the expected structure.
     if (attachments && Array.isArray(attachments) && attachments.length > 0) {
       payload.attachments = attachments.map((attachment: any) => {
@@ -59,7 +63,8 @@ export async function POST(req: NextRequest) {
         };
       });
     }
-    // check thread for metadata content:
+    
+    console.log('[POST] OpenAI payload:', JSON.stringify(payload, null, 2));
 
     // Create the message in OpenAI.
     const openAIMessage = await openai.beta.threads.messages.create(
@@ -67,6 +72,12 @@ export async function POST(req: NextRequest) {
       payload
     );
     const messageId = openAIMessage.id;
+    
+    // Store the standardized message format in Supabase
+    const formattedContent = typeof content === 'string' 
+      ? JSON.stringify({ text: content }) 
+      : JSON.stringify(content);
+      
     // Store a minimal reference in Supabase
     const { error: insertError } = await supabase
       .from('chat_messages')
@@ -75,7 +86,8 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         message_id: messageId,
         role: 'user',
-        attachments: payload.attachments
+        content: formattedContent,
+        attachments: payload.attachments || null
       });
 
     if (insertError) {

@@ -102,17 +102,17 @@ export type PatientEvaluationFieldType =
   | 'care_team.Other_Case_Manager' | 'care_team.Peer_Support' | 'care_team.intake_specialist' 
   | 'care_team.' | 'care_team.Other_therapist';
 
-export interface PatientEvaluationItemBase {
-  id: number;
-  name: string;
-  evaluation_item_id: number;
-  created_at: string;
-  updated_at: string;
-  field_type: PatientEvaluationFieldType;
-  label: string;
-  optional: boolean;
-  divider_below: boolean;
-}
+  export interface PatientEvaluationItemBase {
+    id: string;
+    name: string;
+    evaluation_item_id: number;
+    created_at: string;
+    updated_at?: string; // Make this optional to match the child interface
+    field_type: PatientEvaluationFieldType;
+    label: string;
+    optional: boolean;
+    divider_below: boolean;
+  }
 
 export interface ConsentFormRecordExtended {
   id: number;
@@ -319,4 +319,135 @@ export interface PatientEvaluationItem extends PatientEvaluationItemBase {
   allergies?: any[];
   records?: any[];
   notes?: any[];
+}
+
+export interface FacilityData {
+  patients?: any[];
+  evaluations?: any[];
+  contacts?: any[];
+  glucose_logs?: any[];
+  appointments?: any[];
+  group_sessions?: any[];
+  consent_form_records?: any[];
+  vaults?: any[];
+  vital_signs?: any[];
+  providers?: any[];
+  lab_results?: any[];
+  patient_orders?: any[];
+  medications?: any[];
+  billing_data?: {
+    insurancePlans: Array<{
+      type: string;
+      count: number;
+    }>;
+    totalDaysAuthorized: number;
+    daysRemaining: number;
+    upcomingReviews: Array<{
+      patientName: string;
+      date: string;
+      reviewType: string;
+    }>;
+    outstandingPayments: number;
+    activeAppeals: number;
+    claimsToAppeal: number;
+  };
+  facility_insights?: {
+    currentCensus: number;
+    bedCapacity: number;
+    occupancyRate: number;
+    recentAdmissions: number;
+    recentDischarges: number;
+    upcomingAdmissions: number;
+    staffOnDuty: number;
+    patientToStaffRatio: string;
+    alerts: string[];
+  };
+  compliance_data?: {
+    documentationStatus: {
+      complete: number;
+      pending: number;
+      overdue: number;
+    };
+    upcomingDeadlines: Array<{
+      title: string;
+      date: string;
+    }>;
+    staffCertifications: {
+      current: number;
+      expiringSoon: number;
+      expired: number;
+    };
+    auditReadiness: Array<{
+      name: string;
+      score: number;
+    }>;
+  };
+}
+
+// Facility type matching the JSON structure
+export interface Facility {
+  id?: string; // Make id optional since it's not in the actual JSON data
+  facility_id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  created_at: string;
+  data: FacilityData;
+  meta?: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    patients_count?: number;
+    documents_count?: number;
+    [key: string]: any;
+  };
+}
+
+// Kipu Evaluation Interface - moved from evaluations.ts
+export interface KipuEvaluation {
+  id: number | string; // Allow both number and string types for ID
+  evaluation_type: string;
+  created_at: string;
+  updated_at?: string; // Make this optional to match component usage
+  status: string;
+  notes?: string;
+  patient_id: number | string; // Allow both number and string types for patient_id
+  user_id?: number; // Make optional
+  user_name?: string; // Make optional
+  form_data?: Record<string, any>; // Make optional
+  provider_name?: string;
+  items?: {
+    id: string;
+    question: string;
+    answer?: string;
+  }[];
+}
+
+export interface PatientEvaluationItem {
+  id: string;
+  evaluation_id: string;
+  question: string;
+  answer?: string;
+  answer_type: 'text' | 'number' | 'checkbox' | 'radio' | 'select';
+  options?: { value: string; label: string; }[];
+  value: string;
+  label: string;
+  required: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PatientEvaluation {
+  id: string;
+  patient_id: string;
+  evaluation_type: string;
+  notes: string;
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
+  status: 'draft' | 'completed' | 'reviewed';
+  items?: PatientEvaluationItem[];
 }

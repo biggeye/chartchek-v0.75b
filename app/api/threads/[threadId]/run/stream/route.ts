@@ -2,6 +2,7 @@
 import { createServer } from "@/utils/supabase/server";
 import OpenAI from "openai";
 import { NextRequest } from 'next/server';
+import { Run } from "@/types/api/openai";
 
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
@@ -42,24 +43,134 @@ export async function POST(req: NextRequest, { params }: { params: { threadId: s
     .eq('thread_id', threadId)
     .single();
 
+    const additionalInstructions = metadata?.data?.metadata?.additional_instructions;
+    
+    // Create run options
+    const runOptions: {
+      assistant_id: string;
+      stream: true; // Must be exactly true for type compatibility
+      instructions?: string;
+      tools?: any[];
+      metadata?: Record<string, any>;
+      model?: string;
+      additional_instructions?: string;
+    } = {
+      assistant_id,
+      stream: true as const, // Use const assertion to ensure it's exactly true
+      metadata: body.metadata || {}
+    };
 
-      const additionalInstructions = metadata?.data?.metadata?.additional_instructions;
+    // Add optional parameters if provided
+    if (additionalInstructions) runOptions.additional_instructions = additionalInstructions;
+    if (body.model) runOptions.model = body.model;
+    if (body.instructions) runOptions.instructions = body.instructions;
+    if (body.tools) runOptions.tools = body.tools;
+    
     // Variable to keep track of the latest curated content
     let lastCuratedContent: Array<{ text: { value: string; annotations: any[] } }> = [];
+    let runId: string | null = null;
 
     // Create a new ReadableStream for SSE events
     const stream = new ReadableStream({
       async start(controller) {
         try {
           // Create the live assistant stream
+          const runStream = openai.beta.threads.runs.stream(threadId, runOptions);
           
-          const runStream = openai.beta.threads.runs.stream(threadId, {
-            assistant_id: assistant_id,
-            stream: true,
-            additional_instructions: additionalInstructions
+          // Listen for all events and process based on the event type
+          runStream.on('event', async (event: any) => {
+            console.log(`[API] Received event type: ${event.type}`);
+            
+            // Run creation event
+            if (event.type === 'thread.run.created') {
+              const run = event.data;
+              runId = run.id;
+              
+              // Also update the chat_threads table with this run ID
+              const { error: threadUpdateError } = await supabase
+                .from('chat_threads')
+                .upsert({
+                  thread_id: threadId,
+                  run_id: run.id,
+                  instructions: run.options.instructions,
+                  tools: run.options.tools,
+                  model: run.options.model,
+                  additional_instructions: run.options.additional_instructions,
+                  temperature: run.options.temperature,
+                  top_p: run.options.top_p,
+                  max_prompt_tokens: run.options.max_prompt_tokens,
+                  max_completion_tokens: run.options.max_completion_tokens,
+                  truncation_strategy: run.options.truncation_strategy,
+                  response_format: run.options.response_format,
+                  tool_choice: run.options.tool_choice,
+                  parallel_tool_calls: run.options.parallel_tool_calls,
+                  required_action: run.options.required_action,
+                  failed_at: run.options.failed_at,
+                  updated_at: new Date(),
+                  last_run: run.id,
+                  last_run_status: run.status
+                })
+                .eq('thread_id', threadId);
+                
+              if (threadUpdateError) {
+                console.error('[API] Error updating chat_threads with run data:', threadUpdateError);
+              }
+            }
+            
+            // Run status change events
+            if (['thread.run.queued', 'thread.run.in_progress', 'thread.run.requires_action',
+                'thread.run.completed', 'thread.run.incomplete', 'thread.run.failed',
+                'thread.run.cancelling', 'thread.run.cancelled', 'thread.run.expired'].includes(event.type)) {
+              if (!runId) return;
+              
+              try {
+                // Update the status in the database
+                const { error: statusUpdateError } = await supabase
+                  .from('thread_runs')
+                  .update({ status: event.data.status })
+                  .eq('run_id', runId);
+                  
+                if (statusUpdateError) {
+                  console.error('[API] Error updating run status:', statusUpdateError);
+                }
+                
+                // Also update the chat_threads table
+                const { error: threadStatusError } = await supabase
+                  .from('chat_threads')
+                  .update({ last_run_status: event.data.status })
+                  .eq('thread_id', threadId);
+                  
+                if (threadStatusError) {
+                  console.error('[API] Error updating thread status:', threadStatusError);
+                }
+                
+                // For completed runs, update the completed_at timestamp
+                if (event.type === 'thread.run.completed') {
+                  const now = new Date().toISOString();
+                  await supabase
+                    .from('thread_runs')
+                    .update({ completed_at: now })
+                    .eq('run_id', runId);
+                }
+                
+                // For failed runs, update the failed_at timestamp and error message
+                if (event.type === 'thread.run.failed') {
+                  const now = new Date().toISOString();
+                  await supabase
+                    .from('thread_runs')
+                    .update({ 
+                      failed_at: now,
+                      last_error: event.data.last_error?.message || 'Unknown error'
+                    })
+                    .eq('run_id', runId);
+                }
+              } catch (error) {
+                console.error('[API] Exception updating status:', error);
+              }
+            }
           });
 
-          // Handle initial text creation
+          // Handle textCreated events
           runStream.on('textCreated', (text: OpenAIText) => {
             const curatedContent = [
               {
@@ -121,21 +232,23 @@ export async function POST(req: NextRequest, { params }: { params: { threadId: s
           });
 
           // On stream end, send the final message content
-          runStream.on('end', () => {
+          runStream.on('end', async () => {
             controller.enqueue(`data: ${JSON.stringify({
               type: 'messageCompleted',
               data: { content: lastCuratedContent },
             })}\n\n`);
+            
             controller.close();
           });
 
           // On error, emit an error event and close the stream
-          runStream.on('error', (error: any) => {
+          runStream.on('error', async (error: any) => {
             console.error('[API] Stream error:', error);
             controller.enqueue(`data: ${JSON.stringify({
               type: 'error',
               data: { message: error.message || 'Unknown error' },
             })}\n\n`);
+            
             controller.close();
           });
         } catch (error: any) {

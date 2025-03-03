@@ -646,5 +646,64 @@
       }
     ],
     "vaults": []
-  }
-}
+  },
+
+
+"facility_insights": {
+  "currentCensus": 42,
+  "bedCapacity": 50,
+  "occupancyRate": 84,
+  "recentAdmissions": 8,
+  "recentDischarges": 5,
+  "upcomingAdmissions": 3,
+  "staffOnDuty": 12,
+  "patientToStaffRatio": "3.5:1",
+  "alerts": [
+    "Patient ID 123 needs immediate medication review",
+    "Room 302 maintenance issue reported"
+  ]
+},
+"compliance_data": {
+  "documentationStatus": {
+    "complete": 186,
+    "pending": 24,
+    "overdue": 7
+  },
+  "upcomingDeadlines": [
+    {
+      "title": "Quarterly Joint Commission Report",
+      "date": "2025-03-15"
+    },
+    {
+      "title": "Staff BLS Certification Renewal",
+      "date": "2025-03-10"
+    },
+    {
+      "title": "HIPAA Training Completion",
+      "date": "2025-03-20"
+    }
+  ],
+  "staffCertifications": {
+    "current": 28,
+    "expiringSoon": 4,
+    "expired": 1
+  },
+  "auditReadiness": [
+    {
+      "name": "Patient Records",
+      "score": 92
+    },
+    {
+      "name": "Medication Administration",
+      "score": 87
+    },
+    {
+      "name": "Staff Credentials",
+      "score": 95
+    },
+    {
+      "name": "Safety Protocols",
+      "score": 79
+    }
+  ]
+}}

@@ -3,14 +3,14 @@ import { updatePatientEvaluation } from '@/lib/kipu/evaluations';
 
 export async function PUT(
   request: NextRequest,
-  { params, searchParams }: { 
-    params: { facilityId: string; patientId: string; evaluationId: string }; 
-    searchParams: URLSearchParams;
-  }
+  { params }: { params: { facilityId: string; patientId: string; evaluationId: string } }
 ) {
   const { facilityId, evaluationId } = params;
   const data = await request.json();
-  
+
+  // Access searchParams if needed:
+  const searchParams = request.nextUrl.searchParams;
+
   const updatedEvaluation = await updatePatientEvaluation(
     facilityId, 
     parseInt(evaluationId), 

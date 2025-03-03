@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { chatStore } from '@/store/chatStore';
 import { createThreadWithPrompt } from '@/lib/assistant/createThreadWithPrompt';
-
+import Modal from '@/components/modal';
 // inside handleSendPrompt:
 
 
@@ -45,20 +45,17 @@ export default function PatientPage({ params }: PatientPageProps) {
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [complianceToggle, setComplianceToggle] = useState(true);
-  const [billingToggle, setBillingToggle] = useState(false);
+  const [isNewEvalOpen, setIsNewEvalOpen] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   // Access chat store for sending messages
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
 
-  const handleSendPrompt = async (patientId: string, complianceToggle: boolean, billingToggle: boolean, userPrompt: string) => {
+  const handleSendPrompt = async (patientId: string, userPrompt: string) => {
     if (!userPrompt.trim()) return;
     setIsLoading(true);
     // Determine which assistant to use
-    const assistantId = complianceToggle
-      ? "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Compliance assistant
-      : "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
+    const assistantId = "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Billing assistant
 
     // Set the active assistant
     setCurrentAssistantId(assistantId);
@@ -132,11 +129,9 @@ export default function PatientPage({ params }: PatientPageProps) {
     fetchData();
   }, [patientId, facilityId]);
 
-  // Handle prompt submission
-
   // Prepare a well-formatted patient context
   const preparePatientContext = (patientId: any) => {
-    const assistantType = complianceToggle ? "Compliance" : "Billing";
+    const assistantType = "Compliance";
 
     let context = `--- ${assistantType} Assistant Context ---\n`;
 
@@ -222,10 +217,9 @@ export default function PatientPage({ params }: PatientPageProps) {
         <Button
           color="purple"
           onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+          className="flex items-center p-2 gap-2 bg-purple-600 hover:bg-purple-700"
         >
-          <MessageSquare className="h-5 w-5 p-2" />
-          Send To Assistant
+          chartChek
         </Button>
       </div>
       {isLoading ? (
@@ -236,7 +230,7 @@ export default function PatientPage({ params }: PatientPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Patient Information</CardTitle>
+              <title>Patient Information</title>
             </CardHeader>
             <CardContent>
               <dl className="space-y-4">
@@ -291,16 +285,16 @@ export default function PatientPage({ params }: PatientPageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Evaluations</CardTitle>
-              {/* button for "new evaluation, onClick should open a modal with the evaluation form which is wired up to the simulated api */}
-              <Button
-                color="purple"
-                onClick={() => setIsDialogOpen(true)}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-              >
-                <PlusCircle className="h-5 w-5 p-2" />
-                New Evaluation
-              </Button>
+              <CardTitle className="flex justify-between items-center">
+                <span>Recent Evaluations</span>
+                <Button
+                  color="purple"
+                  onClick={() => setIsNewEvalOpen(true)}
+                  className="flex items-center p-1 px-2  bg-purple-600 hover:bg-purple-700"
+                >
+                  +
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {evaluations.length === 0 ? (
@@ -346,65 +340,45 @@ export default function PatientPage({ params }: PatientPageProps) {
           </Card>
         </div>
       )}
-
-      <Dialog
-        open={isDialogOpen}
-        onOpenChange={() => setIsDialogOpen(false)}
-      >
-        <DialogTitle>
-          Ask Assistant
-        </DialogTitle>
-
-        <DialogBody>
+      <Modal
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        title="Ask Assistant"
+        content={
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               How can I help?
             </p>
 
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Compliance</label>
-                <Switch
-                  color="purple"
-                  checked={complianceToggle}
-                  onChange={(checked) => {
-                    setComplianceToggle(checked);
-                    if (checked) setBillingToggle(false);
-                  }}
-                />
-              </div>
-
-            </div>
-
             <div className="mt-2">
               <textarea
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
-                placeholder="Type your question here..."
+                placeholder={`What do you need for this patient?`}
                 className="w-full min-h-[100px] p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
           </div>
-        </DialogBody>
-
-        <DialogActions>
-          <Button
-            outline
-            onClick={() => setIsDialogOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="purple"
-            className="flex items-center gap-2"
-            onClick={() => handleSendPrompt(patientId, complianceToggle, billingToggle, userPrompt)}
-            disabled={!userPrompt.trim()}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Send
-          </Button>
-        </DialogActions>
-      </Dialog>
+        }
+        actions={
+          <>
+            <Button
+              outline
+              onClick={() => setIsDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex items-center gap-2"
+              onClick={() => handleSendPrompt(patientId, userPrompt)}
+              disabled={!userPrompt.trim()}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }

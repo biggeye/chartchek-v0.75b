@@ -21,7 +21,7 @@ const geistSans = Geist({
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className="scrollbar">
-      <body className={`${geistSans.className} scrollbar overflow-hidden`}>
+      <body className={`${geistSans.className}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

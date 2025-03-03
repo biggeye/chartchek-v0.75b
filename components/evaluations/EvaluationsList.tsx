@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuEvaluation } from '@/lib/kipu/evaluations';
+import { KipuEvaluation } from '@/lib/kipu/types';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -18,17 +18,12 @@ import { CalendarIcon, FilterIcon, MoreHorizontal, Search } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/fieldset';
 import Textarea from '../ui/textarea';
-// Define additional types needed
+
+// Define item interface for clarity
 interface EvaluationItem {
   id: string;
   question: string;
   answer?: string;
-}
-
-interface ExtendedKipuEvaluation extends KipuEvaluation {
-  provider_name?: string;
-  items?: EvaluationItem[];
-  notes?: string;
 }
 
 interface EvaluationsListProps {
@@ -42,24 +37,21 @@ interface EvaluationsListProps {
 export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, onNew }: EvaluationsListProps) {
   const router = useRouter();
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<ExtendedKipuEvaluation | null>(null);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<KipuEvaluation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Filtered evaluations
   const filteredEvaluations = useMemo(() => {
     return evaluations?.filter(evaluation => {
-      // Cast to ExtendedKipuEvaluation to handle possible undefined fields
-      const extEval = evaluation as ExtendedKipuEvaluation;
-
       // Apply search filter
       const matchesSearch =
         !searchTerm ||
-        extEval.evaluation_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (extEval.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        evaluation.evaluation_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (evaluation.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       // Apply status filter
-      const matchesStatus = !statusFilter || extEval.status === statusFilter;
+      const matchesStatus = !statusFilter || evaluation.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     }) || [];
@@ -72,7 +64,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
   const toggleEditMode = () => setIsEditMode(prev => !prev);
 
   const handleViewDetails = (evaluation: KipuEvaluation) => {
-    setSelectedEvaluation(evaluation as ExtendedKipuEvaluation);
+    setSelectedEvaluation(evaluation);
     setIsDetailModalOpen(true);
   };
 
@@ -155,7 +147,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
             </TableHeader>
             <TableBody>
               {filteredEvaluations.map((evaluation) => {
-                const extEval = evaluation as ExtendedKipuEvaluation;
                 return (
                   <TableRow
                     key={evaluation.id}
@@ -166,7 +157,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
                     <TableCell>{formatDate(evaluation.created_at)}</TableCell>
                     <TableCell>
-                      {extEval.provider_name || "System"}
+                      {evaluation.provider_name || "System"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
