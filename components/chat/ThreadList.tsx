@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
-import Tooltip from '@/components/ui/Tooltip'
 import { chatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
 

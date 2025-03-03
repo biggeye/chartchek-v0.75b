@@ -7,7 +7,7 @@ interface TooltipProps {
   maxWidth?: string;
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({ 
+const Tooltip: React.FC<TooltipProps> = ({ 
   content, 
   children, 
   position = 'top',

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Tooltip } from '@/components/ui/tooltip';
+import Tooltip from './ui/Tooltip';
 import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 
 interface DetailFieldProps {
@@ -21,10 +21,24 @@ export default function DetailField({
 }: DetailFieldProps) {
   const [copied, setCopied] = useState(false);
 
-  // Handle json objects and arrays
-  const displayValue = typeof value === 'object' && value !== null 
-    ? JSON.stringify(value, null, 2) 
-    : String(value ?? 'N/A');
+  // Handle json objects and arrays with safer parsing
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) {
+      return 'N/A';
+    }
+    
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val, null, 2);
+      } catch (e) {
+        return String(val);
+      }
+    }
+    
+    return String(val);
+  };
+  
+  const displayValue = formatValue(value);
   
   const isTruncated = truncate && displayValue.length > maxLength;
   const truncatedValue = isTruncated 

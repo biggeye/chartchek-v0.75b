@@ -18,7 +18,15 @@ interface OpenAIText {
 
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest, { params }: { params: { threadId: string } }) {
+/**
+ * Streams run events for a thread
+ * @route POST /api/threads/[threadId]/run/stream
+ */
+export async function POST(
+  req: NextRequest, 
+  { params }: { params: Promise<{ threadId: string }> }
+) {
+  const { threadId } = await params;
   const supabase = await createServer();
 
   // Authenticate user
@@ -34,14 +42,13 @@ export async function POST(req: NextRequest, { params }: { params: { threadId: s
   try {
     const body = await req.json();
     const assistant_id: string = body.assistant_id;
-    const threadId = params.threadId;
 
     console.log(`[API] Starting stream request to thread ${threadId} with assistantId ${assistant_id}`);
     const metadata = await supabase
-    .from('chat_threads')
-    .select('metadata')
-    .eq('thread_id', threadId)
-    .single();
+      .from('chat_threads')
+      .select('metadata')
+      .eq('thread_id', threadId)
+      .single();
 
     const additionalInstructions = metadata?.data?.metadata?.additional_instructions;
     

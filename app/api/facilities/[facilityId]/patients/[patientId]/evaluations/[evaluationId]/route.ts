@@ -1,28 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { updatePatientEvaluation } from '@/lib/kipu/evaluations';
+// app/api/facilities/[facilityId]/patients/[patientId]/evaluations/[evaluationId]/route.ts
+import { NextResponse } from 'next/server';
+import { getPatientEvaluations, updatePatientEvaluation } from '@/lib/kipu/evaluations';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { facilityId: string; patientId: string; evaluationId: string } }
+// GET: Retrieve all evaluations for a patient
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ facilityId: string; patientId: string; evaluationId: string }> }
 ) {
-  const { facilityId, evaluationId } = params;
-  const data = await request.json();
+  const { facilityId, patientId } = await context.params;
+  const evaluations = await getPatientEvaluations(facilityId, patientId);
+  return NextResponse.json(evaluations);
+}
 
-  // Access searchParams if needed:
-  const searchParams = request.nextUrl.searchParams;
-
-  const updatedEvaluation = await updatePatientEvaluation(
-    facilityId, 
-    parseInt(evaluationId), 
-    data
-  );
-  
-  if (!updatedEvaluation) {
-    return NextResponse.json(
-      { error: 'Failed to update evaluation' },
-      { status: 500 }
-    );
+// PUT: Update an evaluation for a patient
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ facilityId: string; patientId: string; evaluationId: string }> }
+) {
+  const { facilityId, evaluationId } = await context.params;
+  const body = await request.json();
+  const evalId = parseInt(evaluationId, 10);
+  const updated = await updatePatientEvaluation(facilityId, evalId, body);
+  if (!updated) {
+    return NextResponse.json({ error: 'Evaluation not found or failed to update' }, { status: 404 });
   }
-  
-  return NextResponse.json({ evaluation: updatedEvaluation });
+  return NextResponse.json(updated);
 }

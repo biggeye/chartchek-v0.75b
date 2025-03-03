@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import DetailModal from './DetailModal';
-import DetailField from './DetailField';
+import DetailModal from '../DetailModal';
+import DetailField from '../DetailField';
 import { ThreadRun } from '@/lib/services/threadService';
 import { format } from 'date-fns';
 

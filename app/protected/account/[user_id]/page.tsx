@@ -5,8 +5,8 @@ import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import threadService, { ChatThread, ThreadRun } from '@/lib/services/threadService'
-import ThreadsTable from '@/components/ThreadsTable'
-import ThreadRunsTable from '@/components/ThreadRunsTable'
+import ThreadsTable from '@/components/profile/ThreadsTable'
+import ThreadRunsTable from '@/components/profile/ThreadRunsTable'
 
 export default function AccountPage() {
   const params = useParams();

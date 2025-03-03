@@ -172,11 +172,13 @@ export function EvaluationForm({
       };
 
       // API endpoint and method based on whether we're creating or updating
-      const apiUrl = evaluationId
-        ? `/api/facilities/${facilityId}/patients/${patientId}/evaluations/${evaluationId}`
-        : `/api/facilities/${facilityId}/patients/${patientId}/evaluations`;
-
-      const method = evaluationId ? 'PUT' : 'POST';
+      let apiUrl = `/api/facilities/${facilityId}/patients/${patientId}/evaluations/mock`;
+      let method = 'POST';
+      
+      // If we're updating, add the evaluationId as a query parameter
+      if (evaluationId) {
+        apiUrl += `?evaluationId=${evaluationId}`;
+      }
 
       const response = await fetch(apiUrl, {
         method,

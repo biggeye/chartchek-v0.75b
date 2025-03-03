@@ -8,20 +8,14 @@ import Link from 'next/link';
 
 interface PatientLayoutProps {
   children: React.ReactNode;
-  params: {
-    facilityId: string;
-    patientId: string;
-  };
+  params: Promise<{ facilityId: string; patientId: string }>;
 }
 
 export default function PatientLayout({ children, params }: PatientLayoutProps) {
-  // Use type assertion to help TypeScript understand the result of use()
-  const unwrappedParams = use(params as any) as { facilityId: string; patientId: string };
-  const { facilityId, patientId } = unwrappedParams;
+  // use() unwraps the promise, so you get the actual params
+  const { facilityId, patientId } = use(params);
   
-  // In a real app, you would validate if the patient exists here
-  // and call notFound() if they don't
-  
+  // You might add validation here (e.g., call notFound() if needed)
   return (
     <div className="container">
       <div className="flex flex-col gap-4 py-4">
