@@ -109,16 +109,24 @@ export interface ChatMessage {
   attachments?: ChatMessageAttachment[];
   metadata: Record<string, any>;
 }
+
 export interface ChatThread {
-  thread_id: string;
-  assistant_id?: string;
+  id: string;
+  user_id: string;
+  assistant_id: string | null;
+  status: string;
   messages: ChatMessage[];
+  created_at: string | null;
+  updated_at: string | null;
+  metadata?: Record<string, any>;
+  thread_id: string;
   current_files?: Document[];
   title?: string;
-  tool_resources: ToolResources | null;  // this is an object or null
-  last_run?: string;
-  last_run_status?: string;
-  metadata?: Record<string, any>;
+  last_message_at: string | null;
+  is_active: boolean;
+  tool_resources: ToolResources | null; 
+  last_run?: string | null;
+  last_run_status?: string | null;
   additional_instructions?: string;
 }
 

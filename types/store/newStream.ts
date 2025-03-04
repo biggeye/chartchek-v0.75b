@@ -36,3 +36,37 @@ export interface NewStreamingState {
     };
     snapshot?: any;
   }
+
+  export interface ThreadRun {
+    id: string;
+    created_at?: string | null;
+    updated_at?: string | null;
+    run_id: string;
+    thread_id: string;
+    assistant_id: string;
+    user_id: string;
+    status: string;
+    started_at: string | null;
+    completed_at?: string | null;
+    cancelled_at?: string | null;
+    failed_at?: string | null;
+    expires_at?: string | null;
+    last_error?: string | null;
+    model: string | null;
+    instructions: string | null;
+    tools?: any;
+    metadata?: any;
+    required_action?: any;
+    prompt_tokens?: string | null;
+    completion_tokens?: string | null;
+    total_tokens?: string | null;
+    temperature?: string | null;
+    top_p?: string | null;
+    max_prompt_tokens?: number | null;
+    max_completion_tokens?: number | null;
+    truncation_strategy?: string | null;
+    response_format: any;
+    tool_choice?: any;
+    parallel_tool_calls?: boolean | null;
+    additional_instructions?: string | null;
+  }

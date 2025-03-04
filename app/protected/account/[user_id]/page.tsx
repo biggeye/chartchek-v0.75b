@@ -3,19 +3,49 @@
 import { useParams } from 'next/navigation'
 import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
-import { useEffect, useState } from 'react'
-import threadService, { ChatThread, ThreadRun } from '@/lib/services/threadService'
+import { useEffect, useState, FormEvent } from 'react'
+import { ChatThread } from '@/types/database'
+import { ThreadRun } from '@/types/store/newStream'
+import threadService from '@/lib/services/threadService'
 import ThreadsTable from '@/components/profile/ThreadsTable'
 import ThreadRunsTable from '@/components/profile/ThreadRunsTable'
+import { createClient } from '@/utils/supabase/client'
+
+interface ProfileData {
+  id: string
+  user_id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  is_owner: boolean
+  title: string | null
+  phone_number: string | null
+  specialty: string | null
+  about: string | null
+  profile_image_url: string | null
+  facility_id: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip_code: string | null
+  country: string | null
+  username: string | null
+  created_at: string
+  updated_at: string
+}
 
 export default function AccountPage() {
   const params = useParams();
   const userId = params?.user_id as string;
+  const supabase = createClient();
   
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [runs, setRuns] = useState<ThreadRun[]>([]);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchUserData() {
@@ -24,7 +54,21 @@ export default function AccountPage() {
       try {
         setIsLoading(true);
         
-        // Fetch all thread data at once using the API endpoint
+        // Fetch profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          setError('Failed to load user profile. Please try again later.');
+        } else {
+          setProfile(profileData);
+        }
+        
+        // Fetch thread data using the ThreadService
         const userData = await threadService.getUserThreadData(userId);
         setThreads(userData.threads);
         setRuns(userData.runs);
@@ -37,17 +81,77 @@ export default function AccountPage() {
     }
     
     fetchUserData();
-  }, [userId]);
+  }, [userId, supabase]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    
+    if (!profile) return;
+    
+    try {
+      setIsSaving(true);
+      setError(null);
+      setSuccessMessage(null);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: profile.email,
+          title: profile.title,
+          about: profile.about,
+          phone_number: profile.phone_number,
+          specialty: profile.specialty,
+          address: profile.address,
+          city: profile.city,
+          state: profile.state,
+          zip_code: profile.zip_code,
+          country: profile.country,
+          username: profile.username
+        })
+        .eq('user_id', userId);
+        
+      if (updateError) {
+        setError(`Failed to update profile: ${updateError.message}`);
+      } else {
+        setSuccessMessage('Profile updated successfully');
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile. Please try again later.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setProfile(prev => {
+      if (!prev) return prev;
+      return { ...prev, [name]: value };
+    });
+  };
+
+  if (isLoading) {
+    return <div className="p-8">Loading user data...</div>;
+  }
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Account for {userId}</h1>
-      <form>
+      <h1 className="text-2xl font-bold mb-4">Account Settings</h1>
+      
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">{error}</div>}
+      {successMessage && <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md">{successMessage}</div>}
+      
+      <form onSubmit={handleSubmit}>
         <div className="space-y-12">
           <div className="border-b border-gray-900/10 pb-12">
             <h2 className="text-base/7 font-semibold text-gray-900">Profile</h2>
             <p className="mt-1 text-sm/6 text-gray-600">
-              This information will be displayed publicly so be careful what you share.
+              Complete your profile information to help others identify you.
             </p>
 
             <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -56,16 +160,14 @@ export default function AccountPage() {
                   Username
                 </label>
                 <div className="mt-2">
-                  <div className="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
-                    <div className="shrink-0 text-base text-gray-500 select-none sm:text-sm/6">workcation.com/</div>
-                    <input
-                      id="username"
-                      name="username"
-                      type="text"
-                      placeholder="janesmith"
-                      className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-                    />
-                  </div>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    value={profile?.username || ''}
+                    onChange={handleInputChange}
+                    className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  />
                 </div>
               </div>
 
@@ -78,47 +180,28 @@ export default function AccountPage() {
                     id="about"
                     name="about"
                     rows={3}
+                    value={profile?.about || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                    defaultValue={''}
                   />
                 </div>
                 <p className="mt-3 text-sm/6 text-gray-600">Write a few sentences about yourself.</p>
               </div>
 
               <div className="col-span-full">
-                <label htmlFor="photo" className="block text-sm/6 font-medium text-gray-900">
-                  Photo
+                <label htmlFor="profile_image_url" className="block text-sm/6 font-medium text-gray-900">
+                  Profile Image URL
                 </label>
-                <div className="mt-2 flex items-center gap-x-3">
-                  <UserCircleIcon aria-hidden="true" className="size-12 text-gray-300" />
-                  <button
-                    type="button"
-                    className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 ring-1 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50"
-                  >
-                    Change
-                  </button>
-                </div>
-              </div>
-
-              <div className="col-span-full">
-                <label htmlFor="cover-photo" className="block text-sm/6 font-medium text-gray-900">
-                  Cover photo
-                </label>
-                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-                  <div className="text-center">
-                    <PhotoIcon aria-hidden="true" className="mx-auto size-12 text-gray-300" />
-                    <div className="mt-4 flex text-sm/6 text-gray-600">
-                      <label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 focus-within:outline-hidden hover:text-indigo-500"
-                      >
-                        <span>Upload a file</span>
-                        <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs/5 text-gray-600">PNG, JPG, GIF up to 10MB</p>
-                  </div>
+                <div className="mt-2">
+                  <input
+                    id="profile_image_url"
+                    name="profile_image_url"
+                    type="text"
+                    value={profile?.profile_image_url || ''}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/profile-image.jpg"
+                    className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  />
                 </div>
               </div>
             </div>
@@ -126,40 +209,42 @@ export default function AccountPage() {
 
           <div className="border-b border-gray-900/10 pb-12">
             <h2 className="text-base/7 font-semibold text-gray-900">Personal Information</h2>
-            <p className="mt-1 text-sm/6 text-gray-600">Use a permanent address where you can receive mail.</p>
+            <p className="mt-1 text-sm/6 text-gray-600">Provide your contact information and professional details.</p>
 
             <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
               <div className="sm:col-span-3">
-                <label htmlFor="first-name" className="block text-sm/6 font-medium text-gray-900">
+                <label htmlFor="first_name" className="block text-sm/6 font-medium text-gray-900">
                   First name
                 </label>
                 <div className="mt-2">
                   <input
-                    id="first-name"
-                    name="first-name"
+                    id="first_name"
+                    name="first_name"
                     type="text"
-                    autoComplete="given-name"
+                    value={profile?.first_name || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="last-name" className="block text-sm/6 font-medium text-gray-900">
+                <label htmlFor="last_name" className="block text-sm/6 font-medium text-gray-900">
                   Last name
                 </label>
                 <div className="mt-2">
                   <input
-                    id="last-name"
-                    name="last-name"
+                    id="last_name"
+                    name="last_name"
                     type="text"
-                    autoComplete="family-name"
+                    value={profile?.last_name || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
-              <div className="sm:col-span-4">
+              <div className="sm:col-span-3">
                 <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900">
                   Email address
                 </label>
@@ -168,44 +253,72 @@ export default function AccountPage() {
                     id="email"
                     name="email"
                     type="email"
-                    autoComplete="email"
+                    value={profile?.email || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="country" className="block text-sm/6 font-medium text-gray-900">
-                  Country
+                <label htmlFor="phone_number" className="block text-sm/6 font-medium text-gray-900">
+                  Phone number
                 </label>
-                <div className="mt-2 grid grid-cols-1">
-                  <select
-                    id="country"
-                    name="country"
-                    autoComplete="country-name"
-                    className="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                  >
-                    <option>United States</option>
-                    <option>Canada</option>
-                    <option>Mexico</option>
-                  </select>
-                  <ChevronDownIcon
-                    aria-hidden="true"
-                    className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
+                <div className="mt-2">
+                  <input
+                    id="phone_number"
+                    name="phone_number"
+                    type="text"
+                    value={profile?.phone_number || ''}
+                    onChange={handleInputChange}
+                    className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <label htmlFor="title" className="block text-sm/6 font-medium text-gray-900">
+                  Title
+                </label>
+                <div className="mt-2">
+                  <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    value={profile?.title || ''}
+                    onChange={handleInputChange}
+                    className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <label htmlFor="specialty" className="block text-sm/6 font-medium text-gray-900">
+                  Specialty
+                </label>
+                <div className="mt-2">
+                  <input
+                    id="specialty"
+                    name="specialty"
+                    type="text"
+                    value={profile?.specialty || ''}
+                    onChange={handleInputChange}
+                    className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
               <div className="col-span-full">
-                <label htmlFor="street-address" className="block text-sm/6 font-medium text-gray-900">
-                  Street address
+                <label htmlFor="address" className="block text-sm/6 font-medium text-gray-900">
+                  Address
                 </label>
                 <div className="mt-2">
                   <input
-                    id="street-address"
-                    name="street-address"
+                    id="address"
+                    name="address"
                     type="text"
-                    autoComplete="street-address"
+                    value={profile?.address || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
@@ -220,236 +333,84 @@ export default function AccountPage() {
                     id="city"
                     name="city"
                     type="text"
-                    autoComplete="address-level2"
+                    value={profile?.city || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="region" className="block text-sm/6 font-medium text-gray-900">
-                  State / Province
+                <label htmlFor="state" className="block text-sm/6 font-medium text-gray-900">
+                  State
                 </label>
                 <div className="mt-2">
                   <input
-                    id="region"
-                    name="region"
+                    id="state"
+                    name="state"
                     type="text"
-                    autoComplete="address-level1"
+                    value={profile?.state || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="postal-code" className="block text-sm/6 font-medium text-gray-900">
-                  ZIP / Postal code
+                <label htmlFor="zip_code" className="block text-sm/6 font-medium text-gray-900">
+                  ZIP Code
                 </label>
                 <div className="mt-2">
                   <input
-                    id="postal-code"
-                    name="postal-code"
+                    id="zip_code"
+                    name="zip_code"
                     type="text"
-                    autoComplete="postal-code"
+                    value={profile?.zip_code || ''}
+                    onChange={handleInputChange}
                     className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                   />
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="border-b border-gray-900/10 pb-12">
-            <h2 className="text-base/7 font-semibold text-gray-900">Notifications</h2>
-            <p className="mt-1 text-sm/6 text-gray-600">
-              We'll always let you know about important changes, but you pick what else you want to hear about.
-            </p>
-
-            <div className="mt-10 space-y-10">
-              <fieldset>
-                <legend className="text-sm/6 font-semibold text-gray-900">By email</legend>
-                <div className="mt-6 space-y-6">
-                  <div className="flex gap-3">
-                    <div className="flex h-6 shrink-0 items-center">
-                      <div className="group grid size-4 grid-cols-1">
-                        <input
-                          defaultChecked
-                          id="comments"
-                          name="comments"
-                          type="checkbox"
-                          aria-describedby="comments-description"
-                          className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 indeterminate:border-indigo-600 indeterminate:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
-                        />
-                        <svg
-                          fill="none"
-                          viewBox="0 0 14 14"
-                          className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25"
-                        >
-                          <path
-                            d="M3 8L6 11L11 3.5"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-checked:opacity-100"
-                          />
-                          <path
-                            d="M3 7H11"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-indeterminate:opacity-100"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-sm/6">
-                      <label htmlFor="comments" className="font-medium text-gray-900">
-                        Comments
-                      </label>
-                      <p id="comments-description" className="text-gray-500">
-                        Get notified when someones posts a comment on a posting.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex h-6 shrink-0 items-center">
-                      <div className="group grid size-4 grid-cols-1">
-                        <input
-                          id="candidates"
-                          name="candidates"
-                          type="checkbox"
-                          aria-describedby="candidates-description"
-                          className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 indeterminate:border-indigo-600 indeterminate:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
-                        />
-                        <svg
-                          fill="none"
-                          viewBox="0 0 14 14"
-                          className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25"
-                        >
-                          <path
-                            d="M3 8L6 11L11 3.5"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-checked:opacity-100"
-                          />
-                          <path
-                            d="M3 7H11"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-indeterminate:opacity-100"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-sm/6">
-                      <label htmlFor="candidates" className="font-medium text-gray-900">
-                        Candidates
-                      </label>
-                      <p id="candidates-description" className="text-gray-500">
-                        Get notified when a candidate applies for a job.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex h-6 shrink-0 items-center">
-                      <div className="group grid size-4 grid-cols-1">
-                        <input
-                          id="offers"
-                          name="offers"
-                          type="checkbox"
-                          aria-describedby="offers-description"
-                          className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 indeterminate:border-indigo-600 indeterminate:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
-                        />
-                        <svg
-                          fill="none"
-                          viewBox="0 0 14 14"
-                          className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25"
-                        >
-                          <path
-                            d="M3 8L6 11L11 3.5"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-checked:opacity-100"
-                          />
-                          <path
-                            d="M3 7H11"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="opacity-0 group-has-indeterminate:opacity-100"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-sm/6">
-                      <label htmlFor="offers" className="font-medium text-gray-900">
-                        Offers
-                      </label>
-                      <p id="offers-description" className="text-gray-500">
-                        Get notified when a candidate accepts or rejects an offer.
-                      </p>
-                    </div>
-                  </div>
+              <div className="sm:col-span-3">
+                <label htmlFor="country" className="block text-sm/6 font-medium text-gray-900">
+                  Country
+                </label>
+                <div className="mt-2 grid grid-cols-1">
+                  <select
+                    id="country"
+                    name="country"
+                    value={profile?.country || 'United States'}
+                    onChange={handleInputChange}
+                    className="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                  >
+                    <option>United States</option>
+                    <option>Canada</option>
+                    <option>Mexico</option>
+                  </select>
+                  <ChevronDownIcon
+                    aria-hidden="true"
+                    className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
+                  />
                 </div>
-              </fieldset>
-
-              <fieldset>
-                <legend className="text-sm/6 font-semibold text-gray-900">Push notifications</legend>
-                <p className="mt-1 text-sm/6 text-gray-600">
-                  These are delivered via SMS to your mobile phone.
-                </p>
-
-                <div className="mt-6 space-y-6">
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      defaultChecked
-                      id="push-everything"
-                      name="push-notifications"
-                      type="radio"
-                      className="relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden"
-                    />
-                    <label htmlFor="push-everything" className="block text-sm/6 font-medium text-gray-900">
-                      Everything
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      id="push-email"
-                      name="push-notifications"
-                      type="radio"
-                      className="relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden"
-                    />
-                    <label htmlFor="push-email" className="block text-sm/6 font-medium text-gray-900">
-                      Same as email
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      id="push-nothing"
-                      name="push-notifications"
-                      type="radio"
-                      className="relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden"
-                    />
-                    <label htmlFor="push-nothing" className="block text-sm/6 font-medium text-gray-900">
-                      No push notifications
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
+              </div>
             </div>
           </div>
 
           <div className="mt-6 flex items-center justify-end gap-x-6">
-            <button type="button" className="text-sm font-semibold text-gray-900">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="text-sm font-semibold text-gray-900"
+            >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={isSaving}
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-indigo-300"
             >
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

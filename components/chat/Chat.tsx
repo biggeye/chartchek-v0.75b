@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageList } from './MessageList';
-import ChatInputArea from './ChatInputArea';
+import { ChatInputArea } from './ChatInputArea';
 import RunStatusIndicator from './RunStatusIndicator';
 import { chatStore } from '@/store/chatStore';
 import { useNewStreamingStore } from '@/store/newStreamStore';
@@ -60,14 +60,17 @@ export default function Chat({ assistantId }: ChatProps) {
     }
   };
 
-  const handleMessageSubmit = async (content: string, attachmentIds: string[] = []) => {
-    if (isLoading || isStreamingActive) {
+  const handleMessageSubmit = async (content: string, attachmentIds: string[] = [], patientContext: any = null) => {
+    if (!content.trim() && attachmentIds.length === 0) {
+      console.log('[Chat] Empty message, not sending');
       return;
     }
+    
+    // Check active run first
     if (activeRunStatus?.isActive) {
+      console.log('[Chat] A run is already active', activeRunStatus);
       setLocalError(
-        'The assistant is still processing your previous request. ' +
-        'Wait for it to complete or cancel it using the button below.'
+        'A previous message is still being processed. Please wait or cancel the previous run.'
       );
       if (currentThread?.thread_id) {
         chatStore.getState().checkActiveRun(currentThread.thread_id);
@@ -86,12 +89,35 @@ export default function Chat({ assistantId }: ChatProps) {
       if (!threadToUse || !assistantId) {
         throw new Error('Thread ID or Assistant ID is missing');
       }
+      
+      // Format message content with patient context if available
+      let messageText = content;
+      
+      if (patientContext) {
+        // Include minimal patient context for the LLM to reference
+        messageText = `
+--- PATIENT CONTEXT ---
+Patient: ${patientContext.first_name} ${patientContext.last_name}
+DOB: ${patientContext.dob}
+MR#: ${patientContext.mr_number}
+Admission: ${patientContext.admission_date}
+---
+
+${content}`;
+      }
+      
+      // Format the content as JSON object to standardize storage
+      const formattedContent = JSON.stringify({ text: messageText });
+      
+      // Format attachments as ChatMessageAttachment objects
       const formattedAttachments: ChatMessageAttachment[] = attachmentIds.map(id => ({
         file_id: id,
-        tools: [{ type: 'file_search' }]
+        tools: []
       }));
-      const result: SendMessageResult = await sendMessage(assistantId, threadToUse, content, formattedAttachments);
-      if (!result.success) {
+      
+      const result = await sendMessage(assistantId, threadToUse, formattedContent, formattedAttachments);
+      
+      if (!result.messageId) {
         console.error('[Chat] Error sending message:', result.error);
         setLocalError(result.error || 'Failed to send message');
         if (result.error?.includes('run is active')) {
@@ -99,6 +125,7 @@ export default function Chat({ assistantId }: ChatProps) {
         }
         return;
       }
+      
       if (assistantId) {
        useNewStreamingStore.setState({ isStreamingActive: true });
         await startStream(threadToUse, assistantId);
@@ -110,7 +137,6 @@ export default function Chat({ assistantId }: ChatProps) {
       console.error('[Chat] Error submitting message:', error);
       setLocalError(error instanceof Error ? error.message : String(error));
     } finally {
-
       setIsLoading(false);
     }
   };

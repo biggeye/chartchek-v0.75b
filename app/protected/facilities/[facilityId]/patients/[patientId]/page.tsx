@@ -50,6 +50,8 @@ export default function PatientPage({ params }: PatientPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   // Access chat store for sending messages
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
+  
+  
 
   const handleSendPrompt = async (patientId: string, userPrompt: string) => {
     if (!userPrompt.trim()) return;
@@ -58,7 +60,9 @@ export default function PatientPage({ params }: PatientPageProps) {
     const assistantId = "asst_9RqcRDt3vKUEFiQeA0HfLC08" // Billing assistant
 
     // Set the active assistant
-    setCurrentAssistantId(assistantId);
+    const currentAssistantId = await chatStore.getState().setCurrentAssistantId(assistantId);
+      console.log('[Chat] Current assistant ID:', currentAssistantId);
+      
     await preparePatientContext(patientId);
     try {
       // Create a thread with context and prompt

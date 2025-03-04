@@ -26,6 +26,7 @@ import {
   HomeIcon,
   UsersIcon,
   XMarkIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline'
 import { 
   ShieldCheckIcon, 
@@ -45,6 +46,9 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 import { ThreadList } from '@/components/chat/ThreadList';
 import Link from 'next/link';
 import ChatStoreWidget from '@/components/ChatStoreWidget';
+import { ChatInputArea } from '@/components/chat/ChatInputArea';
+import { chatStore } from '@/store/chatStore';
+import { usePatientStore } from '@/store/patientStore';
 
 /// Aside Components (Insights)
  import { FacilityInsights } from '@/components/dashboard/FacilityInsights';
@@ -60,9 +64,14 @@ interface AppLayoutProps {
 export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
+  const [isChatInputVisible, setIsChatInputVisible] = useState(false); // Control chat input visibility
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentFacilityId, setCurrentFacilityId] = useState<string | undefined>(undefined);
   const pathname = usePathname();
   
   // Initialize stores
+  const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
+  const { currentPatient } = usePatientStore();
     
   // Navigation items
   const navigation = [
@@ -82,8 +91,85 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
     { name: 'Settings', href: '/protected/settings' },
     { name: 'Sign out', href: '#', onClick: async () => await signOutAction() },
   ];
+  
+  // Handle chat message submission
+  const handleChatSubmit = async (content: string, attachments: string[], patientContext: any = null) => {
+    if (!content.trim()) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Determine assistant based on current route
+      let assistantId = "asst_9RqcRDt3vKUEFiQeA0HfLC08"; // Default to compliance assistant
+      
+      if (pathname?.includes('/billing')) {
+        assistantId = "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
+      }
+      
+      // Set the current assistant ID
+      setCurrentAssistantId(assistantId);
+      
+      // Create a thread if needed or use existing
+      const thread = chatStore.getState().currentThread;
+      const threadId = thread?.thread_id || await createThread(assistantId);
+      
+      if (!threadId) {
+        throw new Error('Failed to create or retrieve thread');
+      }
+      
+      // Format the message content with patient context if available
+      let messageText = content;
+      
+      if (patientContext) {
+        // Include minimal patient context for the LLM to reference
+        messageText = `
+--- PATIENT CONTEXT ---
+Patient: ${patientContext.first_name} ${patientContext.last_name}
+DOB: ${patientContext.dob}
+MR#: ${patientContext.mr_number}
+Admission: ${patientContext.admission_date}
+---
 
-  // Fetch assistant name for specific routes
+${content}`;
+      }
+      
+      // Format the content as JSON object to standardize storage
+      // This ensures consistency in message storage and retrieval as specified in MEMORY
+      const formattedContent = JSON.stringify({ text: messageText });
+      
+      // Convert string attachments to proper ChatMessageAttachment objects
+      const formattedAttachments = attachments.map(fileId => ({
+        file_id: fileId,
+        tools: []
+      }));
+      
+      // Send the message with JSON formatted content and proper attachment objects
+      await sendMessage(assistantId, threadId, formattedContent, formattedAttachments);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Extract facility ID if present in the pathname
+  useEffect(() => {
+    if (pathname) {
+      const matches = pathname.match(/\/facilities\/([^\/]+)/);
+      if (matches && matches[1]) {
+        setCurrentFacilityId(matches[1]);
+      } else {
+        setCurrentFacilityId(undefined);
+      }
+      
+      // Set chat input visibility based on route
+      setIsChatInputVisible(
+        pathname.includes('/compliance') || 
+        pathname.includes('/billing') || 
+        (pathname.includes('/facilities') && pathname.includes('/patients/'))
+      );
+    }
+  }, [pathname]);
 
   function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
@@ -247,9 +333,38 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
 
         <div className="flex flex-1">
 
-          <main className="w-full h-full">
+          <main className="w-full h-full relative">
               {children}
-
+              <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300">
+                {!isChatInputVisible ? (
+                  <button
+                    onClick={() => setIsChatInputVisible(true)}
+                    className="flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-t-lg w-20 h-8 shadow-md transition-all duration-200 focus:outline-none"
+                    aria-label="Open chat"
+                  >
+                    <ChevronUpIcon className="w-5 h-5 text-gray-600" />
+                  </button>
+                ) : (
+                  <div className="animate-slide-up max-w-3xl w-[calc(100vw-2rem)] mx-auto">
+                    <div className="bg-white rounded-t-lg shadow-lg border border-gray-200">
+                      <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
+                        <h3 className="text-sm font-medium">Chat Assistant</h3>
+                        <button
+                          onClick={() => setIsChatInputVisible(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <ChatInputArea 
+                        onMessageSubmit={handleChatSubmit}
+                        isSubmitting={isSubmitting}
+                        facilityId={currentFacilityId}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
           </main>
 
           {/* Right sidebar for thread list, etc. (conditionally shown) */}
