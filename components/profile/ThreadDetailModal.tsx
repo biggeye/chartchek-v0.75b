@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import DetailModal from '../DetailModal';
-import DetailField from '../DetailField';
-import { ChatThread } from '@/lib/services/threadService';
+import DetailModal from '../detail-modal';
+import DetailField from '../detail-field';
+import { ChatThread } from '@/types/database';
 import { format } from 'date-fns';
 
 interface ThreadDetailModalProps {

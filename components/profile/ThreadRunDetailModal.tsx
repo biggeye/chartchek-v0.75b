@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import DetailModal from '../DetailModal';
-import DetailField from '../DetailField';
-import { ThreadRun } from '@/lib/services/threadService';
+import DetailModal from '../detail-modal';
+import DetailField from '../detail-field';
+import { ThreadRun } from '@/types/store/newStream';
 import { format } from 'date-fns';
 
 interface ThreadRunDetailModalProps {
@@ -15,7 +15,7 @@ interface ThreadRunDetailModalProps {
 export default function ThreadRunDetailModal({ isOpen, onClose, run }: ThreadRunDetailModalProps) {
   if (!run) return null;
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
       return format(new Date(dateString), 'PPpp');

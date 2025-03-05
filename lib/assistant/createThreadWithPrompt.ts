@@ -63,7 +63,7 @@ export async function createThreadWithPrompt(options: CreateThreadWithPromptOpti
     await openai.beta.threads.messages.create(threadId, {
       role: "user",
       content: messageContent,
-      file_ids: file_ids.length > 0 ? file_ids : undefined
+      attachments: file_ids.length > 0 ? file_ids.map(id => ({ file_id: id })) : undefined
     });
     
     // Create a run on the thread

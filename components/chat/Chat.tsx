@@ -167,19 +167,17 @@ ${content}`;
         streamingContent={currentStreamContent}
       />
 
-
-      <div className="absolute bottom-4 left-0 right-0 mx-auto w-[80%]">
-        <ChatInputArea onMessageSubmit={handleMessageSubmit} isSubmitting={isLoading || isStreamingActive} />
-        {isStreamingActive && (
-          <button
+      {/* Chat input is now rendered in AppLayout */}
+      
+      {isStreamingActive && (
+        <button
           onClick={() => threadId && cancelStream()}
-             className="flex items-center justify-center gap-2 text-xs text-muted-foreground mx-auto mt-1 hover:text-primary"
-          >
-            <XCircleIcon className="w-4 h-4" />
-            Cancel generation
-          </button>
-        )}
-      </div>
+          className="flex items-center justify-center gap-2 text-xs text-muted-foreground mx-auto mt-1 hover:text-primary"
+        >
+          <XCircleIcon className="w-4 h-4" />
+          Cancel generation
+        </button>
+      )}
     </div>
   );
 }

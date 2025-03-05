@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThreadRun } from '@/lib/services/threadService';
+import { ThreadRun } from '@/types/store/newStream';
 import { formatDistanceToNow } from 'date-fns';
 import ThreadRunDetailModal from './ThreadRunDetailModal';
 

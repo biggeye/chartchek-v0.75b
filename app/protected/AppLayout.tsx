@@ -1,6 +1,6 @@
 'use client'
-
-import { useState, useEffect } from 'react'
+import { chatStore } from '@/store/chatStore';
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Dialog,
@@ -18,25 +18,16 @@ import {
 } from '@headlessui/react'
 import {
   Bars3Icon,
-  BellIcon,
-  CalendarIcon,
-  ChartPieIcon,
   DocumentDuplicateIcon,
-  FolderIcon,
-  HomeIcon,
-  UsersIcon,
   XMarkIcon,
   ChevronUpIcon,
 } from '@heroicons/react/24/outline'
-import { 
-  ShieldCheckIcon, 
-  BuildingOffice2Icon, 
-  UserCircleIcon, 
+import {
+  ShieldCheckIcon,
+  BuildingOffice2Icon,
+  UserCircleIcon,
   CreditCardIcon,
-  UserIcon,
-  Cog6ToothIcon,
-  ArrowLeftStartOnRectangleIcon,
-  ChatBubbleLeftRightIcon
+
 } from '@heroicons/react/24/outline'
 
 import ChevronDownIcon from '@heroicons/react/24/solid/ChevronDownIcon';
@@ -45,16 +36,13 @@ import Modal from '@/components/modal';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { ThreadList } from '@/components/chat/ThreadList';
 import Link from 'next/link';
-import ChatStoreWidget from '@/components/ChatStoreWidget';
-import { ChatInputArea } from '@/components/chat/ChatInputArea';
-import { chatStore } from '@/store/chatStore';
-import { usePatientStore } from '@/store/patientStore';
+import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput';
+import { cn } from '@/lib/utils';
 
 /// Aside Components (Insights)
- import { FacilityInsights } from '@/components/dashboard/FacilityInsights';
- import { BillingInsights } from '@/components/dashboard/BillingInsights';
- import { ComplianceInsights } from '@/components/dashboard/ComplianceInsights';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { FacilityInsights } from '@/components/dashboard/FacilityInsights';
+import { BillingInsights } from '@/components/dashboard/BillingInsights';
+import { ComplianceInsights } from '@/components/dashboard/ComplianceInsights';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -64,15 +52,17 @@ interface AppLayoutProps {
 export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
-  const [isChatInputVisible, setIsChatInputVisible] = useState(false); // Control chat input visibility
+  const [showChatInputArea, setShowChatInputArea] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFacilityId, setCurrentFacilityId] = useState<string | undefined>(undefined);
+  const [currentFacilityId, setCurrentFacilityId] = useState<string | undefined>();
+  const [isChatInputVisible, setIsChatInputVisible] = useState(false);
+  const [assistantId, setAssistantId] = useState<string | undefined>();
+  const [threadId, setThreadId] = useState<string | undefined>();
   const pathname = usePathname();
-  
+
   // Initialize stores
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
-  const { currentPatient } = usePatientStore();
-    
+
   // Navigation items
   const navigation = [
     { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon },
@@ -91,35 +81,38 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
     { name: 'Settings', href: '/protected/settings' },
     { name: 'Sign out', href: '#', onClick: async () => await signOutAction() },
   ];
-  
+
   // Handle chat message submission
   const handleChatSubmit = async (content: string, attachments: string[], patientContext: any = null) => {
     if (!content.trim()) return;
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // Determine assistant based on current route
       let assistantId = "asst_9RqcRDt3vKUEFiQeA0HfLC08"; // Default to compliance assistant
-      
+
       if (pathname?.includes('/billing')) {
         assistantId = "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
       }
-      
+
       // Set the current assistant ID
       setCurrentAssistantId(assistantId);
-      
+      setAssistantId(assistantId);
+
       // Create a thread if needed or use existing
       const thread = chatStore.getState().currentThread;
       const threadId = thread?.thread_id || await createThread(assistantId);
-      
+
       if (!threadId) {
         throw new Error('Failed to create or retrieve thread');
       }
-      
+
+      setThreadId(threadId);
+
       // Format the message content with patient context if available
       let messageText = content;
-      
+
       if (patientContext) {
         // Include minimal patient context for the LLM to reference
         messageText = `
@@ -132,17 +125,17 @@ Admission: ${patientContext.admission_date}
 
 ${content}`;
       }
-      
+
       // Format the content as JSON object to standardize storage
       // This ensures consistency in message storage and retrieval as specified in MEMORY
       const formattedContent = JSON.stringify({ text: messageText });
-      
+
       // Convert string attachments to proper ChatMessageAttachment objects
       const formattedAttachments = attachments.map(fileId => ({
         file_id: fileId,
         tools: []
       }));
-      
+
       // Send the message with JSON formatted content and proper attachment objects
       await sendMessage(assistantId, threadId, formattedContent, formattedAttachments);
     } catch (error) {
@@ -161,11 +154,11 @@ ${content}`;
       } else {
         setCurrentFacilityId(undefined);
       }
-      
+
       // Set chat input visibility based on route
       setIsChatInputVisible(
-        pathname.includes('/compliance') || 
-        pathname.includes('/billing') || 
+        pathname.includes('/compliance') ||
+        pathname.includes('/billing') ||
         (pathname.includes('/facilities') && pathname.includes('/patients/'))
       );
     }
@@ -177,20 +170,25 @@ ${content}`;
 
   // Determine sidebar content based on current route
   let asideContent;
-  switch (pathname) {
-    case '/protected/facilities/[facilityId]':
-      asideContent = 
-      <FacilityInsights />
+  switch (true) {
+    case pathname?.includes('/facilities'):
+      asideContent = <FacilityInsights />;
       break;
-    case '/protected/billing':
-      asideContent = 
-      <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />;
-      <BillingInsights />;
+    case pathname === '/protected/billing':
+      asideContent = (
+        <>
+          <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />
+          <BillingInsights />
+        </>
+      );
       break;
-    case '/protected/compliance':
-      asideContent = 
-      <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />;
-      <ComplianceInsights />;
+    case pathname === '/protected/compliance':
+      asideContent = (
+        <>
+          <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />
+          <ComplianceInsights />
+        </>
+      );
       break;
     default:
       asideContent = null;
@@ -213,184 +211,233 @@ ${content}`;
               <div className="absolute top-0 right-0 -mr-12 pt-2">
                 <button
                   type="button"
-                  onClick={() => setMobileMenuOpen(false)}
                   className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className="sr-only">Close sidebar</span>
                   <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
                 </button>
               </div>
-              
-              <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-                <div className="flex flex-shrink-0 items-center px-4">
-                  <img
-                    alt="ChartChek"
-                    src="/chartChek-banner-dark.png"
-                    className="h-12 w-auto"
-                  />
+              <div className="flex grow flex-col overflow-y-auto rounded-lg border-r border-border bg-background shadow-lg">
+                <div className="flex flex-col grow gap-y-5 px-6 py-4">
+                  <nav className="flex flex-1 flex-col">
+                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
+                      <li>
+                        <ul role="list" className="-mx-2 space-y-1">
+                          {navigation.map((item) => (
+                            <li key={item.name}>
+                              <Link
+                                href={item.href}
+                                className={cn(
+                                  item.current
+                                    ? 'bg-primary-50 text-primary'
+                                    : 'text-foreground hover:text-foreground hover:bg-muted',
+                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                                )}
+                              >
+                                <item.icon
+                                  className={cn(
+                                    item.current ? 'text-primary' : 'text-foreground-muted group-hover:text-foreground',
+                                    'h-6 w-6 shrink-0'
+                                  )}
+                                  aria-hidden="true"
+                                />
+                                {item.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    </ul>
+                  </nav>
                 </div>
-                <nav className="mt-5 flex-1 space-y-1 px-2">
-                  {navigation.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      className={classNames(
-                        item.current
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                        'group flex items-center rounded-md px-2 py-2 text-base font-medium'
-                      )}
-                    >
-                      <item.icon className="mr-4 h-6 w-6 flex-shrink-0" aria-hidden="true" />
-                      {item.name}
-                    </a>
-                  ))}
-                </nav>
-              </div>
-              
-              <div className="flex flex-shrink-0 justify-center border-t border-border p-4">
-                <ThemeSwitcher />
               </div>
             </DialogPanel>
           </div>
         </Dialog>
 
-        {/* Desktop header and layout */}
-        <header className="bg-background z-10 border-b border-border">
-          <nav className="flex items-center justify-between p-3">
-            {/* Logo and hamburger menu */}
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                className="lg:hidden -ml-1.5 mr-2 inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <span className="sr-only">Open main menu</span>
-                <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-              </button>
-              
-              <a href="/protected" className="-m-1.5 p-1.5">
-                <span className="sr-only">ChartChek</span>
-                <img
-                  alt="ChartChek"
-                  src="/chartChek-icon-dark.png"
-                  className="h-8 w-auto"
-                />
-              </a>
-            </div>
-            
-             
-            {/* Desktop nav */}
-            <PopoverGroup className="hidden lg:flex lg:gap-x-6">
-              {navigation.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={classNames(
-                    item.current
-                      ? 'text-foreground'
-                      : 'text-muted-foreground hover:text-foreground',
-                    'flex items-center gap-x-2 text-sm font-semibold'
-                  )}
-                >
-                  <item.icon className="h-5 w-5" aria-hidden="true" />
-                  {item.name}
-                </a>
-              ))}
-            </PopoverGroup>
-            
-            {/* User menu */}
-            <div className="flex items-center">
-              <Popover className="relative">
-                <PopoverButton className="flex items-center gap-x-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-                  <UserCircleIcon className="h-6 w-6" aria-hidden="true" />
-                  <span className="hidden sm:inline-block"></span>
-                  <ChevronDownIcon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-                </PopoverButton>
-
-                <PopoverPanel
-                  transition
-                  className="absolute right-0 z-10 mt-3 w-56 origin-top-right rounded-md bg-popover p-2 shadow-lg ring-1 ring-border focus:outline-none transition data-closed:translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-                >
-                  <div className="py-1">
-                    {userNavigation.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        onClick={item.onClick}
-                        className="block px-4 py-2 text-sm text-foreground hover:bg-muted rounded-md"
-                      >
-                        {item.name}
-                      </a>
-                    ))}
-                  </div>
-                </PopoverPanel>
-              </Popover>
-              <ThemeSwitcher className="ml-4" />
-            </div>
-          </nav>
-        </header>
-
-        <div className="flex flex-1">
-
-          <main className="w-full h-full relative">
-              {children}
-              <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300">
-                {!isChatInputVisible ? (
-                  <button
-                    onClick={() => setIsChatInputVisible(true)}
-                    className="flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-t-lg w-20 h-8 shadow-md transition-all duration-200 focus:outline-none"
-                    aria-label="Open chat"
-                  >
-                    <ChevronUpIcon className="w-5 h-5 text-gray-600" />
-                  </button>
-                ) : (
-                  <div className="animate-slide-up max-w-3xl w-[calc(100vw-2rem)] mx-auto">
-                    <div className="bg-white rounded-t-lg shadow-lg border border-gray-200">
-                      <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
-                        <h3 className="text-sm font-medium">Chat Assistant</h3>
-                        <button
-                          onClick={() => setIsChatInputVisible(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <XMarkIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <ChatInputArea 
-                        onMessageSubmit={handleChatSubmit}
-                        isSubmitting={isSubmitting}
-                        facilityId={currentFacilityId}
-                      />
-                    </div>
-                  </div>
-                )}
+        {/* Static sidebar for desktop */}
+        <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+          <div className="flex grow flex-col overflow-y-auto rounded-lg border-r border-border bg-background px-6 pb-4">
+            <div className="flex h-16 shrink-0 items-center justify-between">
+              <div className="h-10 w-auto">
+                <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
               </div>
-          </main>
-
-          {/* Right sidebar for thread list, etc. (conditionally shown) */}
-          {asideContent && (
-            <aside className="hidden lg:block w-80 overflow-auto border-l border-border bg-background px-4 py-6">
-              {asideContent}
-            </aside>
-          )}
+              <ThemeSwitcher />
+            </div>
+            <nav className="flex flex-1 flex-col">
+              <ul role="list" className="flex flex-1 flex-col gap-y-7">
+                <li>
+                  <ul role="list" className="-mx-2 space-y-1">
+                    {navigation.map((item) => (
+                      <li key={item.name}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            item.current
+                              ? 'bg-primary-foreground text-primary'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                          )}
+                        >
+                          <item.icon
+                            className={cn(
+                              item.current ? 'text-primary' : 'text-foreground-muted group-hover:text-foreground',
+                              'h-6 w-6 shrink-0'
+                            )}
+                            aria-hidden="true"
+                          />
+                          {item.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+                <li>
+                  <div className="text-xs font-semibold leading-6 text-muted-foreground">Your threads</div>
+                  <div className="mt-2">
+                    {/* Thread list will be inserted here */}
+                  </div>
+                </li>
+                <li className="mt-auto">
+                  <Menu>
+                    <div className="flex items-center">
+                      <MenuButton className="flex flex-1 items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-foreground hover:bg-background-muted rounded-md">
+                        <UserCircleIcon className="h-8 w-8 rounded-full text-foreground-muted" />
+                        <span className="flex-1">{user_id}</span>
+                        <ChevronUpIcon className="h-5 w-5 flex-none text-muted-foreground" />
+                      </MenuButton>
+                    </div>
+                    <MenuItems className="absolute left-0 right-0 bottom-full mb-1 overflow-hidden rounded-md bg-card border border-border shadow-lg z-10">
+                      {userNavigation.map((item) => (
+                        <MenuItem key={item.name} as="div">
+                          {({ active }) => (
+                            item.onClick ? (
+                              <button
+                                className={cn(
+                                  active ? 'bg-muted text-foreground' : '',
+                                  'block px-4 py-2 text-sm w-full text-left'
+                                )}
+                                onClick={item.onClick}
+                              >
+                                {item.name}
+                              </button>
+                            ) : (
+                              <Link
+                                href={item.href}
+                                className={cn(
+                                  active ? 'bg-muted text-foreground' : '',
+                                  'block px-4 py-2 text-sm'
+                                )}
+                              >
+                                {item.name}
+                              </Link>
+                            )
+                          )}
+                        </MenuItem>
+                      ))}
+                    </MenuItems>
+                  </Menu>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
 
-        {/* Thread list modal */}
-        <Modal
-          isOpen={isThreadListModalOpen}
-          onClose={() => setThreadListModalOpen(false)}
-          title="Thread List"
-          content={<ThreadList />}
-          actions={
-            <button 
-              onClick={() => setThreadListModalOpen(false)} 
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground ring-1 shadow-xs ring-border hover:bg-muted sm:col-start-1 sm:mt-0"
+        <div className="lg:pl-72">
+          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-background px-4 sm:gap-x-6 sm:px-6 lg:px-8">
+            <button
+              type="button"
+              className="-m-2.5 p-2.5 text-foreground-muted lg:hidden"
+              onClick={() => setMobileMenuOpen(true)}
             >
-              Close
+              <span className="sr-only">Open sidebar</span>
+              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
-          }
-        />
+
+            {/* Separator */}
+            <div className="h-6 w-px bg-foreground/10 lg:hidden" aria-hidden="true" />
+
+            <div className="flex flex-1 gap-x-4 self-stretch justify-end">
+              <div className="flex items-center">
+                <Menu>
+                  <div className="relative">
+                    <MenuButton className="inline-flex rounded-md bg-background p-1.5 text-foreground focus:outline-none focus:ring-offset-2">
+                      <span className="sr-only">Open user menu</span>
+                      <UserCircleIcon className="h-8 w-8 rounded-full" aria-hidden="true" />
+                    </MenuButton>
+                  </div>
+                  <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-card border border-border shadow-lg py-1">
+                    {userNavigation.map((item) => (
+                      <MenuItem key={item.name} as="div">
+                        {({ active }) => (
+                          item.onClick ? (
+                            <button
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : '',
+                                'block px-4 py-2 text-sm w-full text-left'
+                              )}
+                              onClick={item.onClick}
+                            >
+                              {item.name}
+                            </button>
+                          ) : (
+                            <Link
+                              href={item.href}
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : '',
+                                'block px-4 py-2 text-sm'
+                              )}
+                            >
+                              {item.name}
+                            </Link>
+                          )
+                        )}
+                      </MenuItem>
+                    ))}
+                  </MenuItems>
+                </Menu>
+              </div>
+            </div>
+          </div>
+
+          <main className="flex flex-1 min-h-[calc(100vh-4rem)]">
+            <div className="flex-1 p-4 bg-background sm:p-6 lg:p-8">
+              {children}
+            </div>
+            {asideContent && (
+              <aside className="hidden xl:block w-80 shrink-0 p-6 border-l border-border bg-card">
+                {asideContent}
+              </aside>
+            )}
+          </main>
+        </div>
+
+        {/* Chat Input Area */}
+        {isChatInputVisible && (
+          <GlobalChatInputArea />
+        )}
       </div>
+
+      {/* Thread List Modal */}
+      <Modal
+        isOpen={isThreadListModalOpen}
+        onClose={() => setThreadListModalOpen(false)}
+        title="Your Conversations"
+        content={
+          <div className="mt-4 max-h-[70vh] overflow-y-auto">
+            <ThreadList />
+          </div>
+        }
+        actions={
+          <button
+            className="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground ring-1 shadow-xs ring-border hover:bg-muted sm:col-start-1 sm:mt-0"
+            onClick={() => setThreadListModalOpen(false)}
+          >
+            Close
+          </button>
+        }
+      />
     </>
   )
 }

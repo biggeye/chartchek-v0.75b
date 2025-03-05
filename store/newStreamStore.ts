@@ -1,8 +1,6 @@
 'use client';
 
 import { create } from 'zustand';
-import { StreamingState } from '@/types/store/streaming';
-import { OpenAIStreamingEvent } from '@/types/api/openai';
 import { createClient } from '@/utils/supabase/client';
 import { chatStore } from './chatStore';
 import { NewStreamingState } from '@/types/store/newStream';
@@ -10,11 +8,11 @@ import { NewStreamingState } from '@/types/store/newStream';
 // Initialize Supabase client
 const supabase = createClient();
 
-// Get the user ID (without top-level await)
 const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
     return data?.user?.id || 'anonymous';
 };
+
 const addMessageReference = chatStore.getState().addMessageReference;
 
 const newStreamingStore = create<NewStreamingState>((set, get) => ({

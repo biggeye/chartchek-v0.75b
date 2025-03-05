@@ -5,7 +5,6 @@ import MetricCard from '@/components/metric-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, BrainCircuit, MessageSquare, FileText } from 'lucide-react';
-import UserStats from '@/components/user-stats';
 import RecentConversations from '@/components/chat/recent-conversations';
 import DocumentInsightsPreview from '@/components/documents/insights-preview';
 import { getMetrics, getPatientStats, getDocumentInsights, getRecentConversations } from '@/lib/kipu';
