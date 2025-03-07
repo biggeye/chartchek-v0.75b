@@ -21,6 +21,8 @@ import {
   DocumentDuplicateIcon,
   XMarkIcon,
   ChevronUpIcon,
+  ArrowLeftCircleIcon,
+  ArrowRightCircleIcon
 } from '@heroicons/react/24/outline'
 import {
   ShieldCheckIcon,
@@ -39,10 +41,7 @@ import Link from 'next/link';
 import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput';
 import { cn } from '@/lib/utils';
 
-/// Aside Components (Insights)
-import { FacilityInsights } from '@/components/dashboard/FacilityInsights';
-import { BillingInsights } from '@/components/dashboard/BillingInsights';
-import { ComplianceInsights } from '@/components/dashboard/ComplianceInsights';
+
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -58,6 +57,9 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [isChatInputVisible, setIsChatInputVisible] = useState(false);
   const [assistantId, setAssistantId] = useState<string | undefined>();
   const [threadId, setThreadId] = useState<string | undefined>();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [showInsights, setShowInsights] = useState(true);
   const pathname = usePathname();
 
   // Initialize stores
@@ -152,7 +154,11 @@ ${content}`;
       if (matches && matches[1]) {
         setCurrentFacilityId(matches[1]);
       } else {
-        setCurrentFacilityId(undefined);
+        if (matches && matches[2]) {
+          setCurrentFacilityId(matches[2]);
+        } else {
+          setCurrentFacilityId(undefined);
+        }
       }
 
       // Set chat input visibility based on route
@@ -169,30 +175,43 @@ ${content}`;
   }
 
   // Determine sidebar content based on current route
-  let asideContent;
-  switch (true) {
-    case pathname?.includes('/facilities'):
-      asideContent = <FacilityInsights />;
-      break;
-    case pathname === '/protected/billing':
-      asideContent = (
-        <>
-          <ThreadList assistantId='asst_7rzhAUWAamYufZJjZeKYkX1t' />
-          <BillingInsights />
-        </>
-      );
-      break;
-    case pathname === '/protected/compliance':
-      asideContent = (
-        <>
-          <ThreadList assistantId='asst_9RqcRDt3vKUEFiQeA0HfLC08' />
-          <ComplianceInsights />
-        </>
-      );
-      break;
-    default:
-      asideContent = null;
+  let asideContent = null;
+  if (pathname === '/protected/compliance') {
+    asideContent = <ThreadList assistantId="asst_9RqcRDt3vKUEFiQeA0HfLC08" />;
+  } else if (pathname === '/protected/billing') {
+    asideContent = <ThreadList assistantId="asst_7rzhAUWAamYufZJjZeKYkX1t" />;
+  } else if (pathname === '/protected/documents') {
+    // documents assistant
+    asideContent = null;
+  } else if (pathname === '/protected/facilities') {
+    // facilities assistant
+    asideContent = null;
+  } else {
+    asideContent = null;
   }
+
+  // Determine sidebar width based on collapsed state
+  const sidebarWidth = sidebarCollapsed ? 'lg:w-20' : 'lg:w-72';
+
+  // Handle scroll events to hide/show insights
+  useEffect(() => {
+    const handleScroll = () => {
+      const st = window.pageYOffset || document.documentElement.scrollTop;
+      if (st > lastScrollTop && st > 150) {
+        // Scrolling down and past threshold, hide insights
+        setShowInsights(false);
+      } else if (st < lastScrollTop || st < 50) {
+        // Scrolling up or near top, show insights
+        setShowInsights(true);
+      }
+      setLastScrollTop(st <= 0 ? 0 : st);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollTop]);
 
   return (
     <>
@@ -257,13 +276,28 @@ ${content}`;
         </Dialog>
 
         {/* Static sidebar for desktop */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+        <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex ${sidebarWidth} lg:flex-col transition-all duration-300 ease-in-out`}>
           <div className="flex grow flex-col overflow-y-auto rounded-lg border-r border-border bg-background px-6 pb-4">
             <div className="flex h-16 shrink-0 items-center justify-between">
               <div className="h-10 w-auto">
-                <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
+                {!sidebarCollapsed && (
+                  <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
+                )}
               </div>
-              <ThemeSwitcher />
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="text-foreground-muted hover:text-foreground transition-colors"
+                  aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  {sidebarCollapsed ? (
+                    <ArrowRightCircleIcon className="h-6 w-6" />
+                  ) : (
+                    <ArrowLeftCircleIcon className="h-6 w-6" />
+                  )}
+                </button>
+                {!sidebarCollapsed && <ThemeSwitcher />}
+              </div>
             </div>
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -277,8 +311,10 @@ ${content}`;
                             item.current
                               ? 'bg-primary-foreground text-primary'
                               : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
+                            sidebarCollapsed ? 'justify-center' : ''
                           )}
+                          title={sidebarCollapsed ? item.name : undefined}
                         >
                           <item.icon
                             className={cn(
@@ -287,28 +323,31 @@ ${content}`;
                             )}
                             aria-hidden="true"
                           />
-                          {item.name}
+                          {!sidebarCollapsed && item.name}
                         </Link>
                       </li>
                     ))}
                   </ul>
                 </li>
-                <li>
-                  <div className="text-xs font-semibold leading-6 text-muted-foreground">Your threads</div>
-                  <div className="mt-2">
-                    {/* Thread list will be inserted here */}
-                  </div>
-                </li>
-                <li className="mt-auto">
-                  <Menu>
-                    <div className="flex items-center">
-                      <MenuButton className="flex flex-1 items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-foreground hover:bg-background-muted rounded-md">
-                        <UserCircleIcon className="h-8 w-8 rounded-full text-foreground-muted" />
-                        <span className="flex-1">{user_id}</span>
-                        <ChevronUpIcon className="h-5 w-5 flex-none text-muted-foreground" />
-                      </MenuButton>
+                {!sidebarCollapsed && (
+                  <li>
+                    <div className="text-xs font-semibold leading-6 text-muted-foreground">Your threads</div>
+                    <div className="mt-2">
+                      {/* Thread list will be inserted here */}
                     </div>
-                    <MenuItems className="absolute left-0 right-0 bottom-full mb-1 overflow-hidden rounded-md bg-card border border-border shadow-lg z-10">
+                  </li>
+                )}
+                {/* User menu moved to bottom and simplified */}
+                <li className="mt-auto">
+                  <Menu as="div" className="relative">
+                    <MenuButton className={cn(
+                      "flex items-center rounded-md p-2 text-sm font-semibold text-foreground hover:bg-background-muted",
+                      sidebarCollapsed ? "justify-center" : ""
+                    )}>
+                      <UserCircleIcon className="h-9 w-9 rounded-full text-foreground-muted" aria-hidden="true" />
+                      {/* Removed UUID display as requested */}
+                    </MenuButton>
+                    <MenuItems className="absolute zindex-500 bottom-full mb-1 w-48 origin-bottom-left rounded-md bg-card py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                       {userNavigation.map((item) => (
                         <MenuItem key={item.name} as="div">
                           {({ active }) => (
@@ -344,9 +383,8 @@ ${content}`;
           </div>
         </div>
 
-        <div className="lg:pl-72">
-          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-background px-4 sm:gap-x-6 sm:px-6 lg:px-8">
-            <button
+        <div className={`${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'} transition-all duration-300 ease-in-out`}>
+             <button
               type="button"
               className="-m-2.5 p-2.5 text-foreground-muted lg:hidden"
               onClick={() => setMobileMenuOpen(true)}
@@ -356,64 +394,24 @@ ${content}`;
             </button>
 
             {/* Separator */}
-            <div className="h-6 w-px bg-foreground/10 lg:hidden" aria-hidden="true" />
+            <div className="h-6 w-px bg-border lg:hidden" aria-hidden="true" />
 
-            <div className="flex flex-1 gap-x-4 self-stretch justify-end">
-              <div className="flex items-center">
-                <Menu>
-                  <div className="relative">
-                    <MenuButton className="inline-flex rounded-md bg-background p-1.5 text-foreground focus:outline-none focus:ring-offset-2">
-                      <span className="sr-only">Open user menu</span>
-                      <UserCircleIcon className="h-8 w-8 rounded-full" aria-hidden="true" />
-                    </MenuButton>
-                  </div>
-                  <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-card border border-border shadow-lg py-1">
-                    {userNavigation.map((item) => (
-                      <MenuItem key={item.name} as="div">
-                        {({ active }) => (
-                          item.onClick ? (
-                            <button
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : '',
-                                'block px-4 py-2 text-sm w-full text-left'
-                              )}
-                              onClick={item.onClick}
-                            >
-                              {item.name}
-                            </button>
-                          ) : (
-                            <Link
-                              href={item.href}
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : '',
-                                'block px-4 py-2 text-sm'
-                              )}
-                            >
-                              {item.name}
-                            </Link>
-                          )
-                        )}
-                      </MenuItem>
-                    ))}
-                  </MenuItems>
-                </Menu>
-              </div>
-            </div>
-          </div>
-
+            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6"></div>
+        
           <main className="flex flex-1 min-h-[calc(100vh-4rem)]">
-            <div className="flex-1 p-4 bg-background sm:p-6 lg:p-8">
+            <div className="flex-1 px-4 sm:px-6 lg:px-8">
               {children}
             </div>
+            {/* Re-added the right sidebar with ThreadList */}
             {asideContent && (
-              <aside className="hidden xl:block w-80 shrink-0 p-6 border-l border-border bg-card">
+              <aside className="hidden xl:block w-80 shrink-0 p-6 border-l border-border bg-card overflow-y-auto">
                 {asideContent}
               </aside>
             )}
           </main>
         </div>
 
-        {/* Chat Input Area */}
+        {/* Chat Input Area - Now using the fixed position version */}
         {isChatInputVisible && (
           <GlobalChatInputArea />
         )}

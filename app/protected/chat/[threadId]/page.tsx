@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import React from 'react'
 import { MessageList } from '@/components/chat/MessageList'
 import { chatStore } from '@/store/chatStore'
 import { useNewStreamingStore } from '@/store/newStreamStore'
@@ -12,8 +13,8 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 
-export default function ChatPage({ params }: any) {
-  const { threadId } = params
+export default function ChatPage({ params }: { params: Promise<{ threadId: string }> }) {
+  const { threadId } = React.use(params)
   const [isLoading, setIsLoading] = useState(true)
   const [localError, setLocalError] = useState<string | null>(null)
   const [hasPatientContext, setHasPatientContext] = useState(false)

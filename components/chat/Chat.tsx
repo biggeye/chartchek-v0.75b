@@ -142,7 +142,7 @@ ${content}`;
   };
 
   return (
-    <div className="relative flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="relative flex flex-col h-full max-h-[calc(100vh-5rem)] overflow-hidden">
       <RunStatusIndicator onCancel={handleCancelRun} />
 
       {(localError || streamError) && (
@@ -172,7 +172,7 @@ ${content}`;
       {isStreamingActive && (
         <button
           onClick={() => threadId && cancelStream()}
-          className="flex items-center justify-center gap-2 text-xs text-muted-foreground mx-auto mt-1 hover:text-primary"
+          className="flex items-center justify-center gap-2 text-xs text-muted-foreground mx-auto mt-1 mb-1 hover:text-primary"
         >
           <XCircleIcon className="w-4 h-4" />
           Cancel generation
