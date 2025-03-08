@@ -12,7 +12,7 @@ import {
   ComplianceFramework,
   UserCompliancePreference
 } from './complianceFrameworkService';
-import { associatePdfWithComplianceFramework } from '../processPdfForEmbeddings';
+import { associatePdfWithComplianceFramework } from '../vectorChek/processPdfForEmbeddings';
 
 export interface ComplianceSearchParams {
   userId: string;

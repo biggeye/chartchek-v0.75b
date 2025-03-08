@@ -8,7 +8,7 @@ import { Dialog, DialogTitle, DialogBody, DialogActions } from '@/components/ui/
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { chatStore } from '@/store/chatStore';
-import { createThreadWithPrompt } from '@/lib/assistant/createThreadWithPrompt';
+import { createThreadWithPrompt } from '@/lib/chat/createThreadWithPrompt';
 import Modal from '@/components/modal';
 // inside handleSendPrompt:
 
