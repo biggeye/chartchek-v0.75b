@@ -3,11 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from '@/utils/openai/server';
 import type { MessagePayload } from '@/types/store/document/index';
 
-const { openai, isLoading, error: openaiError } = useOpenAI(); 
-
+const openai = getOpenAIClient();
 
 export async function POST(req: NextRequest) {
   const { pathname } = new URL(req.url);

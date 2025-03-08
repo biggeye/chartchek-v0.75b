@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from "@/utils/openai/server"
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
 
-const { openai, isLoading, error: openaiError } = useOpenAI()
+const openai = getOpenAIClient()
 
 export async function GET(request: NextRequest): Promise<Response> {
   const supabase = await createServer()
@@ -30,11 +30,6 @@ export async function GET(request: NextRequest): Promise<Response> {
         status: 400, 
         headers: { 'Content-Type': 'application/json' } 
       });
-    }
-
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not initialized')
     }
 
     // Verify user has access to this thread
@@ -102,11 +97,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
     }
 
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not initialized')
-    }
-
     // Update thread in OpenAI
     const updatedThread = await openai.beta.threads.update(threadId, {
       metadata
@@ -165,11 +155,6 @@ export async function DELETE(request: NextRequest): Promise<Response> {
         status: 400, 
         headers: { 'Content-Type': 'application/json' } 
       });
-    }
-
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not initialized')
     }
 
     // Delete thread from OpenAI

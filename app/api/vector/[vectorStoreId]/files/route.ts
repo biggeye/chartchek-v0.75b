@@ -1,27 +1,33 @@
 // api/vector/[vectorStoreId]/files/route.ts
 
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getOpenAIClient } from '@/utils/openai/server';
 
-const { openai, isLoading, error } = useOpenAI()
-  
-
-export async function GET(req: Request) {
-  const { pathname } = new URL(req.url);
-  const vectorStoreId = pathname.split('/').slice(-2, -1)[0];
+export async function GET(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const segments = pathname.split('/');
+  const vectorStoreId = segments[segments.indexOf('vector') + 1];
 
   if (!vectorStoreId) {
-    return NextResponse.json({ error: 'Missing vectorStoreId' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Vector store ID is required' },
+      { status: 400 }
+    );
   }
 
   try {
-    const response = await openai!.beta.vectorStores.files.list(vectorStoreId!);
+    const openai = getOpenAIClient();
+    const response = await openai.beta.vectorStores.files.list(vectorStoreId);
 
     const fileIds = response.data.map((file: any) => file.id);
     console.log('[vector/files api route]: ', fileIds);
-    return NextResponse.json({ fileIds });
+    
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error listing vector store files:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('[vector/files api route] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to list vector store files' },
+      { status: 500 }
+    );
   }
 }

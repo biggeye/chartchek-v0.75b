@@ -1,9 +1,11 @@
 // app/api/threads/[threadId]/merged-documents/route.ts
 import { NextResponse } from 'next/server';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from '@/utils/openai/server'
+
 import { createServer } from '@/utils/supabase/server';
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
   
 
 export async function GET(request: Request) {
@@ -15,7 +17,7 @@ export async function GET(request: Request) {
 
   try {
     // Retrieve the thread object from OpenAI using the threadId.
-    const thread = await openai!.beta.threads.retrieve(threadId);
+    const thread = await openai.beta.threads.retrieve(threadId);
     // Extract the vector store id from the thread's tool_resources.
     const vectorStoreId = thread.tool_resources?.file_search?.vector_store_ids?.[0];
 
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
     const order = searchParams.get('order') as 'asc' | 'desc' | undefined;
 
     // Retrieve the list of files from the OpenAI vector store.
-    const vectorStoreFiles = await openai!.beta.vectorStores.files.list(vectorStoreId, {
+    const vectorStoreFiles = await openai.beta.vectorStores.files.list(vectorStoreId, {
       limit: limit ? parseInt(limit) : undefined,
       after: after || undefined,
       order: order,

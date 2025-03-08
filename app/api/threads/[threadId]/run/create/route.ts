@@ -1,9 +1,11 @@
 // app/api/threads/[threadId]/run/create/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'  
+import { getOpenAIClient } from '@/utils/openai/server'
+  
 import { NextRequest, NextResponse } from 'next/server';
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
   
 
 export const maxDuration = 30;
@@ -55,7 +57,7 @@ export async function POST(
     if (body.tools) runOptions.tools = body.tools;
 
     // Create run
-    const run = await openai!.beta.threads.runs.create(
+    const run = await openai.beta.threads.runs.create(
       threadId,
       runOptions
     );

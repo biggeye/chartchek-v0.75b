@@ -1,7 +1,9 @@
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from '@/utils/openai/server'
+
 import { createServer } from "@/utils/supabase/server";
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
      
 
 export async function POST(req: Request) {
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
                 return new Response("File is empty", { status: 400 });
             }
             
-            const fileUpload = await openai!.files.create({
+            const fileUpload = await openai.files.create({
                 file: file,
                 purpose: "assistants",
             });

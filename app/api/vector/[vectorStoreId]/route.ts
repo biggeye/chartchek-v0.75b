@@ -18,8 +18,10 @@ Returns
 The vector store object matching the specified ID.
 
 Example request
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
-const { openai, isLoading, error } = useOpenAI()
+import { getOpenAIClient } from '@/utils/openai/server'
+;
+const openai = getOpenAIClient()
+
 
 async function main() {
   const vectorStore = await openai.beta.vectorStores.retrieve(
@@ -44,9 +46,11 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server'
+;
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
   
 
 export async function GET(request: NextRequest) {
@@ -70,7 +74,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const vectorStore = await openai!.beta.vectorStores.retrieve(vectorStoreId);
+    const vectorStore = await openai.beta.vectorStores.retrieve(vectorStoreId);
     return NextResponse.json(vectorStore);
   } catch (error) {
     console.error('[Retrieve Vector Store] Error:', error);
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
     const expiresAfter = formData.get('expires_after') ? JSON.parse(formData.get('expires_after') as string) : undefined;
     const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
 
-    const updatedVectorStore = await openai!.beta.vectorStores.update(vectorStoreId, {
+    const updatedVectorStore = await openai.beta.vectorStores.update(vectorStoreId, {
       name,
       expires_after: expiresAfter,
       metadata

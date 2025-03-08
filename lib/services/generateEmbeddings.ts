@@ -329,7 +329,8 @@ async function generateEmbeddings() {
     console.log('Refresh flag set, re-generating all pages')
   }
 
-  const { openai, isLoading, error } = useOpenAI()
+  const openai = getOpenAIClient()
+
 
   for (const embeddingSource of embeddingSources) {
     const { type, source, path, parentPath } = embeddingSource
@@ -438,7 +439,7 @@ async function generateEmbeddings() {
         const input = content.replace(/\n/g, ' ')
 
         try {
-          const embeddingResponse = await openai!.embeddings.create({
+          const embeddingResponse = await openai.embeddings.create({
             model: 'text-embedding-ada-002',
             input,
           });

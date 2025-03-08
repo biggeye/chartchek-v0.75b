@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from '@/utils/openai/server'
+
 import { useNewStreamingStore } from '@/store/newStreamStore';
 import { ChatMessage, ChatThread } from '@/types/database';
 import { ThreadRun } from '@/types/store/newStream';

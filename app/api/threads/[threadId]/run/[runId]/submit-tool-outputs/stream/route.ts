@@ -1,9 +1,11 @@
 // app/api/threads/[threadId]/run/[runId]/submit-tool-outputs/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server'
+;
 import { NextRequest, NextResponse } from 'next/server';
 
-const { openai, isLoading, error } = useOpenAI() 
+const openai = getOpenAIClient()
+ 
   
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -39,7 +41,7 @@ export async function POST(
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const stream = await openai!.beta.threads.runs.submitToolOutputs(
+          const stream = await openai.beta.threads.runs.submitToolOutputs(
             threadId,
             runId,
             {

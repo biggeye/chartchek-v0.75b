@@ -66,14 +66,17 @@ export default function PatientPage({ params }: PatientPageProps) {
     await preparePatientContext(patientId);
     try {
       // Create a thread with context and prompt
-      const threadId = await createThreadWithPrompt({
+      const threadId = await createThreadWithPrompt(
         assistantId,
         userPrompt,
-        patient,
-        evaluations,
-        appointments,
-        vitalSigns
-      });
+        [], // attachments
+        {
+          patient,
+          evaluations: evaluations || [],
+          appointments: appointments || [],
+          vitalSigns: vitalSigns || []
+        }
+      );
       if (threadId) {
         alert("Thread created: " + threadId);
       }

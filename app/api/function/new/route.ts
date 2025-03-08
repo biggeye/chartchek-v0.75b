@@ -1,14 +1,13 @@
 import { NextRequest } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from "@/utils/openai/server";
 import type { ApiResponse } from '@/types/api/routes';
 
 export async function POST(req: NextRequest): Promise<Response> {
-  
-
   try {
     const supabase = await createServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
     if (authError || !user) {
       return new Response(JSON.stringify({ 
         error: 'Unauthorized',

@@ -2,100 +2,92 @@
 'use server'
 
 import { createServer } from "@/utils/supabase/server";
-import { useOpenAI } from "../contexts/OpenAIProvider";
+import { getOpenAIClient } from "@/utils/openai/server";
 import { ChatMessageAttachment } from "@/types/database";
 
 const supabase = await createServer();
 
-const getUserId = async (): Promise<string> => {
-  const { data } = await supabase.auth.getUser();
-  return data?.user?.id || 'anonymous';
-};
-
-
-interface CreateThreadWithPromptOptions {
-  assistantId: string;
-  userPrompt: string;
-  patient: any;
-  evaluations?: any[];
-  appointments?: any[];
-  vitalSigns?: any[];
-  attachments?: ChatMessageAttachment[];
+async function getUserId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id;
 }
 
-export async function createThreadWithPrompt(options: CreateThreadWithPromptOptions): Promise<string> {
-  const { 
-    assistantId, 
-    userPrompt, 
-    patient, 
-    evaluations = [], 
-    appointments = [], 
-    vitalSigns = [],
-    attachments = []
-  } = options;
-
-  const patientContext = {
-    patient,
-    evaluations: evaluations || [],
-    appointments: appointments || [],
-    vitalSigns: vitalSigns || []
-  };
+/**
+ * Creates a new thread with an initial prompt and starts a run
+ * @param assistantId The ID of the assistant to use
+ * @param messageContent The content of the initial message
+ * @param attachments Optional file attachments for the message
+ * @param patientContext Optional patient context to include in the run
+ * @returns The ID of the created thread
+ */
+export async function createThreadWithPrompt(
+  assistantId: string,
+  messageContent: string,
+  attachments: ChatMessageAttachment[] = [],
+  patientContext: any = {}
+): Promise<string> {
+  if (!assistantId) {
+    throw new Error('Assistant ID is required');
+  }
+  
+  if (!messageContent) {
+    throw new Error('Message content is required');
+  }
+  
+  // Format the message content
+  messageContent = messageContent.trim();
+  
+  if (patientContext && Object.keys(patientContext).length > 0) {
+    console.log('Including patient context:', JSON.stringify(patientContext, null, 2));
+  }
 
   try {
     // Get the OpenAI instance
-    const { openai, isLoading, error } = useOpenAI();
+    const openai = getOpenAIClient();
     
     // Create a thread directly using the OpenAI SDK
-    const thread = await openai!.beta.threads.create();
+    const thread = await openai.beta.threads.create();
     const threadId = thread.id;
     
     if (!threadId) {
       throw new Error('Failed to create thread');
     }
     
-    // Format the message content as JSON string to ensure consistent storage format
-    const messageContent = JSON.stringify({ text: userPrompt });
-    
-    // Extract file_ids from attachments
+    // Extract file IDs from attachments
     const file_ids = attachments.map(attachment => attachment.file_id);
     
     // Add a message to the thread with the formatted content
-    await openai!.beta.threads.messages.create(threadId, {
+    await openai.beta.threads.messages.create(threadId, {
       role: "user",
       content: messageContent,
       attachments: file_ids.length > 0 ? file_ids.map(id => ({ file_id: id })) : undefined
     });
     
     // Create a run on the thread
-    const run = await openai!.beta.threads.runs.create(threadId, {
+    const run = await openai.beta.threads.runs.create(threadId, {
       assistant_id: assistantId,
       additional_instructions: JSON.stringify(patientContext)
     });
     
-    // Get the user ID
     const userId = await getUserId();
     
     // Save to database
-    const { data, data: dataError } = await supabase
+    const { data, error: dataError } = await supabase
       .from('chat_threads')
       .insert({
         user_id: userId,
         thread_id: threadId,
         assistant_id: assistantId,
-        // Add metadata with patient context flag and basic information if a patient is provided
-        metadata: patient ? {
-          has_patient_context: true,
-          patient_id: patient.casefile_id || patient.id,
-          patient_name: `${patient.first_name} ${patient.last_name}`
-        } : {
-          has_patient_context: false
+        title: messageContent.substring(0, 50) + (messageContent.length > 50 ? '...' : ''),
+        metadata: {
+          patientContext: patientContext
         }
       })
       .select()
       .single();
       
     if (dataError) {
-      console.error('Error saving thread to database:', error);
+      console.error('Error saving thread to database:', dataError);
     }
     
     return threadId;

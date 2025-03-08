@@ -1,10 +1,11 @@
 // app/api/threads/[threadId]/run/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server'
+;
 import type { RunCreateResponse, ApiResponse } from '@/types/api/routes';
 
-const { openai, isLoading, error: openaiError } = useOpenAI();
+const openai = getOpenAIClient();
 
 export const maxDuration = 60;
 

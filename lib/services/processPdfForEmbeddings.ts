@@ -12,7 +12,8 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     
-    const { openai, isLoading, error } = useOpenAI()
+    const openai = getOpenAIClient()
+
 
     // 1. Get signed URL to download PDF from Supabase
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -36,7 +37,7 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
       const chunk = textChunks[i];
       
       // Generate embedding using OpenAI
-      const embeddingResponse = await openai!.embeddings.create({
+      const embeddingResponse = await openai.embeddings.create({
         model: 'text-embedding-ada-002',
         input: chunk,
       });

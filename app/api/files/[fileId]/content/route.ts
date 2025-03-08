@@ -1,9 +1,11 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
+import { getOpenAIClient } from '@/utils/openai/server'
+
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
   
 
 export async function GET(request: NextRequest): Promise<Response> {
@@ -23,7 +25,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     const urlParts = request.nextUrl.pathname.split('/');
     const openai_file_id = urlParts[urlParts.length - 1]; // Extract threadId from the URL path
 
-    const file: any = await openai!.files.content(`file-${openai_file_id}`);
+    const file: any = await openai.files.content(`file-${openai_file_id}`);
 
     return new Response(file, { 
       status: 200, 

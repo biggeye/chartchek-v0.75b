@@ -1,6 +1,6 @@
 // lib/services/documentSearch.ts
-import { createClient } from '@supabase/supabase-js';
-import { useOpenAI } from '../contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server';
+import { createServer } from '@/utils/supabase/server';
 
 export interface DocumentSearchResult {
   id: string;
@@ -32,16 +32,12 @@ export async function searchDocuments(
       frameworkIds
     } = options;
     
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = await createServer();
     
-    const { openai, isLoading, error } = useOpenAI()
+    const openai = getOpenAIClient();
 
-    
     // Generate embedding for the search query
-    const embeddingResponse = await openai!.embeddings.create({
+    const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
       input: query,
     });
@@ -100,10 +96,7 @@ export async function searchComplianceDocuments(
   try {
     // Get user's active compliance frameworks if not specified
     if (!options.frameworkIds || options.frameworkIds.length === 0) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = await createServer();
       
       const { data } = await supabase
         .from('user_compliance_preferences')
@@ -111,9 +104,9 @@ export async function searchComplianceDocuments(
         .eq('user_id', userId)
         .eq('is_active', true);
         
-      options.frameworkIds = (data || []).map(p => p.framework_id);
+      options.frameworkIds = (data || []).map((p: { framework_id: number }) => p.framework_id);
       
-      if (options.frameworkIds.length === 0) {
+      if (!options.frameworkIds || options.frameworkIds.length === 0) {
         return [];
       }
     }
@@ -133,22 +126,19 @@ export async function searchComplianceDocuments(
 // Add a function to get document by ID
 export async function getDocumentById(documentId: string): Promise<DocumentSearchResult | null> {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = await createServer();
     
     const { data, error } = await supabase
       .from('documents')
       .select('*')
-      .eq('id', documentId)
+      .eq('id', documentId) 
       .single();
       
     if (error) {
       throw error;
     }
     
-    return data;
+    return data as DocumentSearchResult | null;
   } catch (error) {
     console.error('Failed to get document by ID:', error);
     return null;

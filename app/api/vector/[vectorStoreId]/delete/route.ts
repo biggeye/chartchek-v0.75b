@@ -19,8 +19,10 @@ Returns
 Deletion status
 
 Example request
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
-const { openai, isLoading, error } = useOpenAI()
+import { getOpenAIClient } from '@/utils/openai/server'
+;
+const openai = getOpenAIClient()
+
 
 async function main() {
   const deletedVectorStore = await openai.beta.vectorStores.del(
@@ -40,9 +42,11 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server'
+;
 
-const { openai, isLoading, error } = useOpenAI()
+const openai = getOpenAIClient()
+
   
 
 export async function DELETE(request: NextRequest) {
@@ -67,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the vector store using OpenAI's API
-    const deletedVectorStore = await openai!.beta.vectorStores.del(vectorStoreId);
+    const deletedVectorStore = await openai.beta.vectorStores.del(vectorStoreId);
 
     return NextResponse.json(deletedVectorStore);
   } catch (error) {

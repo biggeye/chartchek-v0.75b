@@ -1,7 +1,8 @@
 // lib/services/complianceQueryService.ts
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createSupabaseClient } from '@/utils/supabase/client';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server'
+;
 
 interface QueryResult {
   id: number;
@@ -34,7 +35,8 @@ export async function queryComplianceDatabase(
   try {
     const supabase = getServerSideClient();
     
-    const { openai, isLoading, error } = useOpenAI()
+    const openai = getOpenAIClient()
+
     
     // Determine which frameworks to query
     let frameworkIds: number[] = [];
@@ -59,7 +61,7 @@ export async function queryComplianceDatabase(
     }
     
     // Generate embedding for the query
-    const embedding = await openai!.embeddings.create({
+    const embedding = await openai.embeddings.create({
       model: "text-embedding-ada-002",
       input: query,
     });
@@ -94,7 +96,8 @@ export async function getComplianceAssistance(
   frameworkId?: number
 ): Promise<string> {
   try {
-    const { openai, isLoading, error } = useOpenAI()
+    const openai = getOpenAIClient()
+
 
     
     // Get relevant compliance sections
@@ -111,7 +114,7 @@ export async function getComplianceAssistance(
       .join('\n\n');
     
     // Generate a response
-    const completion = await openai!.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
         { role: "system", content: "You are a compliance assistant. Answer the user's question based on the provided compliance frameworks and regulations. Cite specific sections when relevant." },
