@@ -15,7 +15,7 @@ import { u } from 'unist-builder'
 import { filter } from 'unist-util-filter'
 import { inspect } from 'util'
 import yargs from 'yargs'
-import { useOpenAI } from '../contexts/OpenAIProvider'
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 
 dotenv.config()
 

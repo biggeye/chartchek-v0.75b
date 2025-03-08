@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { chatStore } from '@/store/chatStore'
 import MessageContent from './MessageContent'
 import { MessageContent as MessageContentType } from '@/types/api/openai'
-import DynamicForm from '@/lib/forms/DynamicForm'
+import DynamicForm from '@/components/dynamicForms/DynamicForm'
 import { renderContent } from '@/lib/chat/renderServices'
 
 interface MessageListProps {

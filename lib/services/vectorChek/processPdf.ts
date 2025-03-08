@@ -1,16 +1,13 @@
 // lib/services/processPdf.ts
-import { createClient } from '@supabase/supabase-js';
-import { useOpenAI } from '../contexts/OpenAIProvider';
+import { createServer } from '@/utils/supabase/server';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 import { Document } from '@/types/store/document';
 import { extractTextFromPdf } from './pdfTextExtractor'; // You'll need to implement this
 
 export async function processPdfForEmbeddings(document: Document): Promise<boolean> {
   try {
     // Initialize clients
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = await createServer();
     
     const openai = getOpenAIClient()
 
@@ -83,10 +80,7 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
     console.error('Failed to process PDF for embeddings:', error);
     
     // Update document with error status
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = await createServer();
     
     await supabase
       .from('documents')

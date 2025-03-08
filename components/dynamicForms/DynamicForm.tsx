@@ -7,7 +7,7 @@ import {
   FormDefinition,
   FormSection,
   FormField,
-} from '@/lib/forms/formDefinitions';
+} from '@/components/dynamicForms/formDefinitions';
 import { chatStore } from '@/store/chatStore';
 import { useNewStreamingStore } from '@/store/newStreamStore';
 
