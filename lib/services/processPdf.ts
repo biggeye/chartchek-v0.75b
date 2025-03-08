@@ -1,6 +1,6 @@
 // lib/services/processPdf.ts
 import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
+import { useOpenAI } from '../contexts/OpenAIProvider';
 import { Document } from '@/types/store/document';
 import { extractTextFromPdf } from './pdfTextExtractor'; // You'll need to implement this
 
@@ -12,9 +12,8 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
-    });
+    const { openai, isLoading, error } = useOpenAI()
+
     
     // 1. Get signed URL to download PDF from Supabase
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -38,7 +37,7 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
       const chunk = textChunks[i];
       
       // Generate embedding using OpenAI
-      const embeddingResponse = await openai.embeddings.create({
+      const embeddingResponse = await openai!.embeddings.create({
         model: 'text-embedding-ada-002',
         input: chunk,
       });

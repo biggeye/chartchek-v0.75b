@@ -42,8 +42,8 @@ Returns
 The modified vector store object.
 
 Example request
-import OpenAI from "openai";
-const openai = new OpenAI();
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+const { openai, isLoading, error } = useOpenAI()
 
 async function main() {
   const vectorStore = await openai.beta.vectorStores.update(
@@ -76,11 +76,10 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function POST(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest) {
     const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : undefined;
 
     // Modify the vector store using OpenAI's API
-    const updatedVectorStore = await openai.beta.vectorStores.update(vectorStoreId, {
+    const updatedVectorStore = await openai!.beta.vectorStores.update(vectorStoreId, {
       name,
       expires_after: expiresAfter,
       metadata

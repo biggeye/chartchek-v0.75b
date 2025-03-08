@@ -1,11 +1,10 @@
 // app/api/threads/[threadId]/run/route.ts
-import { createServer } from "@/utils/supabase/server";
-import OpenAI from "openai";
 import { NextRequest, NextResponse } from 'next/server';
+import { createServer } from "@/utils/supabase/server";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import type { RunCreateResponse, ApiResponse } from '@/types/api/routes';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error: openaiError } = useOpenAI();
 
 export const maxDuration = 60;
 
@@ -42,6 +41,9 @@ export async function GET(
     if (run_id) {
       // Retrieve specific run
       console.log(`[API] Retrieving run ${run_id} for thread ${threadId}`);
+      if (!openai) {
+        throw new Error('OpenAI client not initialized');
+      }
       const run = await openai.beta.threads.runs.retrieve(threadId, run_id);
       return NextResponse.json({ run });
     } else {
@@ -53,6 +55,9 @@ export async function GET(
 
       console.log(`[API] Listing runs for thread ${threadId} with params:`, { limit, order, after, before });
       
+      if (!openai) {
+        throw new Error('OpenAI client not initialized');
+      }
       const runs = await openai.beta.threads.runs.list(threadId, {
         limit,
         order,
@@ -99,6 +104,25 @@ export async function POST(
       );
     }
 
+    // Verify thread belongs to user
+    const { data: threadData, error: threadError } = await supabase
+      .from('chat_threads')
+      .select('*')
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id)
+      .single();
+      
+    if (threadError) {
+      return NextResponse.json(
+        { success: false, error: 'Thread not found or not authorized' },
+        { status: 404 }
+      );
+    }
+
+    if (!openai) {
+      throw new Error('OpenAI client not initialized');
+    }
+    
     // Create run
     const run = await openai.beta.threads.runs.create(threadId, {
       assistant_id

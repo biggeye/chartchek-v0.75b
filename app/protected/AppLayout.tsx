@@ -15,6 +15,7 @@ import {
   PopoverButton,
   PopoverGroup,
   PopoverPanel,
+  Transition
 } from '@headlessui/react'
 import {
   Bars3Icon,
@@ -60,6 +61,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [showInsights, setShowInsights] = useState(true);
+  const [userModalOpen, setUserModalOpen] = useState(false);
   const pathname = usePathname();
 
   // Initialize stores
@@ -277,6 +279,19 @@ ${content}`;
 
         {/* Static sidebar for desktop */}
         <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex ${sidebarWidth} lg:flex-col transition-all duration-300 ease-in-out`}>
+          {/* Toggle button positioned at 50% vertical and on right edge */}
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-10 bg-background rounded-full border border-border shadow-md p-1 text-foreground-muted hover:text-foreground transition-colors"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <ArrowRightCircleIcon className="h-5 w-5" />
+            ) : (
+              <ArrowLeftCircleIcon className="h-5 w-5" />
+            )}
+          </button>
+          
           <div className="flex grow flex-col overflow-y-auto rounded-lg border-r border-border bg-background px-6 pb-4">
             <div className="flex h-16 shrink-0 items-center justify-between">
               <div className="h-10 w-auto">
@@ -284,23 +299,37 @@ ${content}`;
                   <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="text-foreground-muted hover:text-foreground transition-colors"
-                  aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              {/* User dropdown moved to where theme switcher was */}
+              {!sidebarCollapsed && (
+                <button
+                  onClick={() => setUserModalOpen(true)}
+                  className="flex items-center rounded-md p-1 text-sm font-semibold text-foreground hover:bg-background-muted"
                 >
-                  {sidebarCollapsed ? (
-                    <ArrowRightCircleIcon className="h-6 w-6" />
-                  ) : (
-                    <ArrowLeftCircleIcon className="h-6 w-6" />
-                  )}
+                  <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
                 </button>
-                {!sidebarCollapsed && <ThemeSwitcher />}
+              )}
+              {/* User dropdown moved to where "Your threads" was */}
+              {/* Theme switcher moved to where "Your threads" was */}
+              <div className="flex items-center">
+                <ThemeSwitcher />
+              </div>
+              <div className="mt-2">
+                {/* Thread list will be inserted here */}
               </div>
             </div>
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
+                {/* In narrow mode, show user icon at the top */}
+                {sidebarCollapsed && (
+                  <li className="flex justify-center py-2">
+                    <button
+                      onClick={() => setUserModalOpen(true)}
+                      className="flex items-center justify-center"
+                    >
+                      <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
+                    </button>
+                  </li>
+                )}
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
                     {navigation.map((item) => (
@@ -328,55 +357,6 @@ ${content}`;
                       </li>
                     ))}
                   </ul>
-                </li>
-                {!sidebarCollapsed && (
-                  <li>
-                    <div className="text-xs font-semibold leading-6 text-muted-foreground">Your threads</div>
-                    <div className="mt-2">
-                      {/* Thread list will be inserted here */}
-                    </div>
-                  </li>
-                )}
-                {/* User menu moved to bottom and simplified */}
-                <li className="mt-auto">
-                  <Menu as="div" className="relative">
-                    <MenuButton className={cn(
-                      "flex items-center rounded-md p-2 text-sm font-semibold text-foreground hover:bg-background-muted",
-                      sidebarCollapsed ? "justify-center" : ""
-                    )}>
-                      <UserCircleIcon className="h-9 w-9 rounded-full text-foreground-muted" aria-hidden="true" />
-                      {/* Removed UUID display as requested */}
-                    </MenuButton>
-                    <MenuItems className="absolute zindex-500 bottom-full mb-1 w-48 origin-bottom-left rounded-md bg-card py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      {userNavigation.map((item) => (
-                        <MenuItem key={item.name} as="div">
-                          {({ active }) => (
-                            item.onClick ? (
-                              <button
-                                className={cn(
-                                  active ? 'bg-muted text-foreground' : '',
-                                  'block px-4 py-2 text-sm w-full text-left'
-                                )}
-                                onClick={item.onClick}
-                              >
-                                {item.name}
-                              </button>
-                            ) : (
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  active ? 'bg-muted text-foreground' : '',
-                                  'block px-4 py-2 text-sm'
-                                )}
-                              >
-                                {item.name}
-                              </Link>
-                            )
-                          )}
-                        </MenuItem>
-                      ))}
-                    </MenuItems>
-                  </Menu>
                 </li>
               </ul>
             </nav>
@@ -436,6 +416,99 @@ ${content}`;
           </button>
         }
       />
+
+      {/* User Profile Modal */}
+      <Transition
+        show={userModalOpen}
+        enter="transition duration-300 ease-out"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition duration-200 ease-in"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm" 
+            onClick={() => setUserModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <Transition.Child
+            enter="transition duration-300 ease-out"
+            enterFrom="transform scale-50 opacity-0"
+            enterTo="transform scale-100 opacity-100"
+            leave="transition duration-200 ease-in"
+            leaveFrom="transform scale-100 opacity-100"
+            leaveTo="transform scale-50 opacity-0"
+          >
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">User Profile</h2>
+                <button
+                  onClick={() => setUserModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+              
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto flex-grow">
+                <div className="flex flex-col space-y-6">
+                  {/* User Info Section */}
+                  <div className="flex items-center space-x-4">
+                    <UserCircleIcon className="h-16 w-16 text-gray-400" aria-hidden="true" />
+                    <div>
+                      <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100">User ID: {user_id}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Manage your account settings and preferences</p>
+                    </div>
+                  </div>
+                  
+                  {/* Navigation Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {userNavigation.map((item) => (
+                      <div key={item.name} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        {item.onClick ? (
+                          <button
+                            className="w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => {
+                              setUserModalOpen(false);
+                              item.onClick && item.onClick();
+                            }}
+                          >
+                            <h4 className="text-base font-medium text-gray-900 dark:text-gray-100">{item.name}</h4>
+                          </button>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => setUserModalOpen(false)}
+                          >
+                            <h4 className="text-base font-medium text-gray-900 dark:text-gray-100">{item.name}</h4>
+                          </Link>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="border-t dark:border-gray-700 p-4 flex justify-end space-x-3">
+                <button 
+                  className="border bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700"
+                  onClick={() => setUserModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </Transition.Child>
+        </div>
+      </Transition>
     </>
   )
 }

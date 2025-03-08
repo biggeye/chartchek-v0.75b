@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { PaperClipIcon, UserPlusIcon, XCircleIcon, ChatBubbleBottomCenterIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import { PaperClipIcon, UserPlusIcon, XCircleIcon, ChatBubbleBottomCenterIcon, ChevronUpIcon, ChevronDownIcon, DocumentIcon } from '@heroicons/react/24/outline'
 import { SendIcon } from 'lucide-react'
 import { useDocumentStore } from '@/store/documentStore'
 import { chatStore } from '@/store/chatStore'
@@ -10,6 +10,8 @@ import { Document } from '@/types/store/document'
 import { useRouter, usePathname } from 'next/navigation'
 import { getFacilityData } from '@/lib/kipu'
 import { cn } from '@/lib/utils'
+import * as Headless from '@headlessui/react'
+import { Button } from '@/components/ui/button'
 
 type PatientBasicInfo = {
   casefile_id?: string
@@ -68,7 +70,8 @@ export function GlobalChatInputArea() {
     transientFileQueue: storeFileQueue,
     addFileToQueue,
     removeFileFromQueue,
-    setCurrentAssistantId 
+    setCurrentAssistantId,
+    clearFileQueue
   } = chatStore()
 
   const {
@@ -259,44 +262,35 @@ export function GlobalChatInputArea() {
     }
   }
 
-  // DocumentList renders a dropdown list of documents for attachment selection
+  // DocumentList renders a list of documents for attachment selection
   const DocumentList = () => (
-    <div className="absolute bottom-full right-0 mb-1 max-w-[40vw] bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none overflow-y-auto">
+    <div className="overflow-y-auto h-full">
       {isDocumentsLoading ? (
         <div className="py-2 px-3 text-gray-500">Loading documents...</div>
       ) : paginatedDocuments.length === 0 ? (
-        <div className="py-2 px-3 text-gray-500">No documents available</div>
+        <div className="py-2 px-3 text-gray-500">No documents found</div>
       ) : (
-        paginatedDocuments.map((doc: Document) => {
-          const isChecked = isThreadActive
-            ? Boolean(
-                doc.openai_file_id &&
-                  currentThread?.current_files?.some(
-                    (file: any) => file.openai_file_id === doc.openai_file_id
-                  )
-              )
-            : storeFileQueue.some((f: any) => f.document_id === doc.document_id)
+        paginatedDocuments.map((doc) => {
+          const isSelected = storeFileQueue.some((f) => f.document_id === doc.document_id)
           return (
             <div
               key={doc.document_id}
-              className={`cursor-default select-none py-2 pl-3 pr-9 ${
-                isChecked ? 'bg-indigo-50 text-gray-900' : 'text-gray-900'
-              }`}
+              className="flex items-center justify-between px-3 py-2 hover:bg-gray-50"
             >
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={isChecked}
+                  id={`doc-${doc.document_id}`}
+                  checked={isSelected}
                   onChange={() => handleCheckboxChange(doc)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                  aria-label={`Select ${doc.fileName}`}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
                 />
-                <span className="ml-3 block truncate font-medium">
+                <label
+                  htmlFor={`doc-${doc.document_id}`}
+                  className="ml-2 block text-sm font-medium text-gray-900 cursor-pointer"
+                >
                   {doc.fileName}
-                  {doc.processingStatus === 'processing' && (
-                    <span className="ml-2 text-indigo-500 text-xs">(processing)</span>
-                  )}
-                </span>
+                </label>
               </div>
             </div>
           )
@@ -325,22 +319,37 @@ export function GlobalChatInputArea() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 w-full z-50">
-      {/* Toggle button for chat visibility */}
-      <button 
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-primary/80 text-white rounded-t-md p-2 flex items-center gap-1 shadow-lg backdrop-blur-sm"
-      >
-        {isExpanded ? (
-          <ChevronDownIcon className="h-5 w-5" />
-        ) : (
-          <ChevronUpIcon className="h-5 w-5" />
-        )}
-      </button>
+      {/* Toggle button for chat visibility when closed */}
+      {!isExpanded && (
+        <button 
+          onClick={() => setIsExpanded(true)}
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-gray-500/30 text-white rounded-t-md p-1 flex items-center gap-0.5 shadow-lg backdrop-blur-sm"
+        >
+          <ChevronUpIcon className="h-2.5 w-2.5" />
+        </button>
+      )}
 
-      {/* Main chat input area - conditionally rendered based on expanded state */}
-      {isExpanded && (
-        <div className="bg-background/80 shadow-lg backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Main chat input area - conditionally rendered based on expanded state with animation */}
+      <Headless.Transition
+        show={isExpanded}
+        enter="transition duration-300 ease-out"
+        enterFrom="transform translate-y-full"
+        enterTo="transform translate-y-0"
+        leave="transition duration-200 ease-in"
+        leaveFrom="transform translate-y-0"
+        leaveTo="transform translate-y-full"
+      >
+        <div className="bg-transparent relative">
+          {/* Close button (X) in top right corner */}
+          <button 
+            onClick={() => setIsExpanded(false)}
+            className="absolute top-1 right-1 text-gray-500 hover:text-gray-700 z-10"
+            aria-label="Close chat input"
+          >
+            <XCircleIcon className="h-5 w-5" />
+          </button>
+          
+          <div className="max-w-7xl mx-auto px-10 sm:px-4 lg:px-8 py-0.5">
             {/* Patient Context Indicator */}
             {isPatientContextEnabled && currentPatient && (
               <div className="mb-2 flex items-center justify-between bg-blue-50 p-2 rounded-md">
@@ -380,14 +389,92 @@ export function GlobalChatInputArea() {
               </div>
             )}
 
-            {/* Main Input Area */}
-            <div className="relative flex items-start space-x-2 pt-2 pb-4">
+            {/* Main Input Area - Redesigned with solid border and integrated send button */}
+            <div className="relative pt-2 pb-4">
               <div
                 className={cn(
-                  'flex w-full items-center rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600',
+                  'flex w-full items-center rounded-lg border-2 border-gray-300 bg-white px-3 py-2.5 shadow-sm',
                   isSubmitting && 'opacity-50'
                 )}
               >
+                {/* Left side action buttons */}
+                <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={toggleAttachFilesPanel}
+                      className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                      aria-label="Attach files"
+                    >
+                      <PaperClipIcon className="h-5 w-5" />
+                    </button>
+                    
+                    {/* Attach Files Dropdown */}
+                    {showAttachFilesPanel && (
+                      <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[150px] z-10">
+                        <div className="py-1">
+                          <input
+                            type="file"
+                            id="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          >
+                            Upload a file
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={togglePatientPanel}
+                      className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                      aria-label="Set patient context"
+                    >
+                      <UserPlusIcon className="h-5 w-5" />
+                    </button>
+                    
+                    {/* Patient Panel Dropdown */}
+                    {showPatientPanel && facilityId && (
+                      <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[200px] z-10">
+                        <div className="py-1 max-h-56 overflow-y-auto">
+                          {patients.length === 0 ? (
+                            <div className="px-4 py-2 text-sm text-gray-500">No patients found</div>
+                          ) : (
+                            patients.map((patient: PatientBasicInfo) => (
+                              <button
+                                key={patient.casefile_id || patient.mr_number}
+                                onClick={() => selectPatient(patient)}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                              >
+                                {patient.first_name} {patient.last_name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={toggleDocumentListPanel}
+                      className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                      aria-label="Browse documents"
+                    >
+                      <DocumentIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                
                 <textarea
                   rows={1}
                   name="message"
@@ -397,97 +484,100 @@ export function GlobalChatInputArea() {
                   ref={textareaRef}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none"
+                  className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent"
                   placeholder="Type your message..."
                 />
-                <div className="flex-shrink-0 ml-2 border-l pl-2">
+                
+                {/* Right side send button */}
+                <div className="flex-shrink-0 ml-2 pl-2 border-l">
                   <button
                     type="button"
-                    onClick={toggleAttachFilesPanel}
-                    className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                    aria-label="Attach files"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
+                    className={cn(
+                      'inline-flex items-center justify-center text-blue-600 hover:text-blue-800',
+                      (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
+                    )}
+                    aria-label="Send message"
                   >
-                    <PaperClipIcon className="h-5 w-5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={togglePatientPanel}
-                    className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                    aria-label="Set patient context"
-                  >
-                    <UserPlusIcon className="h-5 w-5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={toggleDocumentListPanel}
-                    className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                    aria-label="Browse documents"
-                  >
-                    <ChatBubbleBottomCenterIcon className="h-5 w-5" />
+                    <SendIcon className="h-5 w-5" />
                   </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
-                className={cn(
-                  'inline-flex items-center justify-center rounded-full bg-blue-600 p-2 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600',
-                  (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
-                )}
-                aria-label="Send message"
-              >
-                <SendIcon className="h-5 w-5" />
-              </button>
             </div>
-
-            {/* Dropdowns and Panels */}
-            {showAttachFilesPanel && (
-              <div className="absolute bottom-full right-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="py-1">
-                  <input
-                    type="file"
-                    id="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    Upload a file
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {showPatientPanel && facilityId && (
-              <div className="absolute bottom-full right-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="py-1 max-h-56 overflow-y-auto">
-                  {patients.length === 0 ? (
-                    <div className="px-4 py-2 text-sm text-gray-500">No patients found</div>
-                  ) : (
-                    patients.map((patient: PatientBasicInfo) => (
-                      <button
-                        key={patient.casefile_id || patient.mr_number}
-                        onClick={() => selectPatient(patient)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        {patient.first_name} {patient.last_name}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {showDocumentListPanel && <DocumentList />}
           </div>
         </div>
-      )}
+      </Headless.Transition>
+
+      {/* Document List Modal */}
+      <Headless.Transition
+        show={showDocumentListPanel}
+        enter="transition duration-300 ease-out"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition duration-200 ease-in"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm" 
+            onClick={toggleDocumentListPanel}
+          />
+          
+          {/* Modal Content */}
+          <Headless.Transition.Child
+            enter="transition duration-300 ease-out"
+            enterFrom="transform scale-50 opacity-0"
+            enterTo="transform scale-100 opacity-100"
+            leave="transition duration-200 ease-in"
+            leaveFrom="transform scale-100 opacity-100"
+            leaveTo="transform scale-50 opacity-0"
+          >
+            <div className="relative bg-white rounded-xl shadow-xl w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center p-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
+              </div>
+              
+              {/* Modal Body */}
+              <div className="p-4 overflow-y-auto flex-grow">
+                <DocumentList />
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="border-0.5 p-4 flex justify-end space-x-3">
+                <>
+                <Button 
+                plain
+                  onClick={() => {
+                    // Clear all selections and file queue before closing
+                    if (isThreadActive && currentThread) {
+                      // For active threads, we would need to clear the thread files
+                      // This would need implementation based on how thread files are managed
+                    } else {
+                      // For new chats, clear the file queue
+                      clearFileQueue();
+                    }
+                    toggleDocumentListPanel();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  plain
+
+                  onClick={toggleDocumentListPanel}
+                >
+                  Save
+                </Button>
+                </>
+              </div>
+            </div>
+          </Headless.Transition.Child>
+        </div>
+      </Headless.Transition>
     </div>
   )
 }

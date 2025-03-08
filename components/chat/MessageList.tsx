@@ -52,7 +52,7 @@ export const MessageList = React.memo(({
   console.log('[MessageList] Messages:', messages);
   console.log('[MessageList] Streaming content:', streamingContent);
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)] w-full overflow-y-auto">
+    <ScrollArea className="h-100vh w-full overflow-y-auto">
       <div className="flex flex-col gap-4 p-4 pb-24">
  
 

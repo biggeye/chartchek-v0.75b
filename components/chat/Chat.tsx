@@ -142,7 +142,7 @@ ${content}`;
   };
 
   return (
-    <div className="relative flex flex-col h-full max-h-[calc(100vh-5rem)] overflow-hidden">
+    <div className="relative flex flex-col h-full max-h-[calc(100vh-1rem)] overflow-hidden">
       <RunStatusIndicator onCancel={handleCancelRun} />
 
       {(localError || streamError) && (

@@ -1,16 +1,11 @@
 import { createClient } from '@/utils/supabase/client';
-import OpenAI from 'openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 import { useNewStreamingStore } from '@/store/newStreamStore';
 import { ChatMessage, ChatThread } from '@/types/database';
 import { ThreadRun } from '@/types/store/newStream';
 import { Thread, RunStatusResponse } from '@/types/store/chat';
 import { NewStreamingState } from '@/types/store/newStream';
 
-
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
 
 const supabase = createClient();
 const userId = async function getUserId(): Promise<string> {

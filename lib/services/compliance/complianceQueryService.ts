@@ -1,7 +1,7 @@
 // lib/services/complianceQueryService.ts
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createSupabaseClient } from '@/utils/supabase/client';
-import { OpenAI } from 'openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 
 interface QueryResult {
   id: number;
@@ -34,9 +34,7 @@ export async function queryComplianceDatabase(
   try {
     const supabase = getServerSideClient();
     
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
-    });
+    const { openai, isLoading, error } = useOpenAI()
     
     // Determine which frameworks to query
     let frameworkIds: number[] = [];
@@ -61,7 +59,7 @@ export async function queryComplianceDatabase(
     }
     
     // Generate embedding for the query
-    const embedding = await openai.embeddings.create({
+    const embedding = await openai!.embeddings.create({
       model: "text-embedding-ada-002",
       input: query,
     });
@@ -69,7 +67,7 @@ export async function queryComplianceDatabase(
     const queryEmbedding = embedding.data[0].embedding;
     
     // Query the database using the embedding
-    let { data: results, error } = await supabase
+    let { data: results, error: resultsError } = await supabase
       .rpc('match_compliance_sections', {
         query_embedding: queryEmbedding,
         match_threshold: 0.5,
@@ -77,7 +75,7 @@ export async function queryComplianceDatabase(
         framework_ids: frameworkIds
       });
       
-    if (error) {
+    if (resultsError) {
       console.error('Error querying compliance database:', error);
       return [];
     }
@@ -96,9 +94,8 @@ export async function getComplianceAssistance(
   frameworkId?: number
 ): Promise<string> {
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
-    });
+    const { openai, isLoading, error } = useOpenAI()
+
     
     // Get relevant compliance sections
     const complianceResults = await queryComplianceDatabase(userId, userQuery, frameworkId);
@@ -114,7 +111,7 @@ export async function getComplianceAssistance(
       .join('\n\n');
     
     // Generate a response
-    const completion = await openai.chat.completions.create({
+    const completion = await openai!.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
         { role: "system", content: "You are a compliance assistant. Answer the user's question based on the provided compliance frameworks and regulations. Cite specific sections when relevant." },

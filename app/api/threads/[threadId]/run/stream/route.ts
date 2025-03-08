@@ -1,12 +1,11 @@
 // app/api/threads/[threadId]/run/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 import { NextRequest } from 'next/server';
 import { Run } from "@/types/api/openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 // Define interface for the text object coming from OpenAI
 interface OpenAIText {
@@ -82,7 +81,7 @@ export async function POST(
       async start(controller) {
         try {
           // Create the live assistant stream
-          const runStream = openai.beta.threads.runs.stream(threadId, runOptions);
+          const runStream = openai!.beta.threads.runs.stream(threadId, runOptions);
           
           // Listen for all events and process based on the event type
           runStream.on('event', async (event: any) => {

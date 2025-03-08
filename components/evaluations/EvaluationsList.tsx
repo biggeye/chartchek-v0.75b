@@ -17,7 +17,6 @@ import {
 import { CalendarIcon, FilterIcon, MoreHorizontal, Search } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/fieldset';
-import Textarea from '../ui/textarea';
 
 // Define item interface for clarity
 interface EvaluationItem {
@@ -194,7 +193,13 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
 
       {/* Enhanced Evaluation Details Modal */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto evaluation-dialog">
+          {/* Remove the close button by adding custom CSS */}
+          <style jsx global>{`
+            .evaluation-dialog [data-radix-collection-item] {
+              display: none;
+            }
+          `}</style>
 
           {selectedEvaluation && (
             <>
@@ -202,14 +207,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                 <div className="flex items-center justify-between">
                   <DialogTitle className="text-xl">{selectedEvaluation.evaluation_type}</DialogTitle>
                   {getStatusBadge(selectedEvaluation.status)}
-                  <span className="text-sm text-muted-foreground">
-                    {isEditMode ? 'Edit Mode' : 'View Mode'}
-                  </span>
-                  <Switch
-                    checked={isEditMode}
-                    onChange={toggleEditMode}
-                    aria-label="Toggle edit mode"
-                  />
                 </div>
                 <DialogDescription className="flex items-center gap-2 mt-1">
                   <CalendarIcon className="h-4 w-4" />
@@ -223,7 +220,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
               </DialogHeader>
 
               <DialogBody>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Patient ID</h4>
@@ -238,29 +234,58 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     <p>{selectedEvaluation.id}</p>
                   </div>
                 </div>
+                
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Clinical Notes</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {isEditMode ? 'Edit Mode' : 'View Mode'}
+                    </span>
+                    <Switch
+                      checked={isEditMode}
+                      onChange={toggleEditMode}
+                      aria-label="Toggle edit mode"
+                    />
+                  </div>
+                </div>
+                
                 {isEditMode ? (
-                  <form className="space-y-4 w-full">
-                    
+                  <form className="space-y-4 w-full" onSubmit={(e) => {
+                    e.preventDefault();
+                    // Here you would handle saving the evaluation
+                    // For now, just exit edit mode
+                    setIsEditMode(false);
+                  }}>
+                    <textarea
+                      id="notes"
+                      defaultValue={selectedEvaluation.notes || ''}
+                      rows={6}
+                      className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border w-full min-h-[150px]"
+                    />
           
-                        <label htmlFor="notes">Evaluation Type</label>
-
-                        <textarea
-                          className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border"
-                          id="notes"
-                          defaultValue={selectedEvaluation.notes}
-                        />
-             
-                      {/* More editable fields */}
-           
-                    <div className="flex justify-end gap-2">
-                      <Button onClick={() => setIsEditMode(false)}>Cancel</Button>
-                      <Button type="submit">Save Changes</Button>
+                    {/* More editable fields */}
+         
+                    <div className="border-t p-4 flex justify-end space-x-3 mt-4">
+                      <Button 
+                        onClick={(e: React.MouseEvent) => {
+                          e.preventDefault();
+                          setIsEditMode(false);
+                        }}
+                        className="border bg-white hover:bg-gray-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        className="border bg-white hover:bg-gray-50"
+                      >
+                        Save
+                      </Button>
                     </div>
                   </form>
                 ) : (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Clinical Notes</h3>
-                    <div className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border">
+                    <div className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border min-h-[150px]">
                       {selectedEvaluation.notes || 'No notes recorded'}
                     </div>
                   </div>

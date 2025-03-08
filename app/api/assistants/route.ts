@@ -1,15 +1,14 @@
 import { createServer } from '@/utils/supabase/server'
 import { NextRequest } from 'next/server'
-import OpenAI from "openai"
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 import type { AssistantCreateRequest, AssistantCreateResponse, ApiResponse } from '@/types/api/routes'
 import type { UserAssistant } from '@/types/database'
 import type { Assistant } from '@/types/api/openai'
 import type { ToolType } from '@/types/database'
 import { checkAuth } from '@/utils/auth/checkAuth'
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     if (existingAssistant) {
-      const assistant = await openai.beta.assistants.retrieve(existingAssistant.assistant_id)
+      const assistant = await openai!.beta.assistants.retrieve(existingAssistant.assistant_id)
       const response: ApiResponse<AssistantCreateResponse> = {
         assistant: {
           id: assistant.id,
@@ -79,7 +78,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // Create new assistant
-    const assistant = await openai.beta.assistants.create({
+    const assistant = await openai!.beta.assistants.create({
       name: requestData.name,
       instructions: requestData.instructions,
       model: requestData.model,
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (insertError) {
       // Clean up OpenAI assistant if database insert fails
-      await openai.beta.assistants.del(assistant.id)
+      await openai!.beta.assistants.del(assistant.id)
       throw insertError
     }
 

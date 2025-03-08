@@ -19,8 +19,8 @@ Returns
 Deletion status
 
 Example request
-import OpenAI from "openai";
-const openai = new OpenAI();
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+const { openai, isLoading, error } = useOpenAI()
 
 async function main() {
   const deletedVectorStore = await openai.beta.vectorStores.del(
@@ -40,11 +40,10 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function DELETE(request: NextRequest) {
   const supabase = await createServer();
@@ -68,7 +67,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the vector store using OpenAI's API
-    const deletedVectorStore = await openai.beta.vectorStores.del(vectorStoreId);
+    const deletedVectorStore = await openai!.beta.vectorStores.del(vectorStoreId);
 
     return NextResponse.json(deletedVectorStore);
   } catch (error) {

@@ -3,12 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import OpenAI from "openai"
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 import type { MessagePayload } from '@/types/store/document/index';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-}); 
+const { openai, isLoading, error: openaiError } = useOpenAI(); 
 
 
 export async function POST(req: NextRequest) {
@@ -28,6 +26,11 @@ export async function POST(req: NextRequest) {
         { error: 'Unauthorized', code: 'AUTH_REQUIRED' },
         { status: 401 }
       );
+    }
+
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not initialized');
     }
 
     const requestData = await req.json();
@@ -105,14 +108,14 @@ console.log('[POST] ####### Stringified Payload:', JSON.stringify(payload, null,
   }
 }
 
-export async function GET(request: NextRequest) {
-  const { pathname } = new URL(request.url);
+export async function GET(req: NextRequest) {
+  const { pathname, searchParams } = new URL(req.url);
   const threadId = pathname.split('/').slice(-2, -1)[0];
-
+  
   const supabase = await createServer();
-
-  console.log('[GET] Received request to list messages for thread:', threadId);
-
+  
+  console.log(`[/api/threads/${threadId}/messages] Retrieving messages`);
+  
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -122,43 +125,53 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    if (!threadId) {
-      console.error('[GET] Missing thread ID');
+    
+    // Verify thread belongs to user
+    const { data: threadData, error: threadError } = await supabase
+      .from('chat_threads')
+      .select('*')
+      .eq('thread_id', threadId)
+      .eq('user_id', user.id)
+      .single();
+      
+    if (threadError) {
+      console.error('[GET] Thread not found or not authorized:', threadError.message);
       return NextResponse.json(
-        { error: 'Thread ID required', code: 'THREAD_ID_MISSING' },
-        { status: 400 }
+        { error: 'Thread not found or not authorized', code: 'NOT_FOUND' },
+        { status: 404 }
       );
     }
-
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '100', 10);
-    const order = searchParams.get('order') || 'desc';
-    const after = searchParams.get('after');
-    const before = searchParams.get('before');
-    const runId = searchParams.get('run_id');
-
-    console.log('[GET] Query parameters:', { limit, order, after, before, runId });
-
-    // Fetch messages from OpenAI using pagination options correctly
-    // Note: The SDK only accepts valid options through its query parameter
-    let queryOptions = {};
     
-    // Only add parameters that are defined and valid for the OpenAI API
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not initialized');
+    }
+    
+    // Parse query parameters
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
+    const order = searchParams.get('order') as 'asc' | 'desc' | undefined;
+    const after = searchParams.get('after') || undefined;
+    const before = searchParams.get('before') || undefined;
+    const runId = searchParams.get('run_id') || undefined;
+    
+    let queryOptions: any = {};
+    if (limit) queryOptions = { ...queryOptions, limit };
+    if (order) queryOptions = { ...queryOptions, order };
     if (after) queryOptions = { ...queryOptions, after };
     if (before) queryOptions = { ...queryOptions, before };
     if (runId) queryOptions = { ...queryOptions, run_id: runId };
     
     // Get messages from OpenAI
-    const messagesResponse = await openai.beta.threads.messages.list(
-      threadId,
-      Object.keys(queryOptions).length > 0 ? queryOptions : undefined
-    );
-    
-    console.log('[GET] Retrieved messages:', messagesResponse.data.length);
-    
-    // Return the OpenAI messages directly
-    return NextResponse.json(messagesResponse);
+    if (openai) {
+      const messagesResponse = await openai.beta.threads.messages.list(
+        threadId,
+        Object.keys(queryOptions).length > 0 ? queryOptions : undefined
+      );
+      console.log('[GET] Retrieved messages:', messagesResponse.data.length);
+      return NextResponse.json(messagesResponse);
+    } else {
+      throw new Error('OpenAI client not initialized');
+    }
   } catch (error) {
     console.error('[GET] Error during message listing:', error);
     return NextResponse.json(

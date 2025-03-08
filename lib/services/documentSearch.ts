@@ -1,6 +1,6 @@
 // lib/services/documentSearch.ts
 import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
+import { useOpenAI } from '../contexts/OpenAIProvider';
 
 export interface DocumentSearchResult {
   id: string;
@@ -37,12 +37,11 @@ export async function searchDocuments(
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
-    });
+    const { openai, isLoading, error } = useOpenAI()
+
     
     // Generate embedding for the search query
-    const embeddingResponse = await openai.embeddings.create({
+    const embeddingResponse = await openai!.embeddings.create({
       model: 'text-embedding-ada-002',
       input: query,
     });
@@ -79,15 +78,15 @@ export async function searchDocuments(
     }
     
     // Perform vector similarity search
-    const { data, error } = await supabase.rpc('match_document_embeddings', searchParams);
+    const { data, error: dataError } = await supabase.rpc('match_document_embeddings', searchParams);
     
-    if (error) {
-      throw error;
+    if (dataError) {
+      throw dataError;
     }
     
     return data || [];
-  } catch (error) {
-    console.error('Document search failed:', error);
+  } catch (dataError) {
+    console.error('Document search failed:', dataError);
     return [];
   }
 }

@@ -1,11 +1,10 @@
 // app/api/threads/[threadId]/messages/[messageId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
-import OpenAI from 'openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Retrieve message using OpenAI's API
-    const message = await openai.beta.threads.messages.retrieve(threadId, messageId);
+    const message = await openai!.beta.threads.messages.retrieve(threadId, messageId);
 
     return NextResponse.json(message);
   } catch (error) {

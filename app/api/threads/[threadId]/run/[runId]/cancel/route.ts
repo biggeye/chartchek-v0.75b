@@ -1,11 +1,10 @@
 // app/api/threads/[threadId]/run/[runId]/cancel/route.ts
 import { createServer } from "@/utils/supabase/server";
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 import { NextRequest, NextResponse } from 'next/server';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export const maxDuration = 30;
 
@@ -38,7 +37,7 @@ export async function POST(
     }
 
     // Cancel the run
-    const run = await openai.beta.threads.runs.cancel(
+    const run = await openai!.beta.threads.runs.cancel(
       threadId,
       runId
     );

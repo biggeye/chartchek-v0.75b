@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
-import { openai } from '@/utils/openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 import type { ApiResponse } from '@/types/api/routes';
 
 export async function POST(req: NextRequest): Promise<Response> {

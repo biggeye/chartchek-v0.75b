@@ -1,11 +1,10 @@
 // app/api/threads/[threadId]/run/[runId]/submit-tool-outputs/route.ts
 import { createServer } from "@/utils/supabase/server";
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 import { NextRequest, NextResponse } from 'next/server';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export const maxDuration = 60;
 
@@ -39,7 +38,7 @@ export async function POST(
     }
 
     // Submit tool outputs
-    const run = await openai.beta.threads.runs.submitToolOutputs(
+    const run = await openai!.beta.threads.runs.submitToolOutputs(
       threadId,
       runId,
       {

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 
 interface ComplianceDocument {
   title: string;
@@ -19,9 +20,8 @@ export async function processComplianceDocument(document: ComplianceDocument): P
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
   
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY,
-  });
+  const { openai, isLoading, error } = useOpenAI()
+
   
   try {
     // 1. Insert document record
@@ -47,7 +47,7 @@ export async function processComplianceDocument(document: ComplianceDocument): P
     // 3. Process each section
     for (const section of sections) {
       // Generate embedding
-      const embeddingResponse = await openai.embeddings.create({
+      const embeddingResponse = await openai!.embeddings.create({
         model: 'text-embedding-ada-002',
         input: section.content,
       });

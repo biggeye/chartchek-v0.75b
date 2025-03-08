@@ -1,11 +1,9 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import OpenAI from "openai"
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error: openaiError } = useOpenAI();
 
 export async function POST(request: NextRequest): Promise<Response> {
   const supabase = await createServer();
@@ -22,6 +20,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
 
   try {
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not initialized');
+    }
+    
     console.log('[/API/THREADS] Creating new thread for user:', user.id);
     const response = await openai.beta.threads.create();  
     const threadId = response.id;

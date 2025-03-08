@@ -1,9 +1,8 @@
-import OpenAI from "openai";
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
 import { createServer } from '@/utils/supabase/server';
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function POST(req: Request) {
   const supabase = await createServer();
@@ -11,7 +10,7 @@ export async function POST(req: Request) {
   const { fileId, name, expires_after, chunking_strategy, metadata } = await req.json();
 
   try {
-    const vectorStore = await openai.beta.vectorStores.create({
+    const vectorStore = await openai!.beta.vectorStores.create({
       file_ids: fileId ? [fileId] : undefined,
       name,
       expires_after,
@@ -64,7 +63,7 @@ export async function GET(req: Request) {
     const before = searchParams.get('before');
 
     // List vector stores using OpenAI's API
-    const vectorStores = await openai.beta.vectorStores.list({
+    const vectorStores = await openai!.beta.vectorStores.list({
     });
 
     return new Response(JSON.stringify(vectorStores), {

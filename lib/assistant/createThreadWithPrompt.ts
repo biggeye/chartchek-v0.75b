@@ -1,20 +1,17 @@
 // lib/assistant/createThreadWithPrompt.ts
-import { createClient } from "@/utils/supabase/client";
-import OpenAI from "openai";
+'use server'
+
+import { createServer } from "@/utils/supabase/server";
+import { useOpenAI } from "../contexts/OpenAIProvider";
 import { ChatMessageAttachment } from "@/types/database";
 
-const supabase = createClient();
+const supabase = await createServer();
 
 const getUserId = async (): Promise<string> => {
   const { data } = await supabase.auth.getUser();
   return data?.user?.id || 'anonymous';
 };
 
-// Initialize the OpenAI client
-const openai = new OpenAI({
-  dangerouslyAllowBrowser: true,
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
 
 interface CreateThreadWithPromptOptions {
   assistantId: string;
@@ -45,8 +42,11 @@ export async function createThreadWithPrompt(options: CreateThreadWithPromptOpti
   };
 
   try {
+    // Get the OpenAI instance
+    const { openai, isLoading, error } = useOpenAI();
+    
     // Create a thread directly using the OpenAI SDK
-    const thread = await openai.beta.threads.create();
+    const thread = await openai!.beta.threads.create();
     const threadId = thread.id;
     
     if (!threadId) {
@@ -60,14 +60,14 @@ export async function createThreadWithPrompt(options: CreateThreadWithPromptOpti
     const file_ids = attachments.map(attachment => attachment.file_id);
     
     // Add a message to the thread with the formatted content
-    await openai.beta.threads.messages.create(threadId, {
+    await openai!.beta.threads.messages.create(threadId, {
       role: "user",
       content: messageContent,
       attachments: file_ids.length > 0 ? file_ids.map(id => ({ file_id: id })) : undefined
     });
     
     // Create a run on the thread
-    const run = await openai.beta.threads.runs.create(threadId, {
+    const run = await openai!.beta.threads.runs.create(threadId, {
       assistant_id: assistantId,
       additional_instructions: JSON.stringify(patientContext)
     });
@@ -76,7 +76,7 @@ export async function createThreadWithPrompt(options: CreateThreadWithPromptOpti
     const userId = await getUserId();
     
     // Save to database
-    const { data, error } = await supabase
+    const { data, data: dataError } = await supabase
       .from('chat_threads')
       .insert({
         user_id: userId,
@@ -94,13 +94,13 @@ export async function createThreadWithPrompt(options: CreateThreadWithPromptOpti
       .select()
       .single();
       
-    if (error) {
+    if (dataError) {
       console.error('Error saving thread to database:', error);
     }
     
     return threadId;
-  } catch (error) {
-    console.error('Error creating thread with prompt:', error);
-    throw error;
+  } catch (dataError) {
+    console.error('Error creating thread with prompt:', dataError);
+    throw dataError;
   }
 }

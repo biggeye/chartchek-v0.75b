@@ -10,12 +10,12 @@ import { mdxFromMarkdown } from 'mdast-util-mdx'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import { toString } from 'mdast-util-to-string'
 import { mdxjs } from 'micromark-extension-mdxjs'
-import { OpenAI } from 'openai'
 import { basename, dirname, join } from 'path'
 import { u } from 'unist-builder'
 import { filter } from 'unist-util-filter'
 import { inspect } from 'util'
 import yargs from 'yargs'
+import { useOpenAI } from '../contexts/OpenAIProvider'
 
 dotenv.config()
 
@@ -329,9 +329,7 @@ async function generateEmbeddings() {
     console.log('Refresh flag set, re-generating all pages')
   }
 
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY,
-  });
+  const { openai, isLoading, error } = useOpenAI()
 
   for (const embeddingSource of embeddingSources) {
     const { type, source, path, parentPath } = embeddingSource
@@ -440,7 +438,7 @@ async function generateEmbeddings() {
         const input = content.replace(/\n/g, ' ')
 
         try {
-          const embeddingResponse = await openai.embeddings.create({
+          const embeddingResponse = await openai!.embeddings.create({
             model: 'text-embedding-ada-002',
             input,
           });

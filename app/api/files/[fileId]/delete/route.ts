@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 
 export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,10 +10,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Missing vector_store_id or file_id' }, { status: 400 });
   }
 
-  const openai = new OpenAI();
+  const { openai, isLoading, error } = useOpenAI()
 
   try {
-    const deletedVectorStoreFile = await openai.beta.vectorStores.files.del(vector_store_id, file_id);
+    const deletedVectorStoreFile = await openai!.beta.vectorStores.files.del(vector_store_id, file_id);
     return NextResponse.json(deletedVectorStoreFile, { status: 200 });
   } catch (error) {
     console.error('Error deleting vector store file:', error);

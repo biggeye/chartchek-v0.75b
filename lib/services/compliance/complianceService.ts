@@ -1,6 +1,6 @@
 // lib/services/compliance/complianceService.ts
 import { createClient as createSupabaseClient } from '@/utils/supabase/client';
-import { createClient } from '@supabase/supabase-js';
+
 import { OpenAI } from 'openai';
 import { processComplianceDocument, processComplianceDocumentsBatch } from './complianceDataProcessor';
 import { queryComplianceDatabase } from './complianceQueryService';
@@ -40,10 +40,7 @@ const getClientSideClient = () => {
 
 // Get client for server context (using service role key)
 const getServerSideClient = () => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  return createSupabaseClient();
 };
 
 /**

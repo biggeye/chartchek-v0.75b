@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import OpenAI from 'openai';
+import { useOpenAI } from '@/lib/contexts/OpenAIProvider'
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
+const { openai, isLoading, error } = useOpenAI()
+  
 
 export async function DELETE(request: NextRequest) {
   const { pathname } = new URL(request.url);
@@ -34,7 +33,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete message using OpenAI's API
-    const deletedMessage = await openai.beta.threads.messages.del(threadId, messageId);
+    const deletedMessage = await openai!.beta.threads.messages.del(threadId, messageId);
 
     return NextResponse.json(deletedMessage);
   } catch (error) {
