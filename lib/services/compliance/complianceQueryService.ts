@@ -78,7 +78,7 @@ export async function queryComplianceDatabase(
       });
       
     if (resultsError) {
-      console.error('Error querying compliance database:', error);
+      console.error('Error querying compliance database:', Error);
       return [];
     }
     

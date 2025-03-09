@@ -1,7 +1,6 @@
 // app/api/threads/[threadId]/run/stream/route.ts
 import { createServer } from "@/utils/supabase/server";
-import { getOpenAIClient } from '@/utils/openai/server'
-;
+import { getOpenAIClient, OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
 import { NextRequest } from 'next/server';
 import { Run } from "@/types/api/openai";
 
@@ -42,7 +41,11 @@ export async function POST(
 
   try {
     const body = await req.json();
-    const assistant_id: string = body.assistant_id;
+    const assistant_id: string = body.assistant_id || OPENAI_ASSISTANT_ID;
+
+    if (!assistant_id) {
+      throw new Error('No assistant ID provided and no default assistant configured');
+    }
 
     console.log(`[API] Starting stream request to thread ${threadId} with assistantId ${assistant_id}`);
     const metadata = await supabase
@@ -241,23 +244,34 @@ export async function POST(
 
           // On stream end, send the final message content
           runStream.on('end', async () => {
-            controller.enqueue(`data: ${JSON.stringify({
-              type: 'messageCompleted',
-              data: { content: lastCuratedContent },
-            })}\n\n`);
-            
-            controller.close();
+            if (controller) {
+              try {
+                controller.enqueue(`data: ${JSON.stringify({
+                  type: 'messageCompleted',
+                  data: { content: lastCuratedContent },
+                })}\n\n`);
+              } catch (error) {
+                // Controller might be closed already, ignore the error
+                console.log('[API] Controller already closed on end event');
+              }
+            }
           });
 
           // On error, emit an error event and close the stream
           runStream.on('error', async (error: any) => {
             console.error('[API] Stream error:', error);
-            controller.enqueue(`data: ${JSON.stringify({
-              type: 'error',
-              data: { message: error.message || 'Unknown error' },
-            })}\n\n`);
-            
-            controller.close();
+            if (controller) {
+              try {
+                controller.enqueue(`data: ${JSON.stringify({
+                  type: 'error',
+                  data: { message: error.message || 'Unknown error' },
+                })}\n\n`);
+              } catch (enqueueError) {
+                console.log('[API] Controller already closed on error event');
+              } finally {
+                controller.close();
+              }
+            }
           });
         } catch (error: any) {
           console.error('[API] Error in stream:', error);

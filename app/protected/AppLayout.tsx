@@ -41,8 +41,8 @@ import { ThreadList } from '@/components/chat/ThreadList';
 import Link from 'next/link';
 import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput';
 import { cn } from '@/lib/utils';
-
-
+import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
+import { useNewStreamingStore } from '@/store/newStreamStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -69,8 +69,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
 
   // Navigation items
   const navigation = [
-    { name: 'Compliance', href: '/protected/compliance', icon: ShieldCheckIcon },
-    { name: 'Accounts & Billing', href: '/protected/billing', icon: CreditCardIcon },
+    { name: 'Chat', href: '/protected/chat', icon: ChatBubbleBottomCenterIcon },
     { name: 'Documents', href: '/protected/documents', icon: DocumentDuplicateIcon },
     { name: 'Facilities', href: '/protected/facilities', icon: BuildingOffice2Icon },
   ].map(item => ({
@@ -141,7 +140,12 @@ ${content}`;
       }));
 
       // Send the message with JSON formatted content and proper attachment objects
-      await sendMessage(assistantId, threadId, formattedContent, formattedAttachments);
+      const result = await sendMessage(assistantId, threadId, formattedContent, formattedAttachments);
+      
+      // Start streaming the response to capture run data
+      if (result.success) {
+        await useNewStreamingStore.getState().startStream(threadId, assistantId);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -165,6 +169,7 @@ ${content}`;
 
       // Set chat input visibility based on route
       setIsChatInputVisible(
+        pathname.includes('/chat') ||
         pathname.includes('/compliance') ||
         pathname.includes('/billing') ||
         (pathname.includes('/facilities') && pathname.includes('/patients/'))
@@ -178,7 +183,9 @@ ${content}`;
 
   // Determine sidebar content based on current route
   let asideContent = null;
-  if (pathname === '/protected/compliance') {
+  if (pathname === '/protected/chat') {
+    asideContent = <ThreadList assistantId="asst_9RqcRDt3vKUEFiQeA0HfLC08" />;
+  } else if (pathname === '/protected/compliance') {
     asideContent = <ThreadList assistantId="asst_9RqcRDt3vKUEFiQeA0HfLC08" />;
   } else if (pathname === '/protected/billing') {
     asideContent = <ThreadList assistantId="asst_7rzhAUWAamYufZJjZeKYkX1t" />;

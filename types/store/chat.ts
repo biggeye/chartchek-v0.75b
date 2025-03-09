@@ -56,6 +56,7 @@ export interface ChatStoreState {
   isLoading: boolean;
   error: string | null;
   activeRunStatus: RunStatusResponse | null;
+  currentAssistantId: string | null;
 
   // --- THREAD MANAGEMENT ---
   createThread: (assistantId: string) => Promise<string>;

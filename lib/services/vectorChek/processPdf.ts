@@ -1,6 +1,6 @@
 // lib/services/processPdf.ts
 import { createServer } from '@/utils/supabase/server';
-import { useOpenAI } from '@/lib/contexts/OpenAIProvider';
+import { getOpenAIClient } from '@/utils/openai/server';
 import { Document } from '@/types/store/document';
 import { extractTextFromPdf } from './pdfTextExtractor'; // You'll need to implement this
 
@@ -9,7 +9,7 @@ export async function processPdfForEmbeddings(document: Document): Promise<boole
     // Initialize clients
     const supabase = await createServer();
     
-    const openai = getOpenAIClient()
+    const openai = getOpenAIClient();
 
 
     

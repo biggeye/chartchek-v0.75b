@@ -39,8 +39,10 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
     // Action: Finalize message (move from stream state to your static chat store)
     finalizeMessage: () => {
         const threadId = chatStore.getState().currentThread?.thread_id;
-      chatStore.getState().fetchOpenAIMessages(threadId!);
-      set({ isStreamingActive: false });
+        if (threadId) {
+            chatStore.getState().fetchOpenAIMessages(threadId);
+        }
+        set({ isStreamingActive: false });
     },
 
     startStream: async (threadId: string, assistantId: string) => {
@@ -115,27 +117,23 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
                                   get().setStreamContent(event.data.content[0].text.value);
                                 } else {
                                   console.warn("thread.message.created event is missing expected content structure:", event.data);
-                                  // Optionally, set a default or handle the error gracefully.
                                   get().setStreamContent("No content available");
                                 }
                                 break;
                               
                             case 'messageDelta':
                             case 'thread.message.delta':
-                                // Append incremental updates to current content
-                                if (event.data?.delta?.content) {
+                                if (event.data?.delta?.content?.[0]?.text?.value) {
                                     get().appendStreamContent(event.data.delta.content[0].text.value);
                                 }
                                 break;
                             case 'messageCompleted':
                             case 'thread.message.completed':
-                                // Append any final delta and then finalize the message
-                                if (event.data?.delta?.content) {
+                                if (event.data?.delta?.content?.[0]?.text?.value) {
                                     get().appendStreamContent(event.data.delta.content[0].text.value);
                                 }
                                 get().finalizeMessage();
                                 break;
-                            // Add additional event types (like run events) as needed:
                             case 'thread.run.created':
                             case 'thread.run.in_progress':
                             case 'thread.run.completed':
@@ -147,14 +145,21 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
                                 console.log(`[streamingStore] Run event received: ${event.type}`, event.data);
                                 break;
                             case 'error':
-                                console.error('[streamingStore] Error event:', event.data);
-                                set({ streamError: event.data });
+                                if (event.data && typeof event.data === 'object') {
+                                    const errorMessage = event.data.message || JSON.stringify(event.data);
+                                    console.error('[streamingStore] Error event:', errorMessage);
+                                    set({ streamError: errorMessage });
+                                } else {
+                                    console.error('[streamingStore] Error event:', event.data);
+                                    set({ streamError: String(event.data) });
+                                }
                                 break;
                             default:
                                 console.warn('[streamingStore] Unhandled event type:', event.type, event.data);
                         }
                     } catch (err) {
                         console.error('[streamingStore] Error parsing event JSON:', err, 'Line:', jsonStr);
+                        set({ streamError: err instanceof Error ? err.message : String(err) });
                     }
                 }
             }
@@ -166,7 +171,6 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
             set({ isStreamingActive: false, abortController: null });
         }
     },
-
 }));
 
 export const useNewStreamingStore = newStreamingStore;

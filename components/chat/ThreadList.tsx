@@ -17,23 +17,34 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     error,
     isLoading,
     updateThreadTitle,
+    fetchOpenAIMessages
   } = chatStore()
 
   const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isThreadLoading, setIsThreadLoading] = useState<string | null>(null)
 
   const toggleEditMode = () => {
     setIsEditing(!isEditing)
   }
 
-
   useEffect(() => {
     fetchHistoricalThreads()
   }, [assistantId])
 
-  const handleThreadChange = (threadId: string) => {
-    const selectedThread = historicalThreads.find((t: Thread) => t.thread_id === threadId)
-    if (selectedThread) {
-      setCurrentThread(selectedThread);
+  const handleThreadChange = async (threadId: string) => {
+    try {
+      setIsThreadLoading(threadId)
+      const selectedThread = historicalThreads.find((t: Thread) => t.thread_id === threadId)
+      if (selectedThread) {
+        setCurrentThread(selectedThread)
+        // Fetch messages after setting the thread
+        await fetchOpenAIMessages(threadId)
+      }
+    } catch (error) {
+      console.error('Error changing thread:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load thread messages')
+    } finally {
+      setIsThreadLoading(null)
     }
   }
 
@@ -49,6 +60,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
         await fetchHistoricalThreads()
       } catch (error) {
         console.error('Rename thread error:', error)
+        setError(error instanceof Error ? error.message : 'Failed to rename thread')
       }
     }
   }
@@ -58,20 +70,30 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
       await deleteThread(threadId)
     } catch (error) {
       console.error('Delete thread error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to delete thread')
     }
   }
 
-  const handleAddThread = () => {
-    // Ensure assistantId is provided, otherwise use a default ID or show an error
+  const handleAddThread = async () => {
     if (!assistantId) {
-      setError('No assistant ID provided for new thread creation');
-      return;
+      setError('No assistant ID provided for new thread creation')
+      return
     }
-    createThread(assistantId)
+    try {
+      await createThread(assistantId)
+    } catch (error) {
+      console.error('Create thread error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create thread')
+    }
   }
 
-  const handleRefreshThreads = () => {
-      fetchHistoricalThreads()
+  const handleRefreshThreads = async () => {
+    try {
+      await fetchHistoricalThreads()
+    } catch (error) {
+      console.error('Refresh threads error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to refresh threads')
+    }
   }
 
   if (isLoading) {
@@ -81,14 +103,15 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
       </div>
     )
   }
-  if (error) return <div className="p-4 text-red-500">Error loading threads: {error}</div>
-  if (!isLoading && historicalThreads.length === 0)
-    return <div className="p-4 text-gray-500">No conversations found</div>
 
   return (
     <div>
-      <div className="top-2flex space-x-2">
-        <button onClick={handleAddThread} className="add-thread-button">
+      <div className="top-2 flex space-x-2">
+        <button 
+          onClick={handleAddThread} 
+          className="add-thread-button"
+          disabled={!assistantId}
+        >
           <PlusIcon className="icon" />
         </button>
         <button onClick={handleRefreshThreads} className="refresh-thread-button">
@@ -105,42 +128,63 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
             {isEditing ? 'CANCEL' : 'EDIT'}
           </button>
         </div>
-        <ul className="max-h-full overflow-y-auto divide-y divide-gray-200">
-          {historicalThreads.map((thread: Thread) => (
-            <li
-              key={thread.thread_id}
-              onClick={() => handleThreadChange(thread.thread_id)}
-              className={`thread-item ${
-                currentThread && currentThread.thread_id === thread.thread_id
-                  ? 'bg-accent'
-                  : ''
-              } p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out`}
-            >
-              <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-900 truncate">
-                    {thread.title || 'Untitled'}
-                  </span>
-                {isEditing && (
-                  <div className="flex space-x-2">
-                    <button
-                      className="text-xs text-blue-500"
-                      onClick={() => renameThread(thread.thread_id)}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      className="text-xs text-red-500"
-                      onClick={() => handleDeleteThread(thread.thread_id)}
-                    >
-                      Delete
-                    </button>
+        {error && (
+          <div className="p-2 text-sm text-red-600 bg-red-50 rounded">
+            {error}
+          </div>
+        )}
+        {!isLoading && historicalThreads.length === 0 ? (
+          <div className="p-4 text-gray-500">No conversations found</div>
+        ) : (
+          <ul className="max-h-full overflow-y-auto divide-y divide-gray-200">
+            {historicalThreads.map((thread: Thread) => (
+              <li
+                key={thread.thread_id}
+                onClick={() => !isThreadLoading && handleThreadChange(thread.thread_id)}
+                className={`thread-item ${
+                  currentThread && currentThread.thread_id === thread.thread_id
+                    ? 'bg-accent'
+                    : ''
+                } ${
+                  isThreadLoading === thread.thread_id ? 'opacity-50' : ''
+                } p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {isThreadLoading === thread.thread_id && (
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                    )}
+                    <span className="text-sm text-gray-900 truncate">
+                      {thread.title || 'Untitled'}
+                    </span>
                   </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-        {error && <div className="text-red-500">{error}</div>}
+                  {isEditing && (
+                    <div className="flex space-x-2">
+                      <button
+                        className="text-xs text-blue-500 hover:text-blue-700"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          renameThread(thread.thread_id)
+                        }}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        className="text-xs text-red-500 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteThread(thread.thread_id)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   )
