@@ -16,6 +16,7 @@ const initializeOpenAI = () => {
   }
 };
 
+// Initialize the OpenAI client once when the module loads
 const openai = initializeOpenAI();
 
 export async function POST(req: NextRequest) {
@@ -126,8 +127,19 @@ export async function GET(
   { params }: { params: { threadId: string } }
 ) {
   try {
-    const openai = await getOpenAIClient();
-    if (!openai) {
+    // Try to get the OpenAI client, but handle the error gracefully
+    let openaiClient;
+    try {
+      openaiClient = getOpenAIClient();
+    } catch (error) {
+      console.error('[messages:GET] OpenAI client initialization failed:', error);
+      return NextResponse.json(
+        { error: 'OpenAI service unavailable. Please check your API key configuration.' },
+        { status: 503 }
+      );
+    }
+
+    if (!openaiClient) {
       return NextResponse.json(
         { error: 'OpenAI client not initialized' },
         { status: 500 }
@@ -143,7 +155,7 @@ export async function GET(
     }
 
     try {
-      const messages = await openai.beta.threads.messages.list(threadId);
+      const messages = await openaiClient.beta.threads.messages.list(threadId);
       return NextResponse.json({
         data: messages.data,
         has_more: messages.has_more,

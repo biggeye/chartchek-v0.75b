@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils'
 import * as Headless from '@headlessui/react'
 import { Button } from '@/components/ui/button'
 import { assistantRoster } from '@/lib/assistant/roster'
+import DropdownMenu from '@/components/dropdown-menu'
+import Image from 'next/image'
 
 type PatientBasicInfo = {
   casefile_id?: string
@@ -309,6 +311,29 @@ export function GlobalChatInputArea() {
     setCurrentAssistantId(assistantId);
   };
 
+  // Create dropdown items for the assistant selector
+  const assistantDropdownItems = assistantRoster.map(assistant => ({
+    label: assistant.name,
+    onClick: () => handleAssistantChange(assistant.key)
+  }));
+
+  // Get the current assistant object
+  const currentAssistant = assistantRoster.find(a => a.key === selectedAssistantKey);
+
+  // Get the logo path based on the selected assistant
+  const getAssistantLogoPath = (key: string): string | null => {
+    switch (key) {
+      case 'tjc':
+        return '/ext-logos/tjc-logo.jpg';
+      case 'dhcs':
+        return '/ext-logos/dhcs-logo.png';
+      default:
+        return null;
+    }
+  };
+
+  const assistantLogoPath = getAssistantLogoPath(selectedAssistantKey);
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-10 lg:pl-72">
       <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
@@ -316,21 +341,27 @@ export function GlobalChatInputArea() {
           {/* Assistant Selector */}
           <div className="flex items-center justify-between px-4 py-2 border-b bg-gradient-to-r from-gray-50/5 to-gray-100/10 rounded-t-lg">
             <div className="flex items-center space-x-2">
-              <ChatBubbleBottomCenterIcon className="h-5 w-5 text-muted-foreground" />
-              <select
-                value={selectedAssistantKey}
-                onChange={(e) => handleAssistantChange(e.target.value)}
-                className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
-              >
-                {assistantRoster.map((assistant) => (
-                  <option key={assistant.key} value={assistant.key}>
-                    {assistant.name}
-                  </option>
-                ))}
-              </select>
+              {assistantLogoPath ? (
+                <div className="h-5 w-5 relative">
+                  <Image 
+                    src={assistantLogoPath} 
+                    alt={`${currentAssistant?.name} logo`} 
+                    width={20} 
+                    height={20} 
+                    className="object-contain"
+                  />
+                </div>
+              ) : (
+                <ChatBubbleBottomCenterIcon className="h-5 w-5 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium">{currentAssistant?.name}</span>
+              <DropdownMenu 
+                items={assistantDropdownItems} 
+                triggerIcon={<ChevronDownIcon className="h-4 w-4 text-muted-foreground" />}
+              />
             </div>
             <span className="text-xs text-muted-foreground">
-              {assistantRoster.find(a => a.key === selectedAssistantKey)?.instructions.substring(0, 60)}...
+              {currentAssistant?.instructions.substring(0, 60)}...
             </span>
           </div>
 

@@ -6,8 +6,19 @@ export async function PATCH(
   { params }: { params: { threadId: string } }
 ) {
   try {
-    const openai = await getOpenAIClient();
-    if (!openai) {
+    // Try to get the OpenAI client, but handle the error gracefully
+    let openaiClient;
+    try {
+      openaiClient = getOpenAIClient();
+    } catch (error) {
+      console.error('[metadata:PATCH] OpenAI client initialization failed:', error);
+      return NextResponse.json(
+        { error: 'OpenAI service unavailable. Please check your API key configuration.' },
+        { status: 503 }
+      );
+    }
+
+    if (!openaiClient) {
       return NextResponse.json(
         { error: 'OpenAI client not initialized' },
         { status: 500 }
@@ -33,7 +44,7 @@ export async function PATCH(
     }
 
     try {
-      const updatedThread = await openai.beta.threads.update(
+      const updatedThread = await openaiClient.beta.threads.update(
         threadId,
         { metadata }
       );

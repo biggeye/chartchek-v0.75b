@@ -9,6 +9,8 @@ import { useNewStreamingStore } from '@/store/newStreamStore';
 import { ChatMessageAttachment } from '@/types/database';
 import { SendMessageResult } from '@/types/store/chat';
 import { XCircleIcon } from '@heroicons/react/24/outline';
+import { assistantRoster } from '@/lib/assistant/roster';
+import Image from 'next/image';
 
 interface ChatProps {
   assistantId: string;
@@ -28,6 +30,34 @@ export default function Chat({ assistantId }: ChatProps) {
   const [localError, setLocalError] = useState<string | null>(null);
 
   const threadId = currentThread?.thread_id;
+
+  // Get the current assistant key based on the assistantId
+  const getCurrentAssistantKey = (id: string): string => {
+    switch (id) {
+      case "asst_9RqcRDt3vKUEFiQeA0HfLC08":
+        return "default";
+      case "asst_7rzhAUWAamYufZJjZeKYkX1t":
+        return "tjc";
+      default:
+        return "default";
+    }
+  };
+
+  // Get the logo path based on the assistant key
+  const getAssistantLogoPath = (key: string): string | null => {
+    switch (key) {
+      case 'tjc':
+        return '/ext-logos/tjc-logo.jpg';
+      case 'dhcs':
+        return '/ext-logos/dhcs-logo.png';
+      default:
+        return null;
+    }
+  };
+
+  const assistantKey = getCurrentAssistantKey(assistantId);
+  const assistantLogoPath = getAssistantLogoPath(assistantKey);
+  const currentAssistant = assistantRoster.find(a => a.key === assistantKey);
 
   useEffect(() => {
     setCurrentAssistantId(assistantId);
@@ -144,6 +174,24 @@ ${content}`;
   return (
     <div className="relative flex flex-col h-full max-h-[calc(100vh-1rem)] overflow-hidden">
       <RunStatusIndicator onCancel={handleCancelRun} />
+
+      {/* Assistant Logo in top-right corner */}
+      {assistantLogoPath && (
+        <div className="absolute top-2 right-4 z-20">
+          <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-md px-2 py-1 shadow-sm">
+            {currentAssistant && (
+              <span className="text-xs font-medium text-gray-700">{currentAssistant.name}</span>
+            )}
+            <Image 
+              src={assistantLogoPath} 
+              alt={`${currentAssistant?.name || 'Assistant'} logo`} 
+              width={24} 
+              height={24} 
+              className="object-contain"
+            />
+          </div>
+        </div>
+      )}
 
       {(localError || streamError) && (
         <div

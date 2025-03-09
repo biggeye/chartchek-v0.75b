@@ -6,8 +6,19 @@ export async function GET(
   { params }: { params: { threadId: string } }
 ) {
   try {
-    const openai = await getOpenAIClient();
-    if (!openai) {
+    // Try to get the OpenAI client, but handle the error gracefully
+    let openaiClient;
+    try {
+      openaiClient = getOpenAIClient();
+    } catch (error) {
+      console.error('[run/check:GET] OpenAI client initialization failed:', error);
+      return NextResponse.json(
+        { error: 'OpenAI service unavailable. Please check your API key configuration.' },
+        { status: 503 }
+      );
+    }
+
+    if (!openaiClient) {
       return NextResponse.json(
         { error: 'OpenAI client not initialized' },
         { status: 500 }
@@ -24,7 +35,7 @@ export async function GET(
 
     try {
       // Get the latest run for this thread
-      const runs = await openai.beta.threads.runs.list(threadId);
+      const runs = await openaiClient.beta.threads.runs.list(threadId);
       
       if (!runs.data || runs.data.length === 0) {
         return NextResponse.json(

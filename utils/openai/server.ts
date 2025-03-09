@@ -8,12 +8,13 @@ export const OPENAI_ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID;
 
 export function getOpenAIClient() {
   if (!openaiInstance) {
-    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
-      throw new Error('NEXT_PUBLIC_OPENAI_API_KEY is not defined');
+    // Use OPENAI_API_KEY (server-side) instead of NEXT_PUBLIC_OPENAI_API_KEY
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not defined');
     }
     
     openaiInstance = new OpenAI({
-      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
   

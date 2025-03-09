@@ -24,9 +24,9 @@ export const maxDuration = 60;
  */
 export async function POST(
   req: NextRequest, 
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: { threadId: string } }
 ) {
-  const { threadId } = await params;
+  const { threadId } = params;
   const supabase = await createServer();
 
   // Authenticate user

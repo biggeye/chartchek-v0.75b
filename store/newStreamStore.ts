@@ -74,6 +74,7 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
+            let buffer = ''; // Buffer to handle incomplete JSON chunks
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -82,84 +83,105 @@ const newStreamingStore = create<NewStreamingState>((set, get) => ({
                     break;
                 }
                 const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
 
-                // Split into individual SSE lines
-                const lines = chunk.split('\n').filter(line => line.trim() !== '');
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (!trimmedLine.startsWith('data:')) {
-                        continue; // Skip non-data lines
-                    }
-                    const jsonStr = trimmedLine.slice(5).trim();
+                // Process complete SSE messages from the buffer
+                const messages = buffer.split('\n\n');
+                // Keep the last item which might be incomplete
+                buffer = messages.pop() || '';
 
-                    if (jsonStr === '[DONE]') {
-                        console.log('[streamingStore] Received DONE signal');
-                        // Finalize the message when the stream is done
-                        get().finalizeMessage();
-                        // Close the stream (using the reader/controller, not the abort controller)
-                        break;
-                    }
-
-                    try {
-                        const event = JSON.parse(jsonStr);
-
-                        // Handle events based on their type:
-                        switch (event.type) {
-                            case 'textCreated':
-                            case 'thread.message.created':
-                                if (
-                                  event.data &&
-                                  Array.isArray(event.data.content) &&
-                                  event.data.content.length > 0 &&
-                                  event.data.content[0].text &&
-                                  typeof event.data.content[0].text.value === 'string'
-                                ) {
-                                  get().setStreamContent(event.data.content[0].text.value);
-                                } else {
-                                  console.warn("thread.message.created event is missing expected content structure:", event.data);
-                                  get().setStreamContent("No content available");
-                                }
-                                break;
-                              
-                            case 'messageDelta':
-                            case 'thread.message.delta':
-                                if (event.data?.delta?.content?.[0]?.text?.value) {
-                                    get().appendStreamContent(event.data.delta.content[0].text.value);
-                                }
-                                break;
-                            case 'messageCompleted':
-                            case 'thread.message.completed':
-                                if (event.data?.delta?.content?.[0]?.text?.value) {
-                                    get().appendStreamContent(event.data.delta.content[0].text.value);
-                                }
-                                get().finalizeMessage();
-                                break;
-                            case 'thread.run.created':
-                            case 'thread.run.in_progress':
-                            case 'thread.run.completed':
-                            case 'thread.run.failed':
-                            case 'thread.run.cancelled':
-                                if (event.data?.id) {
-                                    set({ currentRunId: event.data.id });
-                                }
-                                console.log(`[streamingStore] Run event received: ${event.type}`, event.data);
-                                break;
-                            case 'error':
-                                if (event.data && typeof event.data === 'object') {
-                                    const errorMessage = event.data.message || JSON.stringify(event.data);
-                                    console.error('[streamingStore] Error event:', errorMessage);
-                                    set({ streamError: errorMessage });
-                                } else {
-                                    console.error('[streamingStore] Error event:', event.data);
-                                    set({ streamError: String(event.data) });
-                                }
-                                break;
-                            default:
-                                console.warn('[streamingStore] Unhandled event type:', event.type, event.data);
+                for (const message of messages) {
+                    const lines = message.split('\n').filter(line => line.trim() !== '');
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine.startsWith('data:')) {
+                            continue; // Skip non-data lines
                         }
-                    } catch (err) {
-                        console.error('[streamingStore] Error parsing event JSON:', err, 'Line:', jsonStr);
-                        set({ streamError: err instanceof Error ? err.message : String(err) });
+                        const jsonStr = trimmedLine.slice(5).trim();
+
+                        if (jsonStr === '[DONE]') {
+                            console.log('[streamingStore] Received DONE signal');
+                            // Finalize the message when the stream is done
+                            get().finalizeMessage();
+                            // Close the stream (using the reader/controller, not the abort controller)
+                            break;
+                        }
+
+                        try {
+                            const event = JSON.parse(jsonStr);
+
+                            // Handle events based on their type:
+                            switch (event.type) {
+                                case 'textCreated':
+                                case 'thread.message.created':
+                                    if (
+                                      event.data &&
+                                      Array.isArray(event.data.content) &&
+                                      event.data.content.length > 0 &&
+                                      event.data.content[0].text &&
+                                      typeof event.data.content[0].text.value === 'string'
+                                    ) {
+                                      get().setStreamContent(event.data.content[0].text.value);
+                                    } else if (
+                                      event.data &&
+                                      event.data.content &&
+                                      typeof event.data.content === 'string'
+                                    ) {
+                                      // Handle case where content is a direct string
+                                      get().setStreamContent(event.data.content);
+                                    } else {
+                                      console.warn("thread.message.created event is missing expected content structure:", event.data);
+                                      get().setStreamContent("No content available");
+                                    }
+                                    break;
+                                  
+                                case 'messageDelta':
+                                case 'thread.message.delta':
+                                    if (event.data?.delta?.content?.[0]?.text?.value) {
+                                        get().appendStreamContent(event.data.delta.content[0].text.value);
+                                    } else if (event.data?.delta?.content && typeof event.data.delta.content === 'string') {
+                                        // Handle case where delta content is a direct string
+                                        get().appendStreamContent(event.data.delta.content);
+                                    }
+                                    break;
+                                case 'messageCompleted':
+                                case 'thread.message.completed':
+                                    if (event.data?.delta?.content?.[0]?.text?.value) {
+                                        get().appendStreamContent(event.data.delta.content[0].text.value);
+                                    } else if (event.data?.content && typeof event.data.content === 'string') {
+                                        // Handle case where content is a direct string
+                                        get().appendStreamContent(event.data.content);
+                                    }
+                                    get().finalizeMessage();
+                                    break;
+                                case 'thread.run.created':
+                                case 'thread.run.in_progress':
+                                case 'thread.run.completed':
+                                case 'thread.run.failed':
+                                case 'thread.run.cancelled':
+                                    if (event.data?.id) {
+                                        set({ currentRunId: event.data.id });
+                                    }
+                                    console.log(`[streamingStore] Run event received: ${event.type}`, event.data);
+                                    break;
+                                case 'error':
+                                    if (event.data && typeof event.data === 'object') {
+                                        const errorMessage = event.data.message || JSON.stringify(event.data);
+                                        console.error('[streamingStore] Error event:', errorMessage);
+                                        set({ streamError: errorMessage });
+                                    } else {
+                                        console.error('[streamingStore] Error event:', event.data);
+                                        set({ streamError: String(event.data) });
+                                    }
+                                    break;
+                                default:
+                                    console.warn('[streamingStore] Unhandled event type:', event.type, event.data);
+                            }
+                        } catch (err) {
+                            console.error('[streamingStore] Error parsing event JSON:', err, 'Line:', jsonStr);
+                            // Don't set stream error for parse errors, just log them
+                            // This prevents the UI from showing errors for transient parsing issues
+                        }
                     }
                 }
             }

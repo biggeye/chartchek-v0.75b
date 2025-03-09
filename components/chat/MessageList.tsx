@@ -7,6 +7,8 @@ import { chatStore } from '@/store/chatStore'
 import MessageContent from './MessageContent'
 import { MessageContent as MessageContentType } from '@/types/api/openai'
 import DynamicForm from '@/components/dynamicForms/DynamicForm'
+import { renderContent as renderFormattedContent } from '@/lib/chat/renderServices'
+import { ChatMessageAnnotation } from '@/types/database'
 
 interface MessageListProps {
   isAssistantLoading?: boolean
@@ -39,7 +41,7 @@ const getErrorMessage = (error: unknown): string => {
   return 'Unknown error occurred';
 };
 
-// Helper function to safely render content
+// Helper function to safely parse content
 const renderContent = (content: any): string => {
   if (typeof content === 'string') {
     return content;
@@ -51,6 +53,15 @@ const renderContent = (content: any): string => {
     return JSON.stringify(content);
   }
   return String(content || '');
+};
+
+// Helper function that combines both renderContent functions
+const renderMessageContent = (content: any, annotations: ChatMessageAnnotation[] = []): React.ReactNode => {
+  // First, safely parse the content using the inline renderContent
+  const parsedContent = renderContent(content);
+  
+  // Then, apply the enhanced formatting using the external renderFormattedContent
+  return renderFormattedContent(parsedContent, annotations);
 };
 
 export const MessageList = React.memo(({ 
@@ -122,7 +133,7 @@ export const MessageList = React.memo(({
     []
 
   return (
-    <ScrollArea className="h-100vh w-full overflow-y-auto">
+    <ScrollArea className="h-100vh w-full overflow-y-auto mb-20">
       <div className="flex flex-col gap-4 p-4 pb-24">
         {messages.length === 0 && !isStreamingActive && !isAssistantLoading && (
           <div className="text-center text-muted-foreground py-8">
@@ -147,7 +158,9 @@ export const MessageList = React.memo(({
                   message.content.map((content, i) => (
                     <React.Fragment key={`${message.id || id}-content-${i}`}>
                       {content.type === 'text' && content.text && (
-                        <div>{renderContent(content.text.value)}</div>
+                        <div>
+                          {renderMessageContent(content.text.value, content.text.annotations || [])}
+                        </div>
                       )}
                       {content.type === 'image_file' && content.image_file && (
                         <div>
@@ -161,7 +174,7 @@ export const MessageList = React.memo(({
                     </React.Fragment>
                   ))
                 ) : (
-                  <div>{renderContent(message.content)}</div>
+                  <div>{renderMessageContent(message.content)}</div>
                 )}
               </div>
             </div>
@@ -180,7 +193,7 @@ export const MessageList = React.memo(({
                 Assistant is typing...
               </div>
               <div className="text-sm opacity-90">
-                {renderContent(streamingContent)}
+                {renderMessageContent(streamingContent)}
               </div>
             </div>
           </div>
