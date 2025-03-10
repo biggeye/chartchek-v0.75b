@@ -3,22 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServer } from '@/utils/supabase/server'
 import { getOpenAIClient } from '@/utils/openai/server'
 
-
 const openai = getOpenAIClient()
 
-  
-
 export async function GET(request: NextRequest) {
-  const { pathname } = new URL(request.url);
-  const pathSegments = pathname.split('/');
-  const threadId = pathSegments[pathSegments.length - 3];
-  const messageId = pathSegments[pathSegments.length - 1];
-
-  const supabase = await createServer();
-  
-
   try {
     // Authentication check
+    const supabase = await createServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json(
@@ -26,6 +16,15 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Extract params from URL
+    const { pathname } = new URL(request.url);
+    const segments = pathname.split('/');
+    
+    // In the path /api/threads/[threadId]/messages/[messageId], 
+    // threadId is at index 3 and messageId is at index 5
+    const threadId = segments[3];
+    const messageId = segments[5];
 
     // Validate threadId and messageId
     if (!threadId || !messageId) {
@@ -37,7 +36,6 @@ export async function GET(request: NextRequest) {
 
     // Retrieve message using OpenAI's API
     const message = await openai.beta.threads.messages.retrieve(threadId, messageId);
-
     return NextResponse.json(message);
   } catch (error) {
     console.error('[Retrieve Message] Error:', error);

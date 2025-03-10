@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getOpenAIClient } from '@/utils/openai/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { threadId: string } }
-) {
+export async function GET(request: Request) {
   try {
     // Try to get the OpenAI client, but handle the error gracefully
     let openaiClient;
@@ -25,7 +22,12 @@ export async function GET(
       );
     }
 
-    const { threadId } = params;
+    // Extract threadId from URL
+    const { pathname } = new URL(request.url);
+    const segments = pathname.split('/');
+    // In the path /api/threads/[threadId]/run/check, threadId is at index 3
+    const threadId = segments[3];
+
     if (!threadId) {
       return NextResponse.json(
         { error: 'Thread ID is required' },

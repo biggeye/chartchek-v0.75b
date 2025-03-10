@@ -22,11 +22,13 @@ export const maxDuration = 60;
  * Streams run events for a thread
  * @route POST /api/threads/[threadId]/run/stream
  */
-export async function POST(
-  req: NextRequest, 
-  { params }: { params: { threadId: string } }
-) {
-  const { threadId } = params;
+export async function POST(req: NextRequest) {
+  // Extract threadId from URL
+  const { pathname } = new URL(req.url);
+  const segments = pathname.split('/');
+  // In the path /api/threads/[threadId]/run/stream, threadId is at index 3
+  const threadId = segments[3];
+  
   const supabase = await createServer();
 
   // Authenticate user

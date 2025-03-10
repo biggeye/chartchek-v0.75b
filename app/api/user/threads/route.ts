@@ -1,3 +1,5 @@
+// (/api/user/threads/route.ts)
+
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
 

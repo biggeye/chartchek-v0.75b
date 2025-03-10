@@ -123,8 +123,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(
-  request: Request,
-  { params }: { params: { threadId: string } }
+  request: NextRequest
 ) {
   try {
     // Try to get the OpenAI client, but handle the error gracefully
@@ -146,7 +145,10 @@ export async function GET(
       );
     }
 
-    const { threadId } = params;
+    // Extract threadId from the URL path
+    const { pathname } = new URL(request.url);
+    const threadId = pathname.split('/').slice(-2, -1)[0];
+    
     if (!threadId) {
       return NextResponse.json(
         { error: 'Thread ID is required' },
