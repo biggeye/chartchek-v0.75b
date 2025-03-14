@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
 import { chatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
+import { ScrollArea } from '../ui/scroll-area'
 
 export function ThreadList({ assistantId }: { assistantId?: string }) {
   const {
@@ -136,6 +137,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
         {!isLoading && historicalThreads.length === 0 ? (
           <div className="p-4 text-gray-500">No conversations found</div>
         ) : (
+          <ScrollArea className="max-h-full overflow-y-auto divide-y divide-gray-200">
           <ul className="max-h-full overflow-y-auto divide-y divide-gray-200">
             {historicalThreads.map((thread: Thread) => (
               <li
@@ -184,6 +186,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
               </li>
             ))}
           </ul>
+          </ScrollArea>
         )}
       </div>
     </div>

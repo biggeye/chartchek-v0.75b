@@ -35,14 +35,15 @@ import {
 
 import ChevronDownIcon from '@heroicons/react/24/solid/ChevronDownIcon';
 import { signOutAction } from '../actions';
-import Modal from '@/components/modal';
-import { ThemeSwitcher } from '@/components/theme-switcher';
-import { ThreadList } from '@/components/chat/ThreadList';
+import Modal from '@/components/ui/modal';
+import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import Link from 'next/link';
-import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput';
 import { cn } from '@/lib/utils';
 import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
-import { useNewStreamingStore } from '@/store/newStreamStore';
+import { useStreamStore } from '@/store/streamStore';
+import { FacilitySelector } from '@/components/ui/facility-selector';
+import { useFacilityStore } from '@/store/facilityStore';
+import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -51,18 +52,13 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isThreadListModalOpen, setThreadListModalOpen] = useState(false);
-  const [showChatInputArea, setShowChatInputArea] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFacilityId, setCurrentFacilityId] = useState<string | undefined>();
-  const [isChatInputVisible, setIsChatInputVisible] = useState(false);
-  const [assistantId, setAssistantId] = useState<string | undefined>();
-  const [threadId, setThreadId] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [showInsights, setShowInsights] = useState(true);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const pathname = usePathname();
+  const { currentFacilityId } = useFacilityStore();
 
   // Initialize stores
   const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
@@ -71,7 +67,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const navigation = [
     { name: 'Chat', href: '/protected/chat', icon: ChatBubbleBottomCenterIcon },
     { name: 'Documents', href: '/protected/documents', icon: DocumentDuplicateIcon },
-    { name: 'Facilities', href: '/protected/facilities', icon: BuildingOffice2Icon },
+    { name: 'Patients', href: '/protected/patients', icon: UserCircleIcon },
   ].map(item => ({
     ...item,
     current: pathname === item.href
@@ -79,124 +75,13 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
 
   // User dropdown items
   const userNavigation = [
-    { name: 'Chat History', href: '#', onClick: () => setThreadListModalOpen(true) },
     { name: 'Profile', href: `/protected/account/${user_id}` },
     { name: 'Settings', href: '/protected/settings' },
     { name: 'Sign out', href: '#', onClick: async () => await signOutAction() },
   ];
 
-  // Handle chat message submission
-  const handleChatSubmit = async (content: string, attachments: string[], patientContext: any = null) => {
-    if (!content.trim()) return;
-
-    try {
-      setIsSubmitting(true);
-
-      // Determine assistant based on current route
-      let assistantId = "asst_9RqcRDt3vKUEFiQeA0HfLC08"; // Default to compliance assistant
-
-      if (pathname?.includes('/billing')) {
-        assistantId = "asst_7rzhAUWAamYufZJjZeKYkX1t"; // Billing assistant
-      }
-
-      // Set the current assistant ID
-      setCurrentAssistantId(assistantId);
-      setAssistantId(assistantId);
-
-      // Create a thread if needed or use existing
-      const thread = chatStore.getState().currentThread;
-      const threadId = thread?.thread_id || await createThread(assistantId);
-
-      if (!threadId) {
-        throw new Error('Failed to create or retrieve thread');
-      }
-
-      setThreadId(threadId);
-
-      // Format the message content with patient context if available
-      let messageText = content;
-
-      if (patientContext) {
-        // Include minimal patient context for the LLM to reference
-        messageText = `
---- PATIENT CONTEXT ---
-Patient: ${patientContext.first_name} ${patientContext.last_name}
-DOB: ${patientContext.dob}
-MR#: ${patientContext.mr_number}
-Admission: ${patientContext.admission_date}
----
-
-${content}`;
-      }
-
-      // Format the content as JSON object to standardize storage
-      // This ensures consistency in message storage and retrieval as specified in MEMORY
-      const formattedContent = JSON.stringify({ text: messageText });
-
-      // Convert string attachments to proper ChatMessageAttachment objects
-      const formattedAttachments = attachments.map(fileId => ({
-        file_id: fileId,
-        tools: []
-      }));
-
-      // Send the message with JSON formatted content and proper attachment objects
-      const result = await sendMessage(assistantId, threadId, formattedContent, formattedAttachments);
-      
-      // Start streaming the response to capture run data
-      if (result.success) {
-        await useNewStreamingStore.getState().startStream(threadId, assistantId);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Extract facility ID if present in the pathname
-  useEffect(() => {
-    if (pathname) {
-      const matches = pathname.match(/\/facilities\/([^\/]+)/);
-      if (matches && matches[1]) {
-        setCurrentFacilityId(matches[1]);
-      } else {
-        if (matches && matches[2]) {
-          setCurrentFacilityId(matches[2]);
-        } else {
-          setCurrentFacilityId(undefined);
-        }
-      }
-
-      // Set chat input visibility based on route
-      setIsChatInputVisible(
-        pathname.includes('/chat') ||
-        pathname.includes('/compliance') ||
-        pathname.includes('/billing') ||
-        (pathname.includes('/facilities') && pathname.includes('/patients/'))
-      );
-    }
-  }, [pathname]);
-
   function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
-  }
-
-  // Determine sidebar content based on current route
-  let asideContent = null;
-  if (pathname === '/protected/chat') {
-    asideContent = <ThreadList assistantId="asst_9RqcRDt3vKUEFiQeA0HfLC08" />;
-  } else if (pathname === '/protected/compliance') {
-    asideContent = <ThreadList assistantId="asst_9RqcRDt3vKUEFiQeA0HfLC08" />;
-  } else if (pathname === '/protected/billing') {
-    asideContent = <ThreadList assistantId="asst_7rzhAUWAamYufZJjZeKYkX1t" />;
-  } else if (pathname === '/protected/documents') {
-    // documents assistant
-    asideContent = null;
-  } else if (pathname === '/protected/facilities') {
-    // facilities assistant
-    asideContent = null;
-  } else {
-    asideContent = null;
   }
 
   // Determine sidebar width based on collapsed state
@@ -221,6 +106,37 @@ ${content}`;
       window.removeEventListener('scroll', handleScroll);
     };
   }, [lastScrollTop]);
+
+  // Initialize cross-store subscriptions
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // First initialize facility data
+        const { initializeFacilityData } = require('@/store/storeInitializers');
+        await initializeFacilityData();
+        
+        // Then initialize all store subscriptions
+        const cleanup = initializeStoreSubscriptions();
+        
+        // Return cleanup function to unsubscribe when component unmounts
+        return cleanup;
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        return () => {};
+      }
+    };
+    
+    // Initialize and store the cleanup function
+    let cleanup: (() => void) | undefined;
+    initializeApp().then(cleanupFn => {
+      cleanup = cleanupFn;
+    });
+    
+    // Return cleanup function
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   return (
     <>
@@ -248,6 +164,10 @@ ${content}`;
               </div>
               <div className="flex grow flex-col overflow-y-auto rounded-lg border-r border-border bg-background shadow-lg">
                 <div className="flex flex-col grow gap-y-5 px-6 py-4">
+                  {/* Mobile Facility Selector */}
+                  <div className="py-2">
+                    <FacilitySelector variant="sidebar" />
+                  </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
                       <li>
@@ -306,7 +226,6 @@ ${content}`;
                   <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
                 )}
               </div>
-              {/* User dropdown moved to where theme switcher was */}
               {!sidebarCollapsed && (
                 <button
                   onClick={() => setUserModalOpen(true)}
@@ -315,25 +234,46 @@ ${content}`;
                   <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
                 </button>
               )}
-              {/* User dropdown moved to where "Your threads" was */}
-              {/* Theme switcher moved to where "Your threads" was */}
               <div className="flex items-center">
                 <ThemeSwitcher />
               </div>
-              <div className="mt-2">
-                {/* Thread list will be inserted here */}
-              </div>
             </div>
+            
+            {/* Desktop Facility Selector */}
+            {!sidebarCollapsed && (
+              <div className="mb-4">
+                <FacilitySelector variant="sidebar" />
+              </div>
+            )}
+            
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 {/* In narrow mode, show user icon at the top */}
                 {sidebarCollapsed && (
-                  <li className="flex justify-center py-2">
+                  <li className="flex flex-col items-center space-y-4 py-2">
                     <button
                       onClick={() => setUserModalOpen(true)}
                       className="flex items-center justify-center"
                     >
                       <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
+                    </button>
+                    
+                    {/* Collapsed Facility Selector */}
+                    <button
+                      onClick={() => {
+                        // Create a temporary state to expand sidebar, show facility selector, then collapse again
+                        setSidebarCollapsed(false);
+                        setTimeout(() => {
+                          const facilitySelector = document.querySelector('[data-facility-selector="true"]');
+                          if (facilitySelector) {
+                            (facilitySelector as HTMLElement).click();
+                          }
+                        }, 300);
+                      }}
+                      title="Select Facility"
+                      className="flex items-center justify-center p-1 rounded-md hover:bg-muted"
+                    >
+                      <BuildingOffice2Icon className="h-7 w-7 text-foreground-muted" aria-hidden="true" />
                     </button>
                   </li>
                 )}
@@ -370,8 +310,11 @@ ${content}`;
           </div>
         </div>
 
+        {/* Main Content */}
         <div className={`${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'} transition-all duration-300 ease-in-out`}>
-             <button
+          {/* Top navigation bar */}
+          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+            <button
               type="button"
               className="-m-2.5 p-2.5 text-foreground-muted lg:hidden"
               onClick={() => setMobileMenuOpen(true)}
@@ -379,51 +322,39 @@ ${content}`;
               <span className="sr-only">Open sidebar</span>
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
-
-            {/* Separator */}
-            <div className="h-6 w-px bg-border lg:hidden" aria-hidden="true" />
-
-            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6"></div>
+            
+            {/* Header Facility Selector (visible on larger screens) */}
+            <div className="hidden md:block flex-1">
+              <FacilitySelector variant="header" data-facility-selector="true" />
+            </div>
+            
+            <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
+              {/* Mobile Facility Selector (visible on small screens) */}
+              <div className="flex items-center md:hidden">
+                <FacilitySelector variant="header" />
+              </div>
+              
+              {/* User dropdown */}
+              <div className="flex items-center gap-x-4 lg:gap-x-6">
+                <button
+                  onClick={() => setUserModalOpen(true)}
+                  className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted"
+                >
+                  <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
+                  <span className="hidden lg:block">Account</span>
+                </button>
+              </div>
+            </div>
+          </div>
         
-          <main className="flex flex-1 min-h-[calc(100vh-4rem)]">
-            <div className="flex-1 px-4 sm:px-6 lg:px-8">
+          <main className="flex flex-1 overflow-hidden">
+            <div className="flex-1 px-4 sm:px-6 lg:px-8 overflow-auto">
               {children}
             </div>
-            {/* Re-added the right sidebar with ThreadList */}
-            {asideContent && (
-              <aside className="hidden xl:block w-80 shrink-0 p-6 border-l border-border bg-card overflow-y-auto">
-                {asideContent}
-              </aside>
-            )}
           </main>
         </div>
-
-        {/* Chat Input Area - Now using the fixed position version */}
-        {isChatInputVisible && (
-          <GlobalChatInputArea />
-        )}
       </div>
-
-      {/* Thread List Modal */}
-      <Modal
-        isOpen={isThreadListModalOpen}
-        onClose={() => setThreadListModalOpen(false)}
-        title="Your Conversations"
-        content={
-          <div className="mt-4 max-h-[70vh] overflow-y-auto">
-            <ThreadList />
-          </div>
-        }
-        actions={
-          <button
-            className="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground ring-1 shadow-xs ring-border hover:bg-muted sm:col-start-1 sm:mt-0"
-            onClick={() => setThreadListModalOpen(false)}
-          >
-            Close
-          </button>
-        }
-      />
-
+      
       {/* User Profile Modal */}
       <Transition
         show={userModalOpen}

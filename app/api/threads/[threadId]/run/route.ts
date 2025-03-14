@@ -126,7 +126,8 @@ export async function POST(
     
     // Create run
     const run = await openai.beta.threads.runs.create(threadId, {
-      assistant_id
+      assistant_id,
+      additional_instructions: settings.additional_instructions
     });
     
     if (run) {

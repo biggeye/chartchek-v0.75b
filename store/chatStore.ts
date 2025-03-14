@@ -30,6 +30,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
   error: null,
   activeRunStatus: null,
   currentAssistantId: OPENAI_ASSISTANT_ID || null,
+  patientContext: null,
 
   // --- THREAD MANAGEMENT ---
   createThread: async (assistantId: string): Promise<string> => {
@@ -466,16 +467,90 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
   },
 
   addFileToQueue: (doc: Document) => {
-    const { transientFileQueue } = get();
-    set({ transientFileQueue: [...transientFileQueue, doc] });
+    set((state) => ({
+      transientFileQueue: [...state.transientFileQueue, doc]
+    }));
   },
 
   removeFileFromQueue: (doc: Document) => {
-    const { transientFileQueue } = get();
-    set({ transientFileQueue: transientFileQueue.filter(d => d.document_id !== doc.document_id) });
+    set((state) => ({
+      transientFileQueue: state.transientFileQueue.filter(
+        (file) => file.document_id !== doc.document_id
+      )
+    }));
   },
 
-  clearFileQueue: () => set({ transientFileQueue: [] }),
+  clearFileQueue: () => {
+    set({ transientFileQueue: [] });
+  },
+
+  sendMessageWithFiles: async (
+    assistantId: string,
+    content: string,
+    files: Document[]
+  ): Promise<SendMessageResult> => {
+    try {
+      // Validate required parameters
+      if (!assistantId) {
+        throw new Error('Assistant ID is required');
+      }
+      if (!content.trim() && files.length === 0) {
+        throw new Error('Message content or files are required');
+      }
+
+      console.log('[chatStore:sendMessageWithFiles] Starting send message with files flow');
+      
+      // Get the current thread or create a new one
+      const currentThread = get().currentThread;
+      const threadId = currentThread?.thread_id || await get().createThread(assistantId);
+      
+      if (!threadId) {
+        throw new Error('Failed to create or retrieve thread ID');
+      }
+      
+      // Prepare file IDs from OpenAI
+      const fileIds = await Promise.all(
+        files.map(async (file) => {
+          if (file.openai_file_id) {
+            return file.openai_file_id;
+          }
+          
+          // We should never reach here as files should be processed before reaching this point
+          console.warn('[chatStore:sendMessageWithFiles] File missing OpenAI file ID:', file.file_name);
+          return null;
+        })
+      );
+      
+      // Filter out any null file IDs from failed lookups
+      const validFileIds = fileIds.filter(Boolean) as string[];
+      
+      // Format attachments according to the ChatMessageAttachment interface
+      const formattedAttachments = validFileIds.map(fileId => ({
+        file_id: fileId,
+        tools: [{ type: 'file_search' as const }]
+      }));
+      
+      // Send the message with attachments
+      const result = await get().sendMessage(assistantId, threadId, content, formattedAttachments);
+      
+      // Clear the file queue after successful message sending
+      if (result.success) {
+        get().clearFileQueue();
+      }
+      
+      return {
+        ...result,
+        threadId
+      };
+    } catch (error: any) {
+      console.error('[chatStore:sendMessageWithFiles] Error:', error);
+      set({ error: error.message || 'Failed to send message with files' });
+      return {
+        success: false,
+        error: error.message || 'Failed to send message with files'
+      };
+    }
+  },
 
   setCurrentAssistantId: (assistantId: string) => {
     if (!assistantId) {
@@ -489,7 +564,12 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         ? { ...currentThread, assistant_id: assistantId }
         : null
     });
-  }
+  },
+
+  updatePatientContext: (context: string | null) => {
+    set({ patientContext: context });
+    console.log('[chatStore:updatePatientContext] Updated patient context:', context ? 'context provided' : 'context cleared');
+  },
 }));
 
 // Helper function to merge messages while preserving order

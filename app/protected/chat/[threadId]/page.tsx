@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import React from 'react'
 import { MessageList } from '@/components/chat/MessageList'
 import { chatStore } from '@/store/chatStore'
-import { useNewStreamingStore } from '@/store/newStreamStore'
+import { useStreamStore } from '@/store/streamStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import RunStatusIndicator from '@/components/chat/RunStatusIndicator'
 import { ClockIcon, UserCircleIcon, FileTextIcon, InfoIcon } from 'lucide-react'
@@ -32,7 +32,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
     isStreamingActive,
     streamError,
     cancelStream
-  } = useNewStreamingStore()
+  } = useStreamStore()
 
   // Extract patient context from the first message if available
   const extractPatientContext = (messages: any[]) => {
@@ -243,7 +243,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
                       <ul className="space-y-1 list-disc list-inside pl-1">
                         {currentThread.current_files.map((file: any, index: number) => (
                           <li key={index} className="text-muted-foreground truncate">
-                            {file.fileName || file.file_id || `File ${index + 1}`}
+                            {file.file_name || file.file_id || `File ${index + 1}`}
                           </li>
                         ))}
                       </ul>

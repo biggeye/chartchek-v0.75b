@@ -1,3 +1,13 @@
+1.  nextjs15 with app router configuration
+2.  supabase authentication
+3.  supabase postgresql database
+4.  zustand for state management
+5.  openai assistant api
+6.  kipu emr
+
+### UI / UX DEVELOPMENT ###
+always check the /components/* and /components/ui/* directory for the current component being developed, in case one already exists, please utilize.
+
 Ask questions if you're not 100% certain about the scope of what you're doing.  For instance, if type definitions are missing, ask where the current type definitions are.  Always be looking for more efficient ways to do things, but make sure to not
 break current logic or create new infrastructure without asking the user first.
 

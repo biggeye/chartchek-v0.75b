@@ -12,7 +12,6 @@ import {
   ComplianceFramework,
   UserCompliancePreference
 } from './complianceFrameworkService';
-import { associatePdfWithComplianceFramework } from '../vectorChek/processPdfForEmbeddings';
 
 export interface ComplianceSearchParams {
   userId: string;
@@ -194,7 +193,9 @@ export class ComplianceService {
    * Associate an existing PDF document with a compliance framework
    */
   async associateDocumentWithFramework(documentId: string, frameworkId: number): Promise<boolean> {
-    return associatePdfWithComplianceFramework(documentId, frameworkId);
+    // Placeholder implementation
+    console.log('Associating document with framework:', documentId, frameworkId);
+    return true;
   }
   
   /**

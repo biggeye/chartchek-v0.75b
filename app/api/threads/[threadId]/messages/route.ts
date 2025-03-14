@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { getOpenAIClient, OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
-import type { MessagePayload } from '@/types/store/document/index';
+import type { MessagePayload } from '@/types/store/document';
 
 // Initialize OpenAI client with error handling
 const initializeOpenAI = () => {

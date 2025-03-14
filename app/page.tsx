@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-import AuthButton from "@/components/header-auth";
+import AuthButton from "@/components/ui/header-auth";
 
 export default async function Home() {
   return (

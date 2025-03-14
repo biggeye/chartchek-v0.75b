@@ -19,11 +19,11 @@ export default async function ProtectedLayout({
       redirect("/login");
   }
   return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div>
         <OpenAIProvider>
-          <AppLayout user_id={user.id}>
-            {children}
-          </AppLayout>
+            <AppLayout user_id={user.id}>
+              {children}
+            </AppLayout>
         </OpenAIProvider>
       </div>
   );

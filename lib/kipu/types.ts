@@ -8,6 +8,7 @@
 export type Casefile = string; // Format: ^[0-9]+\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 
 export interface PatientBasicInfo {
+  id?: string; // Added to match facility JSON structure
   casefile_id: Casefile;
   first_name: string;
   middle_name: string;

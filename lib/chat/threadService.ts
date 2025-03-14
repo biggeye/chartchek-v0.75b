@@ -1,11 +1,11 @@
 import { createClient } from '@/utils/supabase/client';
 import { getOpenAIClient } from '@/utils/openai/server'
 
-import { useNewStreamingStore } from '@/store/newStreamStore';
+import { useStreamStore } from '@/store/streamStore';
 import { ChatMessage, ChatThread } from '@/types/database';
-import { ThreadRun } from '@/types/store/newStream';
+import { ThreadRun } from '@/types/store/stream';
 import { Thread, RunStatusResponse } from '@/types/store/chat';
-import { NewStreamingState } from '@/types/store/newStream';
+import { StreamingState } from '@/types/store/stream';
 
 
 const supabase = createClient();
@@ -28,36 +28,45 @@ const formatDateField = (dateField: string | number | null | undefined): string 
   try {
     // If it's already an ISO string, validate it
     if (typeof dateField === 'string') {
-      const date = new Date(dateField);
-      // Check if date is valid and not from 1970 (which would indicate a possible unix timestamp in seconds)
-      if (!isNaN(date.getTime()) && date.getFullYear() > 1971) {
-        return date.toISOString();
+      // Check if it's a Unix timestamp in string form
+      if (/^\d+$/.test(dateField)) {
+        const timestamp = parseInt(dateField);
+        // If the timestamp is in seconds (OpenAI API format), convert to milliseconds
+        const dateValue = timestamp < 946684800000 ? timestamp * 1000 : timestamp;
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      } else {
+        // Try to parse as ISO string
+        const date = new Date(dateField);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
       }
     }
     
-    // If it's a number or a string that's not a valid recent date, assume it's a unix timestamp
-    // Check if it needs to be multiplied by 1000 (seconds to milliseconds)
-    const timestamp = typeof dateField === 'number' ? dateField : parseInt(dateField);
-    if (!isNaN(timestamp)) {
-      // If the timestamp is in seconds (before year 2000), convert to milliseconds
-      const dateValue = timestamp < 946684800 ? timestamp * 1000 : timestamp;
+    // If it's a number, assume it's a unix timestamp
+    if (typeof dateField === 'number') {
+      // If the timestamp is in seconds (OpenAI API format), convert to milliseconds
+      const dateValue = dateField < 946684800000 ? dateField * 1000 : dateField;
       const date = new Date(dateValue);
       if (!isNaN(date.getTime())) {
         return date.toISOString();
       }
     }
     
-    // Fallback to current time if all else fails
-    return new Date().toISOString();
+    console.warn('[ThreadService] Could not format date field:', dateField);
+    return null;
   } catch (error) {
     console.error('[ThreadService] Error formatting date field:', error);
-    return new Date().toISOString();
+    return null;
   }
 };
 
 export class ThreadService {
   private supabase = createClient();
-  private newStreamStore = useNewStreamingStore.getState();
+  private streamStore = useStreamStore.getState();
 
   /**
    * Fetches both thread and run data for a user via API
@@ -73,10 +82,10 @@ export class ThreadService {
         throw new Error(errorData.error || 'Failed to fetch user thread data');
       }
       
-      const data = await response.json();
+      const threadsResponse = await response.json();
       
-      // Process the threads from the API response
-      const threads: ChatThread[] = data.data || [];
+      // Process the threads from the API response - handle both data.data and data formats
+      const threads: ChatThread[] = threadsResponse.data || [];
       console.log('[ThreadService] Fetched threads:', threads);
       
       // Fetch runs for each thread
@@ -102,9 +111,9 @@ export class ThreadService {
               updated_at: formatDateField(run.updated_at) || new Date().toISOString(),
               run_id: run.id,
               thread_id: thread.thread_id,
-              assistant_id: run.assistant_id,
+              assistant_id: run.assistant_id || thread.assistant_id || null,
               user_id: userId,
-              status: run.status,
+              status: run.status || 'unknown',
               started_at: formatDateField(run.started_at),
               completed_at: formatDateField(run.completed_at),
               cancelled_at: formatDateField(run.cancelled_at),
@@ -116,18 +125,18 @@ export class ThreadService {
               tools: run.tools,
               metadata: run.metadata,
               required_action: run.required_action,
-              prompt_tokens: run.usage?.prompt_tokens ? String(run.usage.prompt_tokens) : null,
-              completion_tokens: run.usage?.completion_tokens ? String(run.usage.completion_tokens) : null,
-              total_tokens: run.usage?.total_tokens ? String(run.usage.total_tokens) : null,
-              temperature: null,
-              top_p: null,
-              max_prompt_tokens: null,
-              max_completion_tokens: null,
-              truncation_strategy: null,
+              prompt_tokens: run.usage?.prompt_tokens ? parseInt(String(run.usage.prompt_tokens)) : null,
+              completion_tokens: run.usage?.completion_tokens ? parseInt(String(run.usage.completion_tokens)) : null,
+              total_tokens: run.usage?.total_tokens ? parseInt(String(run.usage.total_tokens)) : null,
+              temperature: run.temperature ? parseFloat(String(run.temperature)) : null,
+              top_p: run.top_p ? parseFloat(String(run.top_p)) : null,
+              max_prompt_tokens: run.max_prompt_tokens ? parseInt(String(run.max_prompt_tokens)) : null,
+              max_completion_tokens: run.max_completion_tokens ? parseInt(String(run.max_completion_tokens)) : null,
+              truncation_strategy: run.truncation_strategy || null,
               response_format: run.response_format,
               tool_choice: run.tool_choice,
-              parallel_tool_calls: null,
-              additional_instructions: null
+              parallel_tool_calls: run.parallel_tool_calls || null,
+              additional_instructions: run.additional_instructions || null
             }));
           }
           
@@ -140,9 +149,9 @@ export class ThreadService {
               updated_at: formatDateField(run.updated_at) || new Date().toISOString(),
               run_id: run.id,
               thread_id: thread.thread_id,
-              assistant_id: run.assistant_id,
+              assistant_id: run.assistant_id || thread.assistant_id || null,
               user_id: userId,
-              status: run.status,
+              status: run.status || 'unknown',
               started_at: formatDateField(run.started_at),
               completed_at: formatDateField(run.completed_at),
               cancelled_at: formatDateField(run.cancelled_at),
@@ -154,18 +163,18 @@ export class ThreadService {
               tools: run.tools,
               metadata: run.metadata,
               required_action: run.required_action,
-              prompt_tokens: run.usage?.prompt_tokens ? String(run.usage.prompt_tokens) : null,
-              completion_tokens: run.usage?.completion_tokens ? String(run.usage.completion_tokens) : null,
-              total_tokens: run.usage?.total_tokens ? String(run.usage.total_tokens) : null,
-              temperature: null,
-              top_p: null,
-              max_prompt_tokens: null,
-              max_completion_tokens: null,
-              truncation_strategy: null,
+              prompt_tokens: run.usage?.prompt_tokens ? parseInt(String(run.usage.prompt_tokens)) : null,
+              completion_tokens: run.usage?.completion_tokens ? parseInt(String(run.usage.completion_tokens)) : null,
+              total_tokens: run.usage?.total_tokens ? parseInt(String(run.usage.total_tokens)) : null,
+              temperature: run.temperature ? parseFloat(String(run.temperature)) : null,
+              top_p: run.top_p ? parseFloat(String(run.top_p)) : null,
+              max_prompt_tokens: run.max_prompt_tokens ? parseInt(String(run.max_prompt_tokens)) : null,
+              max_completion_tokens: run.max_completion_tokens ? parseInt(String(run.max_completion_tokens)) : null,
+              truncation_strategy: run.truncation_strategy || null,
               response_format: run.response_format,
               tool_choice: run.tool_choice,
-              parallel_tool_calls: null,
-              additional_instructions: null
+              parallel_tool_calls: run.parallel_tool_calls || null,
+              additional_instructions: run.additional_instructions || null
             }];
           }
           
@@ -230,18 +239,18 @@ export class ThreadService {
         tools: run.tools,
         metadata: run.metadata,
         required_action: run.required_action,
-        prompt_tokens: run.usage?.prompt_tokens ? String(run.usage.prompt_tokens) : null,
-        completion_tokens: run.usage?.completion_tokens ? String(run.usage.completion_tokens) : null,
-        total_tokens: run.usage?.total_tokens ? String(run.usage.total_tokens) : null,
-        temperature: null,
-        top_p: null,
-        max_prompt_tokens: null,
-        max_completion_tokens: null,
-        truncation_strategy: null,
+        prompt_tokens: run.usage?.prompt_tokens ? parseInt(String(run.usage.prompt_tokens)) : null,
+        completion_tokens: run.usage?.completion_tokens ? parseInt(String(run.usage.completion_tokens)) : null,
+        total_tokens: run.usage?.total_tokens ? parseInt(String(run.usage.total_tokens)) : null,
+        temperature: run.temperature ? parseFloat(String(run.temperature)) : null,
+        top_p: run.top_p ? parseFloat(String(run.top_p)) : null,
+        max_prompt_tokens: run.max_prompt_tokens ? parseInt(String(run.max_prompt_tokens)) : null,
+        max_completion_tokens: run.max_completion_tokens ? parseInt(String(run.max_completion_tokens)) : null,
+        truncation_strategy: run.truncation_strategy || null,
         response_format: run.response_format,
         tool_choice: run.tool_choice,
-        parallel_tool_calls: null,
-        additional_instructions: null
+        parallel_tool_calls: run.parallel_tool_calls || null,
+        additional_instructions: run.additional_instructions || null
       }));
     } catch (error) {
       console.error('[ThreadService] Error in getThreadRunsByThreadId:', error);
@@ -258,15 +267,15 @@ export class ThreadService {
   async createRun(threadId: string, assistantId: string, settings: any = {}, messages: any = {}): Promise<ThreadRun> {
     try {
       // Reset the streaming store state
-      this.newStreamStore.resetStream();
+      this.streamStore.resetStream();
       
       // If we want to stream, use the streaming store's startStream method
       if (settings.stream) {
-        // Start streaming process via the newStreamStore
-        await this.newStreamStore.startStream(threadId, assistantId);
+        // Start streaming process via the streamStore
+        await this.streamStore.startStream(threadId, assistantId);
         
         // Check if we have a currentRunId from the streaming process
-        const runId = this.newStreamStore.currentRunId;
+        const runId = this.streamStore.currentRunId;
         
         if (!runId) {
           throw new Error('Failed to obtain run ID from streaming process');
@@ -296,15 +305,15 @@ export class ThreadService {
           prompt_tokens: null,
           completion_tokens: null,
           total_tokens: null,
-          temperature: null,
-          top_p: null,
-          max_prompt_tokens: null,
-          max_completion_tokens: null,
-          truncation_strategy: null,
-          response_format: null,
-          tool_choice: null,
-          parallel_tool_calls: null,
-          additional_instructions: null
+          temperature: settings.temperature ? parseFloat(String(settings.temperature)) : null,
+          top_p: settings.top_p ? parseFloat(String(settings.top_p)) : null,
+          max_prompt_tokens: settings.max_prompt_tokens ? parseInt(String(settings.max_prompt_tokens)) : null,
+          max_completion_tokens: settings.max_completion_tokens ? parseInt(String(settings.max_completion_tokens)) : null,
+          truncation_strategy: settings.truncation_strategy || null,
+          response_format: settings.response_format,
+          tool_choice: settings.tool_choice,
+          parallel_tool_calls: settings.parallel_tool_calls || null,
+          additional_instructions: settings.additional_instructions || null
         };
       }
       
@@ -349,18 +358,18 @@ export class ThreadService {
         tools: run.tools,
         metadata: run.metadata,
         required_action: run.required_action,
-        prompt_tokens: run.usage?.prompt_tokens ? String(run.usage.prompt_tokens) : null,
-        completion_tokens: run.usage?.completion_tokens ? String(run.usage.completion_tokens) : null,
-        total_tokens: run.usage?.total_tokens ? String(run.usage.total_tokens) : null,
-        temperature: null,
-        top_p: null,
-        max_prompt_tokens: null,
-        max_completion_tokens: null,
-        truncation_strategy: null,
+        prompt_tokens: run.usage?.prompt_tokens ? parseInt(String(run.usage.prompt_tokens)) : null,
+        completion_tokens: run.usage?.completion_tokens ? parseInt(String(run.usage.completion_tokens)) : null,
+        total_tokens: run.usage?.total_tokens ? parseInt(String(run.usage.total_tokens)) : null,
+        temperature: run.temperature ? parseFloat(String(run.temperature)) : null,
+        top_p: run.top_p ? parseFloat(String(run.top_p)) : null,
+        max_prompt_tokens: run.max_prompt_tokens ? parseInt(String(run.max_prompt_tokens)) : null,
+        max_completion_tokens: run.max_completion_tokens ? parseInt(String(run.max_completion_tokens)) : null,
+        truncation_strategy: run.truncation_strategy || null,
         response_format: run.response_format,
         tool_choice: run.tool_choice,
-        parallel_tool_calls: null,
-        additional_instructions: null
+        parallel_tool_calls: run.parallel_tool_calls || null,
+        additional_instructions: run.additional_instructions || null
       };
     } catch (error) {
       console.error('[ThreadService] Error in createRun:', error);

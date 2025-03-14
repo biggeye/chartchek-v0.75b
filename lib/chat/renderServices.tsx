@@ -1,5 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import type { ChatMessageAnnotation } from '@/types/database';
+import { marked } from 'marked';
 
 interface ProcessedContent {
   content: string;
@@ -67,18 +68,18 @@ const processAnnotations = (
 const applyFormatting = (content: string): string => {
   if (!content) return '';
 
-  // Pre-process some common patterns before splitting into blocks
-  
+  // Pre-process content for our specific formatting needs
   // Convert standalone ### (used as section dividers)
-  content = content.replace(/^#+\s*$/gm, '<div class="section-divider my-6 border-t-2 border-gray-200"></div>');
-  
+  content = content.replace(/^#+\s*$/gm, '---');
+
+  // Replace specific patterns with custom HTML that marked will pass through
   // Handle section headings with ### followed by a title (like "### Initial Assessment:")
-  content = content.replace(/^###\s+([^:\n]+):(.*)$/gm, function(match, title, rest) {
-    return `\n\n<h3 class="text-lg font-bold mt-6 mb-3 text-primary">${title}</h3>${rest}\n\n`;
+  content = content.replace(/^###\s+([^:\n]+):(.*)$/gm, function(match: string, title: string, rest: string): string {
+    return `<h3 class="text-lg font-bold mt-6 mb-3 text-primary">${title}</h3>${rest}`;
   });
   
   // Handle numbered items with bold headers (like "1. **Complete a Comprehensive Assessment:**")
-  content = content.replace(/^(\d+)\.\s+\*\*([^*:]+)\*\*:(.*)$/gm, function(match, number, title, rest) {
+  content = content.replace(/^(\d+)\.\s+\*\*([^*:]+)\*\*:(.*)$/gm, function(match: string, number: string, title: string, rest: string): string {
     return `<div class="ml-0 mb-3">
       <div class="font-bold flex items-baseline">
         <span class="mr-2">${number}.</span>
@@ -88,148 +89,79 @@ const applyFormatting = (content: string): string => {
   });
   
   // Handle bold subsections (- **Title**:)
-  content = content.replace(/^\s*-\s+\*\*([^*:]+)\*\*:(.*)$/gm, function(match, title, rest) {
+  content = content.replace(/^\s*-\s+\*\*([^*:]+)\*\*:(.*)$/gm, function(match: string, title: string, rest: string): string {
     return `<div class="ml-6 mb-2">
-      <strong class="text-gray-800">${title}:</strong>${rest}`;
+      <strong class="text-gray-800">${title}:</strong>${rest}
+    </div>`;
   });
   
   // Handle plain bullet points
-  content = content.replace(/^\s*-\s+([^*\n][^\n]*)$/gm, function(match, text) {
+  content = content.replace(/^\s*-\s+([^*\n][^\n]*)$/gm, function(match: string, text: string): string {
     return `<div class="ml-6 mb-2 flex">
       <span class="inline-block w-1.5 h-1.5 mt-2 mr-2 rounded-full bg-gray-500"></span>
       <span>${text}</span>
     </div>`;
   });
-  
-  // Close divs before new sections or list items
-  content = content.replace(/\n(?=\s*-\s+|\d+\.\s+|###)/gm, '</div>\n');
-  
-  // Ensure all opened divs are closed at the end
-  if ((content.match(/<div/g) || []).length > (content.match(/<\/div>/g) || []).length) {
-    content += '</div>';
-  }
 
-  // Replace markdown bold with <strong>
-  content = content.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-  
-  // Replace markdown italic with <em>
-  content = content.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
-
-  // Handle code blocks (```)
-  const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
-  content = content.replace(codeBlockRegex, (match, language, code) => {
-    return `<div class="code-block ${language ? `language-${language}` : ''}"><pre>${code.trim()}</pre></div>`;
+  // Set marked options
+  marked.setOptions({
+    gfm: true,         // Enable GitHub Flavored Markdown
+    breaks: true,      // Convert '\n' in paragraphs into <br>
+    pedantic: false,   // Conform to original markdown spec
+    silent: false      // Don't ignore errors
   });
 
-  // Handle inline code (`)
-  content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Split content by double newlines into blocks.
-  const blocks = content.split('\n\n').map(block => block.trim()).filter(Boolean);
-  const formattedBlocks = blocks.map(block => {
-    // Check for HTML elements we've already generated
-    if (block.startsWith('<h3') || 
-        block.startsWith('<div class="section-divider') || 
-        block.startsWith('<div class="ml-')) {
-      return block;
-    }
+  try {
+    // Let marked handle standard markdown elements
+    const result = marked.parse(content);
     
-    // Heading 1
-    if (/^#\s+/.test(block)) {
-      return `<h1 class="text-2xl font-bold my-4">${block.replace(/^#\s+/, '').trim()}</h1>`;
-    }
+    // Ensure we have a string result
+    const resultStr = typeof result === 'string' ? result : '';
     
-    // Heading 2
-    if (/^#{2}\s+/.test(block)) {
-      return `<h2 class="text-xl font-bold my-3">${block.replace(/^#{2}\s+/, '').trim()}</h2>`;
-    }
+    // Post-process the HTML result
     
-    // Heading 3 (not already processed)
-    if (/^#{3}\s+/.test(block)) {
-      return `<h3 class="text-lg font-semibold my-3 text-primary">${block.replace(/^#{3}\s+/, '').trim()}</h3>`;
-    }
+    // Replace horizontal rules with section dividers (which is what standalone ### was used for)
+    let processedResult = resultStr.replace(/<hr>/g, '<div class="section-divider my-6 border-t-2 border-gray-200"></div>');
     
-    // Heading 4
-    if (/^#{4}\s+/.test(block)) {
-      return `<h4 class="text-base font-semibold my-2">${block.replace(/^#{4}\s+/, '').trim()}</h4>`;
-    }
+    // Style standard markdown elements with our custom classes
     
-    // Special case for numbering prefixes followed by text (like "3. Design Interventions:")
-    if (/^\d+\.\s+[A-Z]/.test(block)) {
-      return `<h4 class="text-base font-semibold my-2">${block}</h4>`;
-    }
-
-    // Unordered bullet lists (both - and • are supported)
-    if (block.split('\n').some(line => line.trim().startsWith('- ') || line.trim().startsWith('• '))) {
-      const listItems = block
-        .split('\n')
-        .map(line => {
-          if (line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
-            return `<li>${line.replace(/^[-•]\s+/, '').trim()}</li>`;
-          }
-          return line; // Keep non-list lines as is
-        })
-        .join('');
-      return `<ul class="list-disc pl-6 my-2">${listItems}</ul>`;
-    }
-
-    // Ordered numbered lists (1., 2., etc.)
-    if (block.split('\n').some(line => /^\d+\.\s/.test(line.trim()))) {
-      // Check if this is actually a list of items or just a numbered heading
-      const lines = block.split('\n');
-      if (lines.length > 1 || !(/[A-Z]/.test(lines[0]))) {
-        const listItems = lines
-          .map(line => {
-            if (/^\d+\.\s/.test(line.trim())) {
-              return `<li>${line.replace(/^\d+\.\s+/, '').trim()}</li>`;
-            }
-            return line; // Keep non-list lines as is
-          })
-          .join('');
-        return `<ol class="list-decimal pl-6 my-2">${listItems}</ol>`;
+    // Style h1-h4 elements
+    processedResult = processedResult.replace(/<h1>([^<]+)<\/h1>/g, '<h1 class="text-2xl font-bold my-4">$1</h1>');
+    processedResult = processedResult.replace(/<h2>([^<]+)<\/h2>/g, '<h2 class="text-xl font-bold my-3">$1</h2>');
+    processedResult = processedResult.replace(/<h3>([^<]+)<\/h3>/g, '<h3 class="text-lg font-semibold my-3 text-primary">$1</h3>');
+    processedResult = processedResult.replace(/<h4>([^<]+)<\/h4>/g, '<h4 class="text-base font-semibold my-2">$1</h4>');
+    
+    // Style paragraphs
+    processedResult = processedResult.replace(/<p>([^<]+)<\/p>/g, (match: string, content: string): string => {
+      // Special handling for paragraphs with specific content
+      if (content.includes("Joint Commission") || 
+          content.startsWith("To create a treatment plan") || 
+          content.startsWith("This plan is developed")) {
+        return `<p class="my-3">${content}</p>`;
       }
-    }
-
-    // Handle lines that start with "- " as bullet points but aren't full blocks
-    if (block.startsWith('- ')) {
-      return `<div class="pl-6 my-2"><span class="inline-block w-1.5 h-1.5 rounded-full bg-gray-500 mr-2"></span>${block.substring(2)}</div>`;
-    }
-
-    // Check if the block is a section with bold title followed by content
-    const boldTitleMatch = block.match(/^\*\*(.*?)\*\*:(.*)$/);
-    if (boldTitleMatch) {
-      const [, title, content] = boldTitleMatch;
-      return `<div class="section-with-title my-2">
-        <span class="font-bold">${title}:</span>${content}
-      </div>`;
-    }
-
-    // Check for introduction or summary paragraphs
-    if (block.includes("Joint Commission") || block.startsWith("To create a treatment plan") || block.startsWith("This plan is developed")) {
-      return `<p class="my-3">${block}</p>`;
-    }
-
-    // Otherwise, wrap the block in a paragraph.
-    return `<p class="my-2">${block}</p>`;
-  });
-
-  let result = formattedBlocks.join('');
-  
-  // Additional passes to clean up any remaining patterns
-  
-  // Convert standalone number + period + space at the beginning of a line to a styled item
-  result = result.replace(/<p[^>]*>(\d+)\.\s+([^<]*)<\/p>/g, (match, number, content) => {
-    return `<div class="flex my-2">
-      <div class="mr-2 font-semibold">${number}.</div>
-      <div>${content}</div>
-    </div>`;
-  });
-  
-  // Clean up any potential nesting issues
-  result = result.replace(/<\/div>\s*<\/div>/g, '</div>');
-  result = result.replace(/<div[^>]*><\/div>/g, '');
-  
-  return result;
+      return `<p class="my-2">${content}</p>`;
+    });
+    
+    // Style lists
+    processedResult = processedResult.replace(/<ul>/g, '<ul class="list-disc pl-6 my-2">');
+    processedResult = processedResult.replace(/<ol>/g, '<ol class="list-decimal pl-6 my-2">');
+    
+    // Style code blocks
+    processedResult = processedResult.replace(/<pre><code( class="language-([^"]+)")?>([^<]+)<\/code><\/pre>/g, 
+      (match: string, languageClass: string, language: string, code: string): string => {
+        return `<div class="code-block ${language ? `language-${language}` : ''}"><pre>${code}</pre></div>`;
+      }
+    );
+    
+    // Clean up any potential nesting issues
+    processedResult = processedResult.replace(/<\/div>\s*<\/div>/g, '</div>');
+    processedResult = processedResult.replace(/<div[^>]*><\/div>/g, '');
+    
+    return processedResult;
+  } catch (error) {
+    console.error('Error parsing markdown:', error);
+    return content; // Return original content on error
+  }
 };
 
 interface ChatbotContentProps {
@@ -270,9 +202,9 @@ export const renderContent = (
   return <ChatbotContent content={text} annotations={annotations} />;
 };
 
-export const renderContentAsync = async (
+export const renderContentAsync = (
   text: string,
   annotations: ChatMessageAnnotation[] = []
-): Promise<ReactNode> => {
+): ReactNode => {
   return renderContent(text, annotations);
 };

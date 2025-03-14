@@ -46,6 +46,7 @@ export interface SendMessageResult {
   success: boolean;
   error?: string;
   messageId?: string;
+  threadId?: string;
 }
 
 export interface ChatStoreState {
@@ -57,6 +58,7 @@ export interface ChatStoreState {
   error: string | null;
   activeRunStatus: RunStatusResponse | null;
   currentAssistantId: string | null;
+  patientContext: string | null;
 
   // --- THREAD MANAGEMENT ---
   createThread: (assistantId: string) => Promise<string>;
@@ -67,10 +69,14 @@ export interface ChatStoreState {
 
   // --- MESSAGE MANAGEMENT ---
   sendMessage: (assistantId: string, threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<SendMessageResult>;
+  sendMessageWithFiles: (assistantId: string, content: string, files: Document[]) => Promise<SendMessageResult>;
   fetchOpenAIMessages: (threadId: string) => Promise<ThreadMessage[] | undefined>;
   addMessageReference: (messageId: string, threadId: string, role: string, content: string) => Promise<void>;
   setCurrentMessages: (messages: ThreadMessage[]) => void;
 
+  // --- CONTEXT MANAGEMENT ---
+  updatePatientContext: (context: string | null) => void;
+  
   // --- RUN MANAGEMENT ---
   checkActiveRun: (threadId: string) => Promise<RunStatusResponse>;
   updateActiveRunStatus: (status: RunStatusResponse | null) => void;

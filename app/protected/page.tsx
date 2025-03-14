@@ -1,12 +1,12 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react';
-import MetricCard from '@/components/metric-card';
+import MetricCard from '@/components/ui/metric-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, BrainCircuit, MessageSquare, FileText } from 'lucide-react';
-import RecentConversations from '@/components/chat/recent-conversations';
-import DocumentInsightsPreview from '@/components/documents/insights-preview';
+import RecentConversations from '@/components/dashboard/RecentConversations';
+import DocumentInsightsPreview from '@/components/dashboard/DocumentInsights';
 import { getMetrics, getPatientStats, getDocumentInsights, getRecentConversations } from '@/lib/kipu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 

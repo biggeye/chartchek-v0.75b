@@ -3,20 +3,40 @@
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from '@heroicons/react/20/solid';
 import { assistantRoster } from '@/lib/assistant/roster';
+import type { AssistantCreateParams } from 'openai/resources/beta/assistants';
 
 interface Assistant {
+  key: string;
   name: string;
-  instructions: string;
+  instructions?: string;
+  assistant_id?: string;
+  tools: AssistantCreateParams['tools'];
+  model: string;
 }
 
 const AssistantCard = ({ assistant }: { assistant: Assistant }) => {
   return (
-    <li className="flex flex-col py-4">
+    <li className="flex flex-col py-4 px-4 hover:bg-gray-50 rounded-md transition-colors">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-900">{assistant.name}</p>
-        <Button color="light" className="inline-flex items-center gap-x-1.5 text-sm font-semibold">
-          <PlusIcon aria-hidden="true" className="h-5 w-5 text-gray-400" />
-          Create <span className="sr-only">{assistant.name}</span>
+        <div>
+          <p className="text-sm font-medium text-gray-900">{assistant.name}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {assistant.instructions || 'Pre-configured assistant with specialized knowledge'}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              {assistant.model}
+            </span>
+            {assistant.tools && assistant.tools.map((tool, idx) => (
+              <span key={idx} className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                {tool.type.replace('_', ' ')}
+              </span>
+            ))}
+          </div>
+        </div>
+        <Button className="inline-flex items-center gap-x-1.5 text-sm font-semibold">
+          <PlusIcon className="h-5 w-5" />
+          Chat
         </Button>
       </div>
     </li>

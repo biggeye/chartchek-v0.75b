@@ -134,7 +134,7 @@ export interface Document {
   id: string;
   createdAt: string;
   updatedAt: string;
-  fileName: string;
+  file_name: string;
   filePath: string;
   fileType: string;
   fileSize: number;
@@ -142,4 +142,17 @@ export interface Document {
   processingStatus: ProcessingStatus;
   processingError?: string;
   openai_file_id?: string;
+}
+
+export interface ThreadMessage {
+  id: string;
+  object: string;
+  created_at: number;
+  thread_id: string;
+  role: 'user' | 'assistant';
+  content: MessageContent[];
+  file_ids: string[];
+  assistant_id: string | null;  // <-- This is defined as string | null
+  run_id: string | null;
+  metadata: Record<string, any> | null;
 }

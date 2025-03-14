@@ -9,7 +9,7 @@ import {
   FormField,
 } from '@/components/dynamicForms/formDefinitions';
 import { chatStore } from '@/store/chatStore';
-import { useNewStreamingStore } from '@/store/newStreamStore';
+import { useStreamStore } from '@/store/streamStore';
 
 interface DynamicFormProps {
   formKey: string;
