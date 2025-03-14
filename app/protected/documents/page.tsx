@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog'
 import DocumentsTable from '@/components/documents/DocumentTable'
 import { PlusIcon } from '@heroicons/react/20/solid'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertCircle } from 'lucide-react'
 
@@ -52,15 +51,9 @@ export default function DocumentsPage() {
     }
   }
 
-  const handleEditDocument = useCallback((documentId: string) => {
-    console.log('[DocumentsPage:handleEditDocument] Edit document:', documentId)
-    // Document editing functionality removed in simplified version
-  }, [])
-
   return (
     <div className="container mx-auto py-6 space-y-6">
-          
-    
+      <h1 className="text-2xl font-bold mb-6">Document Library</h1>
       
       {error && (
         <div className="rounded-md bg-red-50 p-4 border border-red-200">
@@ -78,32 +71,29 @@ export default function DocumentsPage() {
         </div>
       )}
       
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <h2 className="text-xl font-semibold">Document Library</h2>
-          <Button 
-            onClick={() => setIsUploadDialogOpen(true)}
-            className="rounded-full p-2 h-9 w-9 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white"
-            disabled={isLoading}
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList>
-              <TabsTrigger value="all">All Documents</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-4">
-              <DocumentsTable 
-                documents={documents} 
-                isLoading={isLoading}
-                onEditDocument={handleEditDocument}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Documents</h2>
+        <Button 
+          onClick={() => setIsUploadDialogOpen(true)}
+          className="rounded-full p-2 h-9 w-9 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white"
+          disabled={isLoading}
+        >
+          <PlusIcon className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList>
+          <TabsTrigger value="all">All Documents</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-4">
+          <DocumentsTable 
+            documents={documents} 
+            isLoading={isLoading}
+            detailsUrlPrefix="/protected/documents"
+          />
+        </TabsContent>
+      </Tabs>
       
       <DocumentUploadDialog 
         isOpen={isUploadDialogOpen} 

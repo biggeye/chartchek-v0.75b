@@ -2,8 +2,15 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { listFacilities, getFacilityData } from '@/lib/kipu';
 import { Facility } from '@/lib/kipu/types';
+import { FacilityApiSettings } from '@/types/store/facility';
+import { createClient } from '@/utils/supabase/client';
+import { 
+  listFacilities as listFacilitiesService, 
+  getFacility as getFacilityService,
+  getFacilityApiSettings as getFacilityApiSettingsService,
+  updateFacility
+} from '@/lib/kipu/service/facility-service';
 
 interface FacilityStore {
   // State
@@ -17,6 +24,8 @@ interface FacilityStore {
   setCurrentFacility: (facilityId: string) => void;
   getCurrentFacility: () => Facility | null;
   changeFacilityWithContext: (facilityId: string) => Promise<void>;
+  updateFacilityApiSettings: (facilityId: string, settings: FacilityApiSettings) => Promise<boolean>;
+  getFacilityApiSettings: (facilityId: string) => Promise<FacilityApiSettings | null>;
 }
 
 // Create the facility store with Zustand
@@ -34,8 +43,9 @@ export const useFacilityStore = create<FacilityStore>()(
         try {
           set({ isLoading: true, error: null });
           
-          // Get facilities from KIPU API
-          const facilities = await listFacilities();
+          // Get facilities from KIPU service layer
+          const response = await listFacilitiesService();
+          const facilities = response.facilities;
           
           set({ 
             facilities,
@@ -85,11 +95,104 @@ export const useFacilityStore = create<FacilityStore>()(
         
         // The actual data fetching for patients and documents will be handled by the
         // store subscriptions in storeInitializers.ts
+      },
+      
+      // Update facility API settings
+      updateFacilityApiSettings: async (facilityId: string, settings: FacilityApiSettings): Promise<boolean> => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Create a Supabase client
+          const supabase = createClient();
+          
+          try {
+            // First try to update in Supabase
+            const { error } = await supabase
+              .from('facility_api_settings')
+              .upsert({
+                facility_id: facilityId,
+                kipu_api_endpoint: settings.kipu_api_endpoint,
+                kipu_api_key: settings.kipu_api_key,
+                has_api_key_configured: settings.has_api_key_configured,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'facility_id'
+              });
+            
+            if (error) {
+              console.warn('Supabase update failed:', error.message);
+            }
+          } catch (supabaseError) {
+            console.warn('Supabase error:', supabaseError);
+          }
+          
+          // Update the facility using our service layer
+          const updatedFacility = await updateFacility(facilityId, {
+            api_settings: {
+              kipu_api_key: settings.kipu_api_key,
+              kipu_api_endpoint: settings.kipu_api_endpoint,
+              has_api_key_configured: settings.has_api_key_configured,
+              updated_at: new Date().toISOString()
+            }
+          });
+          
+          if (updatedFacility) {
+            // Update the local state
+            const updatedFacilities = get().facilities.map(facility => {
+              if (facility.facility_id === facilityId) {
+                return {
+                  ...facility,
+                  api_settings: settings
+                };
+              }
+              return facility;
+            });
+            
+            set({ 
+              facilities: updatedFacilities,
+              isLoading: false
+            });
+            
+            return true;
+          } else {
+            throw new Error('Failed to update facility');
+          }
+        } catch (error) {
+          console.error('Error updating facility API settings:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to update facility API settings',
+            isLoading: false
+          });
+          return false;
+        }
+      },
+      
+      // Get facility API settings
+      getFacilityApiSettings: async (facilityId: string): Promise<FacilityApiSettings | null> => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Get API settings from service layer
+          const apiSettings = await getFacilityApiSettingsService(facilityId);
+          
+          set({ isLoading: false });
+          
+          return apiSettings;
+        } catch (error) {
+          console.error('Error fetching facility API settings:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to fetch facility API settings',
+            isLoading: false
+          });
+          return null;
+        }
       }
     }),
     {
       name: 'facility-storage',
-      partialize: (state) => ({ currentFacilityId: state.currentFacilityId })
+      partialize: (state) => ({
+        currentFacilityId: state.currentFacilityId
+      })
     }
   )
 );

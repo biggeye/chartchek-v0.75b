@@ -387,7 +387,7 @@ export interface FacilityData {
 
 // Facility type matching the JSON structure
 export interface Facility {
-  id?: string; // Make id optional since it's not in the actual JSON data
+  id?: string;
   facility_id: string;
   name: string;
   address: string;
@@ -395,6 +395,12 @@ export interface Facility {
   email: string;
   created_at: string;
   data: FacilityData;
+  api_settings?: {
+    kipu_api_key?: string;
+    kipu_api_endpoint?: string;
+    has_api_key_configured: boolean;
+    updated_at?: string;
+  };
   meta?: {
     name: string;
     address: string;

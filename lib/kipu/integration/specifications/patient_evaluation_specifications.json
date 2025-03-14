@@ -1,0 +1,777 @@
+{
+  "endpoint_specifications": {
+    "version": "0.1",
+    "last_updated": "2025-03-14",
+    "endpoints": [
+      {
+        "name": "patient_evaluations_list",
+        "path": "/api/kipu/facilities/{facility_id}/patients/{patient_id}/evaluations",
+        "method": "GET",
+        "description": "List all evaluations for a specific patient",
+        "kipu_mapping": {
+          "endpoint": "/patients/{patient_id}/patient_evaluations",
+          "method": "GET",
+          "terminology_mapping": {
+            "facility_id": "Used to retrieve KIPU API credentials, not directly mapped to KIPU endpoint"
+          }
+        },
+        "request": {
+          "path_parameters": [
+            {
+              "name": "facility_id",
+              "type": "string",
+              "required": true,
+              "description": "Facility ID used to retrieve KIPU API credentials"
+            },
+            {
+              "name": "patient_id",
+              "type": "string",
+              "required": true,
+              "description": "Patient ID in our system, mapped to KIPU patient_id"
+            }
+          ],
+          "query_parameters": [
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "default": 1,
+              "description": "Page number for pagination"
+            },
+            {
+              "name": "limit",
+              "type": "integer",
+              "required": false,
+              "default": 20,
+              "description": "Number of evaluations per page"
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "required": false,
+              "enum": ["all", "completed"],
+              "default": "all",
+              "description": "Filter evaluations by status"
+            },
+            {
+              "name": "start_date",
+              "type": "string",
+              "format": "date",
+              "required": false,
+              "description": "Start date for filtering evaluations (YYYY-MM-DD)"
+            },
+            {
+              "name": "end_date",
+              "type": "string",
+              "format": "date",
+              "required": false,
+              "description": "End date for filtering evaluations (YYYY-MM-DD)"
+            },
+            {
+              "name": "evaluation_type",
+              "type": "string",
+              "required": false,
+              "description": "Filter by evaluation type"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            }
+          ],
+          "kipu_query_parameters": [
+            {
+              "name": "app_id",
+              "type": "string",
+              "required": true,
+              "description": "app_id (also referred to as recipient_id, provided by Kipu)"
+            },
+            {
+              "name": "patient_master_id",
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Patient Master UUID (Important: NOT ID)"
+            },
+            {
+              "name": "evaluation_id",
+              "type": "integer",
+              "required": false,
+              "description": "Lists patient evaluations scoped to the given template id"
+            },
+            {
+              "name": "completed_only",
+              "type": "boolean",
+              "required": false,
+              "description": "Includes only the Patient Evaluations with status completed"
+            },
+            {
+              "name": "current_census_only",
+              "type": "boolean",
+              "required": false,
+              "description": "Includes only the Patient Evaluations with patient in current census"
+            },
+            {
+              "name": "start_date",
+              "type": "string",
+              "format": "date",
+              "required": false,
+              "description": "Start Date (Example: 2018-12-01) of the latest updated range"
+            },
+            {
+              "name": "end_date",
+              "type": "string",
+              "format": "date",
+              "required": false,
+              "description": "End Date (Example: 2018-12-03) of the latest updated range"
+            },
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "description": "Page number"
+            },
+            {
+              "name": "per",
+              "type": "integer",
+              "required": false,
+              "description": "Patients per page"
+            },
+            {
+              "name": "patient_process_id",
+              "type": "integer",
+              "required": false,
+              "description": "Includes only the Patient Evaluations with given patient process id"
+            },
+            {
+              "name": "evaluation_content",
+              "type": "string",
+              "required": false,
+              "enum": ["standard", "notes", "treatment_plan"],
+              "description": "Includes only the Patient Evaluations with given evaluation_content value"
+            }
+          ]
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "evaluations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique identifier for the evaluation"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the evaluation"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["completed", "in_progress", "pending"],
+                      "description": "Status of the evaluation"
+                    },
+                    "evaluation_id": {
+                      "type": "string",
+                      "description": "Template ID for the evaluation"
+                    },
+                    "patient_id": {
+                      "type": "string",
+                      "description": "ID of the patient"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the evaluation was created"
+                    },
+                    "created_by": {
+                      "type": "string",
+                      "description": "User who created the evaluation"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the evaluation was last updated"
+                    },
+                    "updated_by": {
+                      "type": "string",
+                      "description": "User who last updated the evaluation"
+                    },
+                    "evaluation_content": {
+                      "type": "string",
+                      "description": "Type of evaluation content"
+                    }
+                  },
+                  "required": ["id", "name", "status", "evaluation_id", "patient_id", "created_at"]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "description": "Total number of evaluations"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "Current page number"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Number of evaluations per page"
+                  },
+                  "pages": {
+                    "type": "integer",
+                    "description": "Total number of pages"
+                  }
+                },
+                "required": ["total", "page", "limit", "pages"],
+                "description": "Pagination information"
+              }
+            },
+            "required": ["evaluations"]
+          },
+          "kipu_response_mapping": {
+            "source": "patient_evaluations array in KIPU response",
+            "transformations": [
+              {
+                "source_field": "id",
+                "target_field": "id",
+                "transformation": "Convert integer to string"
+              },
+              {
+                "source_field": "name",
+                "target_field": "name",
+                "transformation": "Direct mapping"
+              },
+              {
+                "source_field": "status",
+                "target_field": "status",
+                "transformation": "Direct mapping"
+              },
+              {
+                "source_field": "evaluation_id",
+                "target_field": "evaluation_id",
+                "transformation": "Convert integer to string"
+              },
+              {
+                "source_field": "created_at",
+                "target_field": "created_at",
+                "transformation": "Format as ISO date-time"
+              },
+              {
+                "source_field": "updated_at",
+                "target_field": "updated_at",
+                "transformation": "Format as ISO date-time"
+              }
+            ]
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to access evaluations",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to access these evaluations"
+            }
+          },
+          {
+            "status_code": 404,
+            "description": "Not Found - Patient not found",
+            "example": {
+              "error": "not_found",
+              "message": "Patient with ID patient_123 not found"
+            }
+          },
+          {
+            "status_code": 500,
+            "description": "Internal Server Error - Error communicating with KIPU API",
+            "example": {
+              "error": "internal_server_error",
+              "message": "Error communicating with KIPU API",
+              "details": "KIPU API returned status code 502"
+            }
+          }
+        ],
+        "implementation_details": {
+          "caching": {
+            "strategy": "Cache for 15 minutes with invalidation on evaluation updates",
+            "key_format": "evaluations:{facility_id}:{patient_id}:{page}:{limit}:{status}"
+          },
+          "fallback": {
+            "strategy": "Use local JSON data if KIPU API is unavailable",
+            "data_source": "lib/kipu/data/patient_evaluations.json"
+          },
+          "zustand_integration": {
+            "store": "evaluationStore",
+            "actions": [
+              "fetchPatientEvaluations",
+              "setSelectedEvaluation"
+            ],
+            "state_properties": [
+              "evaluations",
+              "isLoading",
+              "error",
+              "selectedEvaluation"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/[facility_id]/patients/[patient_id]/evaluations/route.ts",
+            "component_usage": "components/PatientEvaluationsList.tsx"
+          }
+        }
+      },
+      {
+        "name": "patient_evaluation_detail",
+        "path": "/api/kipu/facilities/{facility_id}/evaluations/{evaluation_id}",
+        "method": "GET",
+        "description": "Get detailed information about a specific patient evaluation",
+        "kipu_mapping": {
+          "endpoint": "/patient_evaluations/{patient_evaluation_id}",
+          "method": "GET"
+        },
+        "request": {
+          "path_parameters": [
+            {
+              "name": "facility_id",
+              "type": "string",
+              "required": true,
+              "description": "Facility ID used to retrieve KIPU API credentials"
+            },
+            {
+              "name": "evaluation_id",
+              "type": "string",
+              "required": true,
+              "description": "Evaluation ID to retrieve"
+            }
+          ],
+          "query_parameters": [
+            {
+              "name": "include_items",
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "description": "Whether to include evaluation items in the response"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            }
+          ],
+          "kipu_query_parameters": [
+            {
+              "name": "app_id",
+              "type": "string",
+              "required": true,
+              "description": "app_id (also referred to as recipient_id, provided by Kipu)"
+            },
+            {
+              "name": "include_settings",
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "description": "Include More Details Of Patient Evaluation"
+            }
+          ]
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the evaluation"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the evaluation"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "in_progress", "pending"],
+                "description": "Status of the evaluation"
+              },
+              "patient_id": {
+                "type": "string",
+                "description": "ID of the patient"
+              },
+              "evaluation_id": {
+                "type": "string",
+                "description": "Template ID for the evaluation"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the evaluation was created"
+              },
+              "created_by": {
+                "type": "string",
+                "description": "User who created the evaluation"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the evaluation was last updated"
+              },
+              "updated_by": {
+                "type": "string",
+                "description": "User who last updated the evaluation"
+              },
+              "evaluation_content": {
+                "type": "string",
+                "description": "Type of evaluation content"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique identifier for the evaluation item"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the evaluation item"
+                    },
+                    "field_type": {
+                      "type": "string",
+                      "description": "Type of field (text, checkbox, dropdown, etc.)"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Display label for the item"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Value of the item"
+                    },
+                    "optional": {
+                      "type": "boolean",
+                      "description": "Whether the item is optional"
+                    }
+                  },
+                  "required": ["id", "name", "field_type", "label"]
+                },
+                "description": "Evaluation items/questions"
+              }
+            },
+            "required": ["id", "name", "status", "patient_id", "evaluation_id", "created_at"]
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to access this evaluation",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to access this evaluation"
+            }
+          },
+          {
+            "status_code": 404,
+            "description": "Not Found - Evaluation not found",
+            "example": {
+              "error": "not_found",
+              "message": "Evaluation with ID evaluation_123 not found"
+            }
+          },
+          {
+            "status_code": 500,
+            "description": "Internal Server Error - Error communicating with KIPU API",
+            "example": {
+              "error": "internal_server_error",
+              "message": "Error communicating with KIPU API",
+              "details": "KIPU API returned status code 502"
+            }
+          }
+        ],
+        "implementation_details": {
+          "caching": {
+            "strategy": "Cache for 15 minutes with invalidation on evaluation updates",
+            "key_format": "evaluation:{facility_id}:{evaluation_id}"
+          },
+          "fallback": {
+            "strategy": "Use local JSON data if KIPU API is unavailable",
+            "data_source": "lib/kipu/data/evaluation_{evaluation_id}.json"
+          },
+          "zustand_integration": {
+            "store": "evaluationStore",
+            "actions": [
+              "fetchEvaluationById",
+              "setSelectedEvaluation"
+            ],
+            "state_properties": [
+              "selectedEvaluation",
+              "isLoading",
+              "error"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/[facility_id]/evaluations/[evaluation_id]/route.ts",
+            "component_usage": "components/PatientEvaluationDetail.tsx"
+          }
+        }
+      },
+      {
+        "name": "create_patient_evaluation",
+        "path": "/api/kipu/facilities/{facility_id}/patients/{patient_id}/evaluations",
+        "method": "POST",
+        "description": "Create a new patient evaluation",
+        "kipu_mapping": {
+          "endpoint": "/patients/{patient_id}/patient_evaluations",
+          "method": "POST"
+        },
+        "request": {
+          "path_parameters": [
+            {
+              "name": "facility_id",
+              "type": "string",
+              "required": true,
+              "description": "Facility ID used to retrieve KIPU API credentials"
+            },
+            {
+              "name": "patient_id",
+              "type": "string",
+              "required": true,
+              "description": "Patient ID in our system, mapped to KIPU patient_id"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            },
+            {
+              "name": "Content-Type",
+              "type": "string",
+              "required": true,
+              "default": "application/json",
+              "description": "Content type of the request body"
+            }
+          ],
+          "body": {
+            "type": "object",
+            "properties": {
+              "evaluation_id": {
+                "type": "string",
+                "description": "Template ID for the evaluation"
+              },
+              "evaluation_name": {
+                "type": "string",
+                "description": "Name of the evaluation"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "evaluation_item_id": {
+                      "type": "string",
+                      "description": "ID of the evaluation item"
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Value for the evaluation item"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["string", "text", "dropdown", "checkbox", "radio", "date"],
+                      "description": "Type of the evaluation item"
+                    }
+                  },
+                  "required": ["evaluation_item_id", "value", "type"]
+                },
+                "description": "Evaluation items/questions with values"
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "evaluation_item_id": {
+                      "type": "string",
+                      "description": "ID of the evaluation item"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "Note text"
+                    }
+                  },
+                  "required": ["note"]
+                },
+                "description": "Notes for the evaluation"
+              }
+            },
+            "required": ["evaluation_id"]
+          },
+          "kipu_request_mapping": {
+            "format": "Nested document object structure",
+            "transformations": [
+              {
+                "source_field": "evaluation_id",
+                "target_field": "document.data.evaluation_id",
+                "transformation": "Convert string to integer"
+              },
+              {
+                "source_field": "evaluation_name",
+                "target_field": "document.data.evaluation_name",
+                "transformation": "Direct mapping"
+              },
+              {
+                "source_field": "items",
+                "target_field": "Various fields based on type",
+                "transformation": "Map to appropriate KIPU fields based on item type"
+              },
+              {
+                "source_field": "notes",
+                "target_field": "document.data.notes",
+                "transformation": "Direct mapping"
+              }
+            ],
+            "additional_fields": [
+              {
+                "target_field": "document.recipient_id",
+                "source": "KIPU app_id from facility API settings"
+              },
+              {
+                "target_field": "document.sending_app_name",
+                "value": "ChartChek"
+              },
+              {
+                "target_field": "document.data.ext_username",
+                "source": "Current user's username"
+              },
+              {
+                "target_field": "document.data.patient_master_id",
+                "source": "Patient master ID from patient record"
+              }
+            ]
+          }
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the created evaluation"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["created", "error"],
+                "description": "Status of the creation operation"
+              },
+              "message": {
+                "type": "string",
+                "description": "Success or error message"
+              }
+            },
+            "required": ["id", "status"]
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 400,
+            "description": "Bad Request - Invalid evaluation data",
+            "example": {
+              "error": "bad_request",
+              "message": "Invalid evaluation data",
+              "details": {
+                "evaluation_id": "Evaluation ID is required"
+              }
+            }
+          },
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to create evaluations",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to create evaluations for this patient"
+            }
+          },
+          {
+            "status_code": 404,
+            "description": "Not Found - Patient not found",
+            "example": {
+              "error": "not_found",
+              "message": "Patient with ID patient_123 not found"
+            }
+          },
+          {
+            "status_code": 500,
+            "description": "Internal Server Error - Error communicating with KIPU API",
+            "example": {
+              "error": "internal_server_error",
+              "message": "Error communicating with KIPU API",
+              "details": "KIPU API returned status code 502"
+            }
+          }
+        ],
+        "implementation_details": {
+          "zustand_integration": {
+            "store": "evaluationStore",
+            "actions": [
+              "createEvaluation",
+              "setSelectedEvaluation"
+            ],
+            "state_properties": [
+              "isCreating",
+              "createError",
+              "selectedEvaluation"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/[facility_id]/patients/[patient_id]/evaluations/route.ts",
+            "component_usage": "components/CreatePatientEvaluation.tsx"
+          },
+          "security_considerations": [
+            "Validate all input data before sending to KIPU API",
+            "Ensure user has appropriate permissions",
+            "Sanitize any free-text fields to prevent injection attacks"
+          ]
+        }
+      }
+    ]
+  }
+}

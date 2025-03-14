@@ -37,6 +37,12 @@ export function getFacilityData(facilityId: string): Facility | null {
         email: facility1Data.email,
         created_at: facility1Data.created_at,
         data: facility1Data.data as unknown as FacilityData, // Cast to FacilityData
+        api_settings: facility1Data.api_settings || {
+          kipu_api_key: '',
+          kipu_api_endpoint: '',
+          has_api_key_configured: false,
+          updated_at: new Date().toISOString()
+        },
         meta: {
           name: facility1Data.name,
           address: facility1Data.address,
@@ -61,6 +67,12 @@ export function getFacilityData(facilityId: string): Facility | null {
         email: facility2Data.email,
         created_at: facility2Data.created_at,
         data: facility2Data.data as unknown as FacilityData, // Cast to FacilityData
+        api_settings: facility2Data.api_settings || {
+          kipu_api_key: '',
+          kipu_api_endpoint: '',
+          has_api_key_configured: false,
+          updated_at: new Date().toISOString()
+        },
         meta: {
           name: facility2Data.name,
           address: facility2Data.address,
@@ -108,6 +120,12 @@ export function listFacilities(): Facility[] {
         email: facility1Data.email,
         created_at: facility1Data.created_at,
         data: facility1Data.data as unknown as FacilityData,
+        api_settings: facility1Data.api_settings || {
+          kipu_api_key: '',
+          kipu_api_endpoint: '',
+          has_api_key_configured: false,
+          updated_at: new Date().toISOString()
+        },
         meta: {
           name: facility1Data.name,
           address: facility1Data.address,
@@ -126,6 +144,12 @@ export function listFacilities(): Facility[] {
         email: facility2Data.email,
         created_at: facility2Data.created_at,
         data: facility2Data.data as unknown as FacilityData,
+        api_settings: facility2Data.api_settings || {
+          kipu_api_key: '',
+          kipu_api_endpoint: '',
+          has_api_key_configured: false,
+          updated_at: new Date().toISOString()
+        },
         meta: {
           name: facility2Data.name,
           address: facility2Data.address,

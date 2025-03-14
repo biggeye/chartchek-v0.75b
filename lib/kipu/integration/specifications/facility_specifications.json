@@ -1,0 +1,814 @@
+{
+  "endpoint_specifications": {
+    "version": "0.1",
+    "last_updated": "2025-03-14",
+    "endpoints": [
+      {
+        "name": "facilities",
+        "path": "/api/kipu/facilities",
+        "method": "GET",
+        "description": "Lists all facilities (KIPU locations) available to the authenticated user",
+        "kipu_mapping": {
+          "endpoint": "/locations",
+          "method": "GET",
+          "terminology_mapping": {
+            "facility": "location",
+            "facility_id": "location_id",
+            "facility_name": "location_name"
+          }
+        },
+        "request": {
+          "query_parameters": [
+            {
+              "name": "page",
+              "type": "integer",
+              "required": false,
+              "default": 1,
+              "description": "Page number for pagination"
+            },
+            {
+              "name": "limit",
+              "type": "integer",
+              "required": false,
+              "default": 20,
+              "description": "Number of facilities per page"
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "required": false,
+              "enum": ["active", "inactive", "all"],
+              "default": "active",
+              "description": "Filter facilities by status"
+            },
+            {
+              "name": "sort",
+              "type": "string",
+              "required": false,
+              "enum": ["name_asc", "name_desc", "created_at_asc", "created_at_desc"],
+              "default": "name_asc",
+              "description": "Sort order for facilities"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            }
+          ],
+          "kipu_headers": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.kipusystems+json; version=3",
+              "required": true,
+              "description": "Accept Header [Do not change this value]"
+            },
+            {
+              "name": "Authorization",
+              "value": "APIAuth {access_id}:{signature}",
+              "required": true,
+              "description": "APIAuth {your Access ID}:{signature}"
+            },
+            {
+              "name": "Date",
+              "value": "RFC 822 Format (Example: Tue, 03 Sep 2019 16:05:56 GMT)",
+              "required": true,
+              "description": "Current date in RFC 822 format"
+            }
+          ],
+          "kipu_query_parameters": [
+            {
+              "name": "app_id",
+              "type": "string",
+              "required": true,
+              "description": "app_id (also referred to as recipient_id, provided by Kipu)"
+            },
+            {
+              "name": "include_buildings",
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "description": "When enabled show additional building details per location"
+            }
+          ]
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "facilities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique identifier for the facility"
+                    },
+                    "facility_id": {
+                      "type": "string",
+                      "description": "KIPU location_id converted to string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the facility (from location_name)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["active", "inactive"],
+                      "description": "Status derived from KIPU enabled field"
+                    },
+                    "buildings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Unique identifier for the building"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Name of the building"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["active", "inactive"],
+                            "description": "Status of the building"
+                          }
+                        }
+                      },
+                      "description": "List of buildings within this facility"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "patients_count": {
+                          "type": "integer",
+                          "description": "Number of patients at this facility"
+                        },
+                        "documents_count": {
+                          "type": "integer",
+                          "description": "Number of documents associated with this facility"
+                        }
+                      },
+                      "description": "Additional metadata about the facility"
+                    },
+                    "api_settings": {
+                      "type": "object",
+                      "properties": {
+                        "has_api_key_configured": {
+                          "type": "boolean",
+                          "description": "Whether API keys are configured for this facility"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When the API settings were last updated"
+                        }
+                      },
+                      "description": "API configuration settings for this facility"
+                    }
+                  },
+                  "required": ["id", "facility_id", "name", "status"]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "description": "Total number of facilities"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "Current page number"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Number of facilities per page"
+                  },
+                  "pages": {
+                    "type": "integer",
+                    "description": "Total number of pages"
+                  }
+                },
+                "required": ["total", "page", "limit", "pages"],
+                "description": "Pagination information"
+              }
+            },
+            "required": ["facilities"]
+          },
+          "example": {
+            "facilities": [
+              {
+                "id": "facility_1",
+                "facility_id": "12345",
+                "name": "Main Treatment Center",
+                "status": "active",
+                "buildings": [
+                  {
+                    "id": "building_1",
+                    "name": "Main Building",
+                    "status": "active"
+                  },
+                  {
+                    "id": "building_2",
+                    "name": "Residential Wing",
+                    "status": "active"
+                  }
+                ],
+                "meta": {
+                  "patients_count": 145,
+                  "documents_count": 1250
+                },
+                "api_settings": {
+                  "has_api_key_configured": true,
+                  "updated_at": "2025-02-15T14:30:00Z"
+                }
+              },
+              {
+                "id": "facility_2",
+                "facility_id": "67890",
+                "name": "Outpatient Clinic",
+                "status": "active",
+                "buildings": [
+                  {
+                    "id": "building_3",
+                    "name": "Clinic Building",
+                    "status": "active"
+                  }
+                ],
+                "meta": {
+                  "patients_count": 78,
+                  "documents_count": 620
+                },
+                "api_settings": {
+                  "has_api_key_configured": false,
+                  "updated_at": null
+                }
+              }
+            ],
+            "pagination": {
+              "total": 2,
+              "page": 1,
+              "limit": 20,
+              "pages": 1
+            }
+          },
+          "kipu_response_mapping": {
+            "source": "locations array in KIPU response",
+            "transformations": [
+              {
+                "source_field": "location_id",
+                "target_field": "facility_id",
+                "transformation": "Convert integer to string"
+              },
+              {
+                "source_field": "location_name",
+                "target_field": "name",
+                "transformation": "Direct mapping"
+              },
+              {
+                "source_field": "enabled",
+                "target_field": "status",
+                "transformation": "true → 'active', false → 'inactive'"
+              },
+              {
+                "source_field": "buildings",
+                "target_field": "buildings",
+                "transformation": "Map each building with similar transformations"
+              }
+            ],
+            "additional_data": [
+              {
+                "target_field": "meta.patients_count",
+                "source": "Separate API call to GET /patients/census with location_id filter"
+              },
+              {
+                "target_field": "meta.documents_count",
+                "source": "Separate API call to GET /evaluations with location_id filter"
+              },
+              {
+                "target_field": "api_settings",
+                "source": "Supabase database query for facility API settings"
+              }
+            ]
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to access facilities",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to access these facilities"
+            }
+          },
+          {
+            "status_code": 500,
+            "description": "Internal Server Error - Error communicating with KIPU API",
+            "example": {
+              "error": "internal_server_error",
+              "message": "Error communicating with KIPU API",
+              "details": "KIPU API returned status code 502"
+            }
+          }
+        ],
+        "implementation_details": {
+          "caching": {
+            "strategy": "Cache for 1 hour with invalidation on facility updates",
+            "key_format": "facilities:{user_id}:{page}:{limit}:{status}:{sort}"
+          },
+          "fallback": {
+            "strategy": "Use local JSON data if KIPU API is unavailable",
+            "data_source": "lib/kipu/data/facilities.json"
+          },
+          "zustand_integration": {
+            "store": "facilityStore",
+            "actions": [
+              "fetchFacilities",
+              "setSelectedFacility"
+            ],
+            "state_properties": [
+              "facilities",
+              "isLoading",
+              "error",
+              "selectedFacility"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/route.ts",
+            "component_usage": "components/FacilitySelector.tsx"
+          },
+          "security_considerations": [
+            "KIPU API credentials stored in Supabase and never exposed to client",
+            "All requests authenticated with Supabase JWT",
+            "Rate limiting applied to prevent abuse"
+          ]
+        }
+      },
+      {
+        "name": "facility",
+        "path": "/api/kipu/facilities/{facility_id}",
+        "method": "GET",
+        "description": "Get detailed information about a specific facility",
+        "kipu_mapping": {
+          "endpoint": "/locations/{location_id}",
+          "method": "GET",
+          "note": "This endpoint doesn't exist directly in KIPU API documentation, but might be inferred from the locations endpoint"
+        },
+        "request": {
+          "path_parameters": [
+            {
+              "name": "facility_id",
+              "type": "string",
+              "required": true,
+              "description": "Unique identifier for the facility"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            }
+          ],
+          "kipu_headers": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.kipusystems+json; version=3",
+              "required": true,
+              "description": "Accept Header [Do not change this value]"
+            },
+            {
+              "name": "Authorization",
+              "value": "APIAuth {access_id}:{signature}",
+              "required": true,
+              "description": "APIAuth {your Access ID}:{signature}"
+            },
+            {
+              "name": "Date",
+              "value": "RFC 822 Format",
+              "required": true,
+              "description": "Current date in RFC 822 format"
+            }
+          ],
+          "kipu_query_parameters": [
+            {
+              "name": "app_id",
+              "type": "string",
+              "required": true,
+              "description": "app_id (also referred to as recipient_id, provided by Kipu)"
+            },
+            {
+              "name": "include_buildings",
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "description": "When enabled show additional building details per location"
+            }
+          ]
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the facility"
+              },
+              "facility_id": {
+                "type": "string",
+                "description": "KIPU location_id converted to string"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the facility (from location_name)"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["active", "inactive"],
+                "description": "Status derived from KIPU enabled field"
+              },
+              "buildings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique identifier for the building"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the building"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["active", "inactive"],
+                      "description": "Status of the building"
+                    }
+                  }
+                },
+                "description": "List of buildings within this facility"
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Physical address of the facility"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Contact phone number"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Contact email address"
+                  },
+                  "capacity": {
+                    "type": "integer",
+                    "description": "Total patient capacity"
+                  },
+                  "services": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of services offered at this facility"
+                  }
+                },
+                "description": "Detailed facility information"
+              },
+              "meta": {
+                "type": "object",
+                "properties": {
+                  "patients_count": {
+                    "type": "integer",
+                    "description": "Number of patients at this facility"
+                  },
+                  "documents_count": {
+                    "type": "integer",
+                    "description": "Number of documents associated with this facility"
+                  },
+                  "staff_count": {
+                    "type": "integer",
+                    "description": "Number of staff members at this facility"
+                  },
+                  "occupancy_rate": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Current occupancy rate as a percentage"
+                  }
+                },
+                "description": "Additional metadata about the facility"
+              },
+              "api_settings": {
+                "type": "object",
+                "properties": {
+                  "has_api_key_configured": {
+                    "type": "boolean",
+                    "description": "Whether API keys are configured for this facility"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the API settings were last updated"
+                  }
+                },
+                "description": "API configuration settings for this facility"
+              }
+            },
+            "required": ["id", "facility_id", "name", "status"]
+          },
+          "example": {
+            "id": "facility_1",
+            "facility_id": "12345",
+            "name": "Main Treatment Center",
+            "status": "active",
+            "buildings": [
+              {
+                "id": "building_1",
+                "name": "Main Building",
+                "status": "active"
+              },
+              {
+                "id": "building_2",
+                "name": "Residential Wing",
+                "status": "active"
+              }
+            ],
+            "details": {
+              "address": "123 Healthcare Ave, San Francisco, CA 94110",
+              "phone": "+1 (555) 123-4567",
+              "email": "info@maintreatment.com",
+              "capacity": 200,
+              "services": [
+                "Detox",
+                "Residential Treatment",
+                "Outpatient Services",
+                "Aftercare"
+              ]
+            },
+            "meta": {
+              "patients_count": 145,
+              "documents_count": 1250,
+              "staff_count": 45,
+              "occupancy_rate": 72.5
+            },
+            "api_settings": {
+              "has_api_key_configured": true,
+              "updated_at": "2025-02-15T14:30:00Z"
+            }
+          },
+          "kipu_response_mapping": {
+            "source": "Combination of multiple KIPU API calls",
+            "transformations": [
+              {
+                "source": "GET /locations with filter for specific location_id",
+                "target_fields": ["id", "facility_id", "name", "status", "buildings"]
+              },
+              {
+                "source": "No direct KIPU endpoint for facility details",
+                "target_fields": ["details"],
+                "note": "May need to be stored in Supabase or local storage"
+              },
+              {
+                "source": "GET /patients/census with location_id filter",
+                "target_fields": ["meta.patients_count", "meta.occupancy_rate"]
+              },
+              {
+                "source": "GET /evaluations with location_id filter",
+                "target_fields": ["meta.documents_count"]
+              },
+              {
+                "source": "No direct KIPU endpoint for staff count",
+                "target_fields": ["meta.staff_count"],
+                "note": "May need to be derived from other endpoints or stored separately"
+              }
+            ]
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to access this facility",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to access this facility"
+            }
+          },
+          {
+            "status_code": 404,
+            "description": "Not Found - Facility not found",
+            "example": {
+              "error": "not_found",
+              "message": "Facility with ID facility_1 not found"
+            }
+          },
+          {
+            "status_code": 500,
+            "description": "Internal Server Error - Error communicating with KIPU API",
+            "example": {
+              "error": "internal_server_error",
+              "message": "Error communicating with KIPU API",
+              "details": "KIPU API returned status code 502"
+            }
+          }
+        ],
+        "implementation_details": {
+          "caching": {
+            "strategy": "Cache for 1 hour with invalidation on facility updates",
+            "key_format": "facility:{facility_id}:{user_id}"
+          },
+          "fallback": {
+            "strategy": "Use local JSON data if KIPU API is unavailable",
+            "data_source": "lib/kipu/data/facility_{facility_id}.json"
+          },
+          "zustand_integration": {
+            "store": "facilityStore",
+            "actions": [
+              "fetchFacilityById",
+              "setSelectedFacility"
+            ],
+            "state_properties": [
+              "selectedFacility",
+              "isLoading",
+              "error"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/[facility_id]/route.ts",
+            "component_usage": "components/FacilityDetails.tsx"
+          },
+          "security_considerations": [
+            "KIPU API credentials stored in Supabase and never exposed to client",
+            "All requests authenticated with Supabase JWT",
+            "Facility ID validation to prevent parameter tampering"
+          ]
+        }
+      },
+      {
+        "name": "facility_api_settings",
+        "path": "/api/kipu/facilities/{facility_id}/api_settings",
+        "method": "GET",
+        "description": "Get API settings for a specific facility",
+        "kipu_mapping": {
+          "endpoint": "N/A - Stored in Supabase with local JSON fallback",
+          "method": "N/A"
+        },
+        "request": {
+          "path_parameters": [
+            {
+              "name": "facility_id",
+              "type": "string",
+              "required": true,
+              "description": "Unique identifier for the facility"
+            }
+          ],
+          "headers": [
+            {
+              "name": "Authorization",
+              "type": "string",
+              "required": true,
+              "description": "Bearer token from Supabase authentication"
+            }
+          ]
+        },
+        "response": {
+          "content_type": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "facility_id": {
+                "type": "string",
+                "description": "Unique identifier for the facility"
+              },
+              "kipu_api_key": {
+                "type": "string",
+                "description": "KIPU API key (access_id)"
+              },
+              "kipu_api_secret": {
+                "type": "string",
+                "description": "KIPU API secret (secret_key) - masked in responses"
+              },
+              "kipu_app_id": {
+                "type": "string",
+                "description": "KIPU app_id (recipient_id)"
+              },
+              "kipu_api_endpoint": {
+                "type": "string",
+                "description": "KIPU API endpoint URL"
+              },
+              "has_api_key_configured": {
+                "type": "boolean",
+                "description": "Whether API keys are configured for this facility"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the API settings were last updated"
+              }
+            },
+            "required": ["facility_id", "has_api_key_configured"]
+          },
+          "example": {
+            "facility_id": "facility_1",
+            "kipu_api_key": "KIPU12345",
+            "kipu_api_secret": "********",
+            "kipu_app_id": "OFZdZaTiCgy5gZnjnpo-Y7pFNoQvgsLJvtQSPJpWJNM",
+            "kipu_api_endpoint": "https://api.kipuapi.com",
+            "has_api_key_configured": true,
+            "updated_at": "2025-02-15T14:30:00Z"
+          }
+        },
+        "error_responses": [
+          {
+            "status_code": 401,
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid or missing authentication token"
+            }
+          },
+          {
+            "status_code": 403,
+            "description": "Forbidden - User does not have permission to access API settings",
+            "example": {
+              "error": "forbidden",
+              "message": "You do not have permission to access API settings for this facility"
+            }
+          },
+          {
+            "status_code": 404,
+            "description": "Not Found - Facility not found",
+            "example": {
+              "error": "not_found",
+              "message": "Facility with ID facility_1 not found"
+            }
+          }
+        ],
+        "implementation_details": {
+          "data_storage": {
+            "primary": "Supabase table: facility_api_settings",
+            "schema": {
+              "id": "uuid PRIMARY KEY",
+              "facility_id": "text NOT NULL REFERENCES facilities(id)",
+              "kipu_api_key": "text",
+              "kipu_api_secret": "text (encrypted)",
+              "kipu_app_id": "text",
+              "kipu_api_endpoint": "text",
+              "created_at": "timestamptz NOT NULL DEFAULT NOW()",
+              "updated_at": "timestamptz NOT NULL DEFAULT NOW()"
+            },
+            "fallback": "lib/kipu/data/facility_api_settings.json"
+          },
+          "security": {
+            "encryption": "API secrets encrypted at rest in Supabase",
+            "access_control": "Row-level security policies in Supabase",
+            "masking": "API secrets masked in API responses"
+          },
+          "zustand_integration": {
+            "store": "facilityStore",
+            "actions": [
+              "fetchFacilityApiSettings",
+              "updateFacilityApiSettings"
+            ],
+            "state_properties": [
+              "apiSettings",
+              "isLoadingApiSettings",
+              "apiSettingsError"
+            ]
+          },
+          "nextjs_integration": {
+            "api_route": "app/api/kipu/facilities/[facility_id]/api_settings/route.ts",
+            "component_usage": "components/settings/FacilityApiSettings.tsx"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -30,6 +30,7 @@ import { usePatientStore } from '@/store/patientStore'
 import { useFacilityStore } from '@/store/facilityStore'
 import { PatientBasicInfo } from '@/lib/kipu/types'
 import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog'
+import { useSidebarStore } from '@/store/sidebarStore'
 
 // Define a type for patient context options
 type PatientContextOption = {
@@ -65,6 +66,9 @@ export function GlobalChatInputArea() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pathname = usePathname()
   const router = useRouter()
+
+  // Get sidebar collapsed state from store
+  const { sidebarCollapsed } = useSidebarStore();
 
   // Auto-resize textarea function
   const autoResizeTextarea = () => {
@@ -462,7 +466,7 @@ if (isPatientContextEnabled && currentPatient) {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-1000 pl-5 pr-5">
+    <div className={`fixed bottom-0 z-1000 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:left-20' : 'lg:left-72'} right-0`}>
       <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
         {!isExpanded ? (
           // When collapsed, only show the CHAT button with minimal width

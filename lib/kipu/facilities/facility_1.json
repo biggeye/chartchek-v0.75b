@@ -5,6 +5,12 @@
   "phone": "(213) 555-0001",
   "email": "info@caldetox.com",
   "created_at": "2023-01-01T00:00:00Z",
+  "api_settings": {
+    "kipu_api_key": "",
+    "kipu_api_endpoint": "",
+    "has_api_key_configured": false,
+    "updated_at": "2023-01-01T00:00:00Z"
+  },
   "data": {
     "patients": [
       {

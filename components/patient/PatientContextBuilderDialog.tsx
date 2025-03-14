@@ -4,7 +4,6 @@ import { useState, Fragment, useEffect } from 'react'
 import { Transition, Tab } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { PatientBasicInfo } from '@/lib/kipu/types'
 import { cn } from '@/lib/utils'
 import { usePatientStore, PatientContextOption } from '@/store/patientStore'
@@ -12,8 +11,7 @@ import {
   Dialog, 
   DialogContent, 
   DialogTitle,
-  DialogHeader,
-  DialogFooter
+  DialogHeader
 } from '@/components/ui/dialog'
 
 type PatientContextBuilderDialogProps = {
@@ -35,11 +33,13 @@ export function PatientContextBuilderDialog({
     currentPatientAppointments: patientAppointments,
     isLoading,
     selectedContextOptions,
-    updatePatientContextOptions
+    updatePatientContextOptions,
+    fetchPatientEvaluations
   } = usePatientStore();
   
   const [selectedOptions, setSelectedOptions] = useState<PatientContextOption[]>([])
   const [allOptions, setAllOptions] = useState<PatientContextOption[]>([])
+  const [loadingEvaluations, setLoadingEvaluations] = useState(false)
   
   // Generate options based on available patient data
   const generateOptions = (): PatientContextOption[] => {
@@ -104,6 +104,15 @@ export function PatientContextBuilderDialog({
           category: 'evaluation'
         })
       }
+
+      if (evaluation.notes) {
+        options.push({
+          id: `notes_${index}`,
+          label: `${evaluation.evaluation_type}: ${evaluation.notes.substring(0, 30)}...`,
+          value: `${evaluation.evaluation_type}: ${evaluation.notes}`,
+          category: 'evaluation'
+        })
+      }
     })
     
     // Vital signs
@@ -129,6 +138,27 @@ export function PatientContextBuilderDialog({
     return options
   }
   
+  // Load evaluations when dialog opens
+  useEffect(() => {
+    if (isOpen && patient) {
+      const loadEvaluations = async () => {
+        setLoadingEvaluations(true)
+        try {
+          // If we have a facility ID and patient ID, fetch evaluations
+          if (patient.facility_id && patient.id) {
+            await fetchPatientEvaluations(patient.facility_id, patient.id)
+          }
+        } catch (error) {
+          console.error('Error loading evaluations:', error)
+        } finally {
+          setLoadingEvaluations(false)
+        }
+      }
+      
+      loadEvaluations()
+    }
+  }, [isOpen, patient, fetchPatientEvaluations])
+  
   // Initialize options when patient data changes
   useEffect(() => {
     if (patient) {
@@ -146,15 +176,25 @@ export function PatientContextBuilderDialog({
     }
   }, [patient, patientEvaluations, patientVitalSigns, patientAppointments, selectedContextOptions])
   
+  // Check if an option is selected
+  const isOptionSelected = (optionId: string) => {
+    return selectedOptions.some(opt => opt.id === optionId)
+  }
+  
   const handleOptionToggle = (option: PatientContextOption) => {
+    console.log('Toggle option:', option.id, 'Current selected:', selectedOptions.map(o => o.id));
+    
     setSelectedOptions(prev => {
-      const exists = prev.some(opt => opt.id === option.id)
+      const exists = prev.some(opt => opt.id === option.id);
+      
       if (exists) {
-        return prev.filter(opt => opt.id !== option.id)
+        console.log('Removing option:', option.id);
+        return prev.filter(opt => opt.id !== option.id);
       } else {
-        return [...prev, option]
+        console.log('Adding option:', option.id);
+        return [...prev, option];
       }
-    })
+    });
   }
   
   const handleApply = () => {
@@ -177,7 +217,7 @@ export function PatientContextBuilderDialog({
           </button>
         </DialogHeader>
         
-        {isLoading ? (
+        {isLoading || loadingEvaluations ? (
           <div className="mt-4 flex justify-center">
             <p>Loading patient data...</p>
           </div>
@@ -226,10 +266,12 @@ export function PatientContextBuilderDialog({
                         .filter(opt => opt.category === 'basic')
                         .map(option => (
                           <div key={option.id} className="flex items-center space-x-2">
-                            <Checkbox
+                            <input
+                              type="checkbox"
                               id={option.id}
-                              checked={selectedOptions.some(opt => opt.id === option.id)}
+                              checked={isOptionSelected(option.id)}
                               onChange={() => handleOptionToggle(option)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <label
                               htmlFor={option.id}
@@ -241,7 +283,7 @@ export function PatientContextBuilderDialog({
                         ))}
                     </div>
                   </Tab.Panel>
-                  <Tab.Panel className="rounded-xl bg-white p-3">
+                  <Tab.Panel className="rounded-xl bg-white p-3 max-h-[300px] overflow-y-auto">
                     <div className="space-y-4">
                       {/* Evaluations */}
                       <div>
@@ -249,21 +291,29 @@ export function PatientContextBuilderDialog({
                         <div className="space-y-2">
                           {allOptions
                             .filter(opt => opt.category === 'evaluation')
-                            .map(option => (
-                              <div key={option.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={option.id}
-                                  checked={selectedOptions.some(opt => opt.id === option.id)}
-                                  onChange={() => handleOptionToggle(option)}
-                                />
-                                <label
-                                  htmlFor={option.id}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {option.label}
-                                </label>
-                              </div>
-                            ))}
+                            .length > 0 ? (
+                            allOptions
+                              .filter(opt => opt.category === 'evaluation')
+                              .map(option => (
+                                <div key={option.id} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={option.id}
+                                    checked={isOptionSelected(option.id)}
+                                    onChange={() => handleOptionToggle(option)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={option.id}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {option.label}
+                                  </label>
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500">No evaluations available</div>
+                          )}
                         </div>
                       </div>
                       
@@ -273,21 +323,29 @@ export function PatientContextBuilderDialog({
                         <div className="space-y-2">
                           {allOptions
                             .filter(opt => opt.category === 'vitalSigns')
-                            .map(option => (
-                              <div key={option.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={option.id}
-                                  checked={selectedOptions.some(opt => opt.id === option.id)}
-                                  onChange={() => handleOptionToggle(option)}
-                                />
-                                <label
-                                  htmlFor={option.id}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {option.label}
-                                </label>
-                              </div>
-                            ))}
+                            .length > 0 ? (
+                            allOptions
+                              .filter(opt => opt.category === 'vitalSigns')
+                              .map(option => (
+                                <div key={option.id} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={option.id}
+                                    checked={isOptionSelected(option.id)}
+                                    onChange={() => handleOptionToggle(option)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={option.id}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {option.label}
+                                  </label>
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500">No vital signs available</div>
+                          )}
                         </div>
                       </div>
                       
@@ -297,21 +355,29 @@ export function PatientContextBuilderDialog({
                         <div className="space-y-2">
                           {allOptions
                             .filter(opt => opt.category === 'appointments')
-                            .map(option => (
-                              <div key={option.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={option.id}
-                                  checked={selectedOptions.some(opt => opt.id === option.id)}
-                                  onChange={() => handleOptionToggle(option)}
-                                />
-                                <label
-                                  htmlFor={option.id}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {option.label}
-                                </label>
-                              </div>
-                            ))}
+                            .length > 0 ? (
+                            allOptions
+                              .filter(opt => opt.category === 'appointments')
+                              .map(option => (
+                                <div key={option.id} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={option.id}
+                                    checked={isOptionSelected(option.id)}
+                                    onChange={() => handleOptionToggle(option)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={option.id}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {option.label}
+                                  </label>
+                                </div>
+                              ))
+                          ) : (
+                            <div className="text-sm text-gray-500">No appointments available</div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -320,14 +386,14 @@ export function PatientContextBuilderDialog({
               </Tab.Group>
             </div>
             
-            <DialogFooter className="mt-6 flex justify-end space-x-2">
-              <Button color="zinc" onClick={onClose}>
+            <div className="mt-6 flex justify-end gap-2 border-t border-gray-200 pt-4">
+              <Button onClick={onClose} color="zinc">
                 Cancel
               </Button>
-              <Button onClick={handleApply}>
+              <Button onClick={handleApply} color="blue">
                 Apply
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
       </DialogContent>

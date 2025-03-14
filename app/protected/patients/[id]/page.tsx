@@ -13,11 +13,22 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog';
 import { PatientContextOption } from '@/store/patientStore';
+import Breadcrumb from '@/components/ui/breadcrumb';
+import { ChartChekModal } from '@/components/patient/ChartChekModal';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+
+// Define Page interface for breadcrumb
+interface Page {
+  name: string;
+  href: string;
+  current: boolean;
+}
 
 export default function PatientDetailsPage() {
   const params = useParams();
   const patientId = params.id as string;
   const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false);
+  const [isChartChekModalOpen, setIsChartChekModalOpen] = useState(false);
   
   const { 
     currentPatient, 
@@ -55,6 +66,10 @@ export default function PatientDetailsPage() {
     updatePatientContextOptions(options);
     setPatientContextEnabled(true);
     setIsPatientContextBuilderOpen(false);
+  };
+
+  const handleOpenChartChek = () => {
+    setIsChartChekModalOpen(true);
   };
 
   if (isLoading) {
@@ -98,18 +113,35 @@ export default function PatientDetailsPage() {
     }
   };
 
+  // Prepare breadcrumb pages
+  const breadcrumbPages: Page[] = [
+    { name: 'Patients', href: '/protected/patients', current: false },
+    { name: `${currentPatient.first_name} ${currentPatient.last_name}`, href: '#', current: true },
+  ];
+
   return (
     <div className="container py-6">
-      <div className="flex justify-between items-center mb-6">
+      <Breadcrumb pages={breadcrumbPages} />
+      
+      <div className="flex justify-between items-center my-6">
         <h1 className="text-2xl font-bold">
           {currentPatient.first_name} {currentPatient.last_name}
         </h1>
-        <Button
-          onClick={handleTogglePatientContext}
-          color={isPatientContextEnabled ? "red" : "dark/zinc"}
-        >
-          {isPatientContextEnabled ? "Disable Patient Context" : "Enable Patient Context"}
-        </Button>
+        <div className="flex space-x-3">
+          <Button
+            onClick={handleOpenChartChek}
+            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+          >
+            <ChatBubbleLeftRightIcon className="h-5 w-5" />
+            ChartChek
+          </Button>
+          <Button
+            onClick={handleTogglePatientContext}
+            color={isPatientContextEnabled ? "red" : "dark/zinc"}
+          >
+            {isPatientContextEnabled ? "Disable Patient Context" : "Enable Patient Context"}
+          </Button>
+        </div>
       </div>
 
       <PatientTabsLayout
@@ -133,6 +165,12 @@ export default function PatientDetailsPage() {
         isOpen={isPatientContextBuilderOpen}
         onClose={() => setIsPatientContextBuilderOpen(false)}
         onApply={handleApplyContextOptions}
+      />
+
+      <ChartChekModal
+        isOpen={isChartChekModalOpen}
+        onClose={() => setIsChartChekModalOpen(false)}
+        patientId={patientId}
       />
     </div>
   );

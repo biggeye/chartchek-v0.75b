@@ -1,0 +1,140 @@
+{
+  "KIPU_API_Documentation": {
+    "base_url": "https://api.kipuapi.com",
+    "credentials": {
+      "access_id": "your_access_id",
+      "secret_key": "your_secret_key",
+      "app_id": "your_app_id (also referred to as recipient_id)"
+    },
+    "authentication": {
+      "description": "All requests require an encoded signature generated using HMAC SHA-1. The signature is created by building a canonical string, hashing it with the secret_key, and then Base64 encoding the result.",
+      "authorization_header_format": "APIAuth access_id:signature",
+      "note": "There is a space between APIAuth and your access_id."
+    },
+    "headers": {
+      "POST": [
+        "Accept",
+        "Date",
+        "Authorization",
+        "Content-Type",
+        "Content-MD5"
+      ],
+      "GET": [
+        "Accept",
+        "Date",
+        "Authorization"
+      ],
+      "header_descriptions": {
+        "Authorization": "Format: APIAuth access_id:signature. The signature is a Base64 encoded HMAC SHA-1 hash of the canonical string.",
+        "Accept": "application/vnd.kipusystems+json; version=3 (constant value)",
+        "Date": "Current date/time in RFC 822 (updated by RFC 1123) format (e.g., 'Wed, 06 Nov 2019 15:38:34 GMT')",
+        "Content-Type": "For POST requests: either 'application/json' or 'multipart/form-data; boundary=BOUNDARY' where BOUNDARY is a chosen string.",
+        "Content-MD5": "24-character Base64 encoded MD5 digest of the request body"
+      }
+    },
+    "signature_calculation": {
+      "steps": [
+        "Build a canonical string",
+        "Create an HMAC SHA-1 encrypted hash of the canonical string using the secret_key",
+        "Perform a strict Base64 encoding of the HMAC hash"
+      ],
+      "canonical_string_format": {
+        "POST": "Content-Type,Content-MD5,request_uri,Date",
+        "GET": ",,request_uri,Date"
+      },
+      "sample_canonical_strings": {
+        "POST": "application/json,VpofNeoRAzRvCD/YjO1mSw==,/api/patients,Wed, 06 Nov 2019 15:38:34 GMT",
+        "GET": ",,/api/patients/census?phi_level=high&app_id=OFZdZaTiCgy5gZnjnpo-Y7pFNoQvgsLJvtQSPJpWJNM,Thu,07 Nov 2019 20:08:59 GMT"
+      },
+      "note": "For GET requests, note the two initial commas. The request_uri must include all query parameters."
+    },
+    "request_uri": {
+      "description": "The full request path including any query parameters. For example: '/api/patients/census?app_id=...&phi_level=high'"
+    },
+    "multipart_post": {
+      "description": "Used when the request body includes attachments_attributes (e.g., file uploads). Supported attachment types are PDF and JPEG.",
+      "attachment_instructions": {
+        "client_id_image": "attachment_name: patient_patient_id_image",
+        "client_profile_picture": "attachment_name: patient_image",
+        "insurance_card_front": "attachment_name: insurance_image, origin_id must match the insurance record's origin_id",
+        "insurance_card_back": "attachment_name: insurance_insurance_card_image, origin_id must match the insurance record's origin_id",
+        "generic_attachments": "Do not include the 'attachment_name' attribute",
+        "patient_evaluation_attachments": "Include attachment_evaluation_item_id, attachment_name: patient_evaluation_item, and an origin_id matching the patient evaluation record",
+        "process_tab_attachment": "Include attachment_patient_process_id with the corresponding patient process tab id"
+      },
+      "sample_canonical_string": "multipart/form-data; boundary=MultipartBoundary,NgiQILMBhq14F8dACXPiAg==,/api/patients,Fri,12 Jun 2020 14:29:47 GMT",
+      "note": "Each request body field name is URL-encoded. The body parts are separated by the boundary string."
+    },
+    "sample_multipart_request": "A multipart POST request contains content parts separated by BOUNDARY strings. Each part includes headers like Content-Disposition and, for files, Content-Type, followed by the content.",
+    "response_codes": [
+      {
+        "code": 200,
+        "text": "OK",
+        "description": "Successful GET request."
+      },
+      {
+        "code": 201,
+        "text": "Created",
+        "description": "Successful POST request where a record was created."
+      },
+      {
+        "code": 400,
+        "text": "Bad Request",
+        "description": "The request was invalid or cannot be otherwise served."
+      },
+      {
+        "code": 401,
+        "text": "Unauthorized",
+        "description": "Authentication signature was missing or incorrect."
+      },
+      {
+        "code": 403,
+        "text": "Forbidden",
+        "description": "The request is understood, but access is refused or not allowed."
+      },
+      {
+        "code": 404,
+        "text": "Not Found",
+        "description": "The requested URI is invalid, or the resource does not exist. Also returned when the requested format is not supported."
+      },
+      {
+        "code": 410,
+        "text": "Gone",
+        "description": "The resource is no longer available; the API endpoint has been turned off."
+      },
+      {
+        "code": 422,
+        "text": "Not Processable Entity",
+        "description": "Returned when an attachment cannot be processed."
+      },
+      {
+        "code": 500,
+        "text": "Server Error",
+        "description": "Something is broken on the server side."
+      },
+      {
+        "code": 502,
+        "text": "Bad Gateway",
+        "description": "Kipu API services are down or being upgraded."
+      },
+      {
+        "code": 503,
+        "text": "Service Unavailable",
+        "description": "The API services are up but overloaded with requests. Try again later."
+      },
+      {
+        "code": 504,
+        "text": "Gateway Timeout",
+        "description": "The API services are up but the request couldn't be serviced due to an internal failure. Try again later."
+      }
+    ],
+    "notes": {
+      "patch_requests": "When PATCH requests with binary data are not supported (e.g., in Salesforce), use POST with an X-HTTP-Method-Override header set to PATCH.",
+      "date_header": "If the Date header is forbidden by the client, use the X-Auth-Date header instead."
+    }
+  },
+  "related_files": {
+    "endpoints.json": "Contains a list of API endpoints. Each entry in endpoints.json can be enriched with additional details as needed.",
+    "schemas.json": "Contains a list of API schemas. Each entry in schemas.json can be enriched with additional details as needed."
+  }
+}

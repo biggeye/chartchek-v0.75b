@@ -1,6 +1,6 @@
 'use client'
 import { chatStore } from '@/store/chatStore';
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Dialog,
@@ -44,6 +44,7 @@ import { useStreamStore } from '@/store/streamStore';
 import { FacilitySelector } from '@/components/ui/facility-selector';
 import { useFacilityStore } from '@/store/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
+import { useSidebarStore } from '@/store/sidebarStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -53,15 +54,14 @@ interface AppLayoutProps {
 export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [showInsights, setShowInsights] = useState(true);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const pathname = usePathname();
-  const { currentFacilityId } = useFacilityStore();
 
-  // Initialize stores
-  const { createThread, sendMessage, setCurrentAssistantId } = chatStore();
+
+  // Use sidebar store instead of local state
+  const { sidebarCollapsed, setSidebarCollapsed, toggleSidebar } = useSidebarStore();
 
   // Navigation items
   const navigation = [
@@ -75,8 +75,8 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
 
   // User dropdown items
   const userNavigation = [
-    { name: 'Profile', href: `/protected/account/${user_id}` },
-    { name: 'Settings', href: '/protected/settings' },
+    { name: 'Your Profile', href: '/protected/account' },
+    { name: 'Facility Settings', href: '/protected/settings' },
     { name: 'Sign out', href: '#', onClick: async () => await signOutAction() },
   ];
 
@@ -208,7 +208,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex ${sidebarWidth} lg:flex-col transition-all duration-300 ease-in-out`}>
           {/* Toggle button positioned at 50% vertical and on right edge */}
           <button 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={() => toggleSidebar()}
             className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-10 bg-background rounded-full border border-border shadow-md p-1 text-foreground-muted hover:text-foreground transition-colors"
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -226,17 +226,6 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
                   <h1 className="text-2xl font-bold tracking-tight text-primary-600">ChartChek</h1>
                 )}
               </div>
-              {!sidebarCollapsed && (
-                <button
-                  onClick={() => setUserModalOpen(true)}
-                  className="flex items-center rounded-md p-1 text-sm font-semibold text-foreground hover:bg-background-muted"
-                >
-                  <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
-                </button>
-              )}
-              <div className="flex items-center">
-                <ThemeSwitcher />
-              </div>
             </div>
             
             {/* Desktop Facility Selector */}
@@ -251,30 +240,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
                 {/* In narrow mode, show user icon at the top */}
                 {sidebarCollapsed && (
                   <li className="flex flex-col items-center space-y-4 py-2">
-                    <button
-                      onClick={() => setUserModalOpen(true)}
-                      className="flex items-center justify-center"
-                    >
-                      <UserCircleIcon className="h-7 w-7 rounded-full text-foreground-muted" aria-hidden="true" />
-                    </button>
-                    
-                    {/* Collapsed Facility Selector */}
-                    <button
-                      onClick={() => {
-                        // Create a temporary state to expand sidebar, show facility selector, then collapse again
-                        setSidebarCollapsed(false);
-                        setTimeout(() => {
-                          const facilitySelector = document.querySelector('[data-facility-selector="true"]');
-                          if (facilitySelector) {
-                            (facilitySelector as HTMLElement).click();
-                          }
-                        }, 300);
-                      }}
-                      title="Select Facility"
-                      className="flex items-center justify-center p-1 rounded-md hover:bg-muted"
-                    >
-                      <BuildingOffice2Icon className="h-7 w-7 text-foreground-muted" aria-hidden="true" />
-                    </button>
+                    {/* Removed user and facility buttons */}
                   </li>
                 )}
                 <li>
@@ -328,7 +294,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
               <FacilitySelector variant="header" data-facility-selector="true" />
             </div>
             
-            <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
+            <div className="flex flex-1 justify-end gap-x-4 lg:gap-x-6">
               {/* Mobile Facility Selector (visible on small screens) */}
               <div className="flex items-center md:hidden">
                 <FacilitySelector variant="header" />
@@ -336,13 +302,81 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
               
               {/* User dropdown */}
               <div className="flex items-center gap-x-4 lg:gap-x-6">
-                <button
-                  onClick={() => setUserModalOpen(true)}
-                  className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted"
-                >
-                  <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
-                  <span className="hidden lg:block">Account</span>
-                </button>
+                <Menu as="div" className="relative inline-block text-left">
+                  <MenuButton className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted">
+                    <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
+                    <span className="hidden lg:block">Account</span>
+                    <ChevronDownIcon className="h-5 w-5 text-foreground-muted" aria-hidden="true" />
+                  </MenuButton>
+                  <Transition
+                    as={Fragment}
+                    enter="transition ease-out duration-100"
+                    enterFrom="transform opacity-0 scale-95"
+                    enterTo="transform opacity-100 scale-100"
+                    leave="transition ease-in duration-75"
+                    leaveFrom="transform opacity-100 scale-100"
+                    leaveTo="transform opacity-0 scale-95"
+                  >
+                    <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-background shadow-lg ring-1 ring-border ring-opacity-5 focus:outline-none">
+                      <div className="py-1">
+                        <MenuItem>
+                          {({ active }) => (
+                            <Link
+                              href="/protected/profile"
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                                'block px-4 py-2 text-sm'
+                              )}
+                            >
+                              Your Profile
+                            </Link>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ active }) => (
+                            <Link
+                              href="/protected/settings"
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                                'block px-4 py-2 text-sm'
+                              )}
+                            >
+                              Facility Settings
+                            </Link>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ active }) => (
+                            <div
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                                'block px-4 py-2 text-sm'
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>Theme</span>
+                                <ThemeSwitcher />
+                              </div>
+                            </div>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ active }) => (
+                            <button
+                              onClick={async () => await signOutAction()}
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                                'block w-full text-left px-4 py-2 text-sm'
+                              )}
+                            >
+                              Sign out
+                            </button>
+                          )}
+                        </MenuItem>
+                      </div>
+                    </MenuItems>
+                  </Transition>
+                </Menu>
               </div>
             </div>
           </div>

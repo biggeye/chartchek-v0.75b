@@ -2,7 +2,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
-
+import { Analytics } from "@vercel/analytics/react"
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -31,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </ThemeProvider>
       </body>
+      <Analytics />
     </html>
   );
 }

@@ -3,17 +3,18 @@ import { Document as DBDocument } from "@/types/database";
 import { Document as StoreDocument } from "@/types/store/document";
 import { Input } from '@/components/ui/input';
 import { ArrowUpTrayIcon } from '@heroicons/react/20/solid';
+import Link from 'next/link';
 
 interface DocumentsTableProps {
   documents: StoreDocument[];
-  onEditDocument?: (documentId: string) => void;
+  detailsUrlPrefix?: string;
   onFileSelect?: (file: File) => Promise<void>;
   isLoading?: boolean;
 }
 
 export default function DocumentsTable({ 
   documents, 
-  onEditDocument, 
+  detailsUrlPrefix = '/protected/documents', 
   onFileSelect,
   isLoading = false 
 }: DocumentsTableProps) {
@@ -79,12 +80,12 @@ export default function DocumentsTable({
                       <td className="hidden md:table-cell px-3 py-4 text-sm whitespace-nowrap text-gray-500">{d.facility_id}</td>
                       <td className="hidden sm:table-cell px-3 py-4 text-sm whitespace-nowrap text-gray-500">{d.file_type}</td>
                       <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                        <button 
-                          onClick={() => onEditDocument && onEditDocument(d.document_id)}
+                        <Link 
+                          href={`${detailsUrlPrefix}/${d.document_id}`}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
-                          Edit<span className="sr-only">{d.file_name}</span>
-                        </button>
+                          View<span className="sr-only">, {d.file_name}</span>
+                        </Link>
                       </td>
                     </tr>
                   ))}
