@@ -211,7 +211,7 @@ export const MessageList = React.memo(({
           <div
             key={message.id || id}
             className={cn(
-              'flex w-full max-w-screen-md items-start gap-2 rounded-lg px-4 py-2',
+              'flex w-full items-start gap-2 rounded-lg px-4 py-2',
               message.role === 'user' ? 'ml-auto bg-primary/10' : 'mr-auto bg-muted'
             )}
           >

@@ -466,33 +466,44 @@ if (isPatientContextEnabled && currentPatient) {
   };
 
   return (
-    <div className={`fixed bottom-0 z-1000 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:left-20' : 'lg:left-72'} right-0`}>
-      <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
-        {!isExpanded ? (
-          // When collapsed, only show the CHAT button with minimal width
-          <div className="flex justify-center">
-            <button 
-              onClick={() => setIsExpanded(true)}
-              className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
-            >
-              CHAT
-            </button>
-          </div>
-        ) : isStreamingActive ? (
-          // When streaming is active, show a spinner for the entire component
-          <div className="rounded-lg bg-gradient-to-b from-background to-background/90 shadow-lg ring-1 ring-gray-900/10 p-4">
-            <div className="flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-              <span className="text-sm text-gray-600 font-medium">Processing...</span>
+    <div 
+      className="fixed bottom-0 z-1000 transition-all duration-300 ease-in-out right-0 left-0 w-full"
+    >
+      <div 
+        className="w-full px-2 sm:px-4 lg:px-6 flex justify-center"
+      >
+        <div 
+          className={`
+            ${!isExpanded 
+              ? 'w-auto' 
+              : 'w-[95%] sm:w-[95%] md:w-[95%] lg:w-[90%] xl:w-[85%] max-w-7xl mx-auto'
+            }
+            mb-4
+          `}
+        >
+          {!isExpanded ? (
+            // When collapsed, only show the CHAT button with minimal width
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setIsExpanded(true)}
+                className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
+              >
+                CHAT
+              </button>
             </div>
-          </div>
-        ) : (
-          // When expanded and not streaming, show the full chat interface
-          <div className="rounded-lg bg-gradient-to-b from-background to-background/90 shadow-lg ring-1 ring-gray-900/10">
-            {/* Assistant Selector */}
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-gradient-to-r from-gray-50/5 to-gray-100/10 rounded-t-lg relative">
-              {/* Right header content with New conversation button */}
-              <div className="flex items-center justify-between w-full">
+          ) : isStreamingActive ? (
+            // When streaming is active, show a spinner for the entire component
+            <div className="rounded-lg bg-gradient-to-b from-background to-background/90 shadow-lg ring-1 ring-gray-900/10 p-4">
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+                <span className="text-sm text-gray-600 font-medium">Processing...</span>
+              </div>
+            </div>
+          ) : (
+            // When expanded and not streaming, show the redesigned chat interface
+            <div className="relative">
+              {/* Tabs on top of input field */}
+              <div className="flex items-center justify-between mb-1 px-2">
                 {/* Left side with assistant selector */}
                 <div className="flex items-center gap-2">
                   {assistantLogoPath ? (
@@ -520,6 +531,14 @@ if (isPatientContextEnabled && currentPatient) {
                   </div>
                 </div>
                 
+                {/* Centered HIDE button */}
+                <button 
+                  onClick={() => setIsExpanded(false)}
+                  className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
+                >
+                  HIDE
+                </button>
+                
                 {/* Right side with New conversation button */}
                 <div className="flex items-center">
                   {/* New conversation button */}
@@ -546,334 +565,320 @@ if (isPatientContextEnabled && currentPatient) {
                   </Button>
                 </div>
               </div>
-              {/* Centered HIDE button */}
-              <button 
-                onClick={() => setIsExpanded(false)}
-                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
-              >
-                HIDE
-              </button>
-              <div className="flex items-center space-x-2">
-                {/* Any other controls that might be on the right side */}
-              </div>
-            </div>
 
-            {/* Chat input area */}
-            <div className="flex flex-col space-y-3 p-3">
-              {/* Main chat input area */}
-              <div className="bg-transparent relative">
-                <div className="max-w-7xl mx-auto px-10 sm:px-4 lg:px-8 py-0.5">
-                  {/* Patient Context Indicator */}
-                  {isPatientContextEnabled && currentPatient && (
-                    <div className="mb-2 flex items-center justify-between bg-blue-50 p-2 rounded-md">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-blue-800 font-medium">
-                          Patient Context: {currentPatient.first_name} {currentPatient.last_name}
-                        </span>
-                        <button
-                          onClick={openPatientContextBuilder}
-                          className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 p-1 text-blue-700 shadow-sm hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                          <AdjustmentsHorizontalIcon className="h-3 w-3" aria-hidden="true" />
-                        </button>
-                        {selectedContextOptions.length > 0 && (
-                          <span className="text-xs text-blue-600">
-                            ({selectedContextOptions.length} details selected)
-                          </span>
-                        )}
-                      </div>
-                      <button 
-                        onClick={togglePatientContext}
-                        className="text-blue-800 hover:text-blue-600"
-                        aria-label="Remove patient context"
+              {/* Chat input area - Now directly below the tabs without card wrapper */}
+              <div className="bg-transparent">
+                {/* Patient Context Indicator */}
+                {isPatientContextEnabled && currentPatient && (
+                  <div className="mb-2 flex items-center justify-between bg-blue-50 p-2 rounded-md">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-blue-800 font-medium">
+                        Patient Context: {currentPatient.first_name} {currentPatient.last_name}
+                      </span>
+                      <button
+                        onClick={openPatientContextBuilder}
+                        className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 p-1 text-blue-700 shadow-sm hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       >
-                        <XCircleIcon className="h-4 w-4" />
+                        <AdjustmentsHorizontalIcon className="h-3 w-3" aria-hidden="true" />
                       </button>
-                    </div>
-                  )}
-                  {/* File Attachments Display */}
-                  {storeFileQueue.length > 0 && (
-                    <div className="mb-2 pt-1">
-                      <div className="flex flex-wrap gap-2">
-                        {storeFileQueue.map((file, index) => (
-                          <div key={'document_id' in file ? file.document_id : index} className="flex items-center bg-gray-100 rounded-md px-2 py-1">
-                            <span className="text-xs text-gray-800 truncate max-w-[150px]">{file.file_name}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeFile(index)}
-                              className="ml-1 text-gray-500 hover:text-gray-700"
-                              aria-label={`Remove ${file.file_name}`}
-                            >
-                              <XCircleIcon className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Main Input Area - Redesigned with solid border and integrated send button */}
-                  <div className="relative pt-2 pb-4">
-                    <div
-                      className={cn(
-                        'flex w-full items-center rounded-lg border-2 border-gray-300 bg-white px-3 py-2.5 shadow-sm',
-                        isSubmitting && 'opacity-50'
+                      {selectedContextOptions.length > 0 && (
+                        <span className="text-xs text-blue-600">
+                          ({selectedContextOptions.length} details selected)
+                        </span>
                       )}
+                    </div>
+                    <button 
+                      onClick={togglePatientContext}
+                      className="text-blue-800 hover:text-blue-600"
+                      aria-label="Remove patient context"
                     >
-                      {/* Action buttons - responsive implementation */}
-                      <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
-                        {/* Mobile dropdown menu */}
-                        <div className="md:hidden relative">
+                      <XCircleIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                
+                {/* File Attachments Display */}
+                {storeFileQueue.length > 0 && (
+                  <div className="mb-2 pt-1">
+                    <div className="flex flex-wrap gap-2">
+                      {storeFileQueue.map((file, index) => (
+                        <div key={'document_id' in file ? file.document_id : index} className="flex items-center bg-gray-100 rounded-md px-2 py-1">
+                          <span className="text-xs text-gray-800 truncate max-w-[150px]">{file.file_name}</span>
                           <button
                             type="button"
-                            onClick={() => setShowMobileMenu(!showMobileMenu)}
-                            className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
+                            onClick={() => removeFile(index)}
+                            className="ml-1 text-gray-500 hover:text-gray-700"
+                            aria-label={`Remove ${file.file_name}`}
                           >
-                            <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
-                         
+                            <XCircleIcon className="h-3 w-3" />
                           </button>
-                          
-                          {showMobileMenu && (
-                            <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-10">
-                              <div className="py-1">
-                                <button
-                                  onClick={() => {
-                                    toggleAttachFilesPanel();
-                                    setShowMobileMenu(false);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                                >
-                                  <PaperClipIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                  Attach files
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    togglePatientPanel();
-                                    setShowMobileMenu(false);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                                >
-                                  <UserPlusIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                  Patient context
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    toggleDocumentListPanel();
-                                    setShowMobileMenu(false);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                                >
-                                  <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                  Browse documents
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                        
-                        {/* Desktop individual buttons */}
-                        <div className="hidden md:flex items-center">
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={toggleAttachFilesPanel}
-                              className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                              aria-label="Attach files"
-                            >
-                              <PaperClipIcon className="h-5 w-5" />
-                            </button>
-                            
-                            {/* Attach Files Dropdown */}
-                            {showAttachFilesPanel && (
-                              <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[150px] z-10">
-                              <div className="py-1">
-                                <input
-                                  type="file"
-                                  id="file"
-                                  ref={fileInputRef}
-                                  onChange={handleFileSelect}
-                                  className="hidden"
-                                />
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                >
-                                  Upload a file
-                                </button>
-                              </div>
-                            </div>
-                            )}
-                          </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={togglePatientPanel}
-                              className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                              aria-label="Set patient context"
-                            >
-                              <UserPlusIcon className="h-5 w-5" />
-                            </button>
-                            
-                            {/* Patient Panel Dropdown */}
-                            {showPatientPanel && facilityId && (
-                              <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[200px] z-10">
-                                <div className="py-1 max-h-56 overflow-y-auto">
-                                  {patients.length === 0 ? (
-                                    <div className="px-4 py-2 text-sm text-gray-500">No patients found</div>
-                                  ) : (
-                                    patients.map((patient: PatientBasicInfo) => (
-                                      <button
-                                        key={patient.id || patient.casefile_id || patient.mr_number}
-                                        onClick={() => selectPatient(patient)}
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                      >
-                                        {patient.first_name} {patient.last_name}
-                                      </button>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={toggleDocumentListPanel}
-                              className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                              aria-label="Browse documents"
-                            >
-                              <DocumentIcon className="h-5 w-5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <textarea
-                        rows={1}
-                        name="message"
-                        id="message"
-                        disabled={isSubmitting}
-                        value={message}
-                        ref={textareaRef}
-                        onChange={(e) => {
-                          setMessage(e.target.value);
-                          // Height will be auto-adjusted by the effect hook
-                        }}
-                        onKeyDown={handleKeyPress}
-                        className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
-                        placeholder="Type your message..."
-                      />
-                      
-                      {/* Right side send button */}
-                      <div className="flex-shrink-0 ml-2 pl-2 border-l">
+                {/* Main Input Area - Expanded to full width */}
+                <div className="relative">
+                  <div
+                    className={cn(
+                      'flex w-full items-center rounded-lg border-2 border-gray-300 bg-white px-3 py-2.5 shadow-sm',
+                      isSubmitting && 'opacity-50'
+                    )}
+                  >
+                    {/* Action buttons - responsive implementation */}
+                    <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
+                      {/* Mobile dropdown menu */}
+                      <div className="md:hidden relative">
                         <button
                           type="button"
-                          onClick={handleSubmit}
-                          disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
-                          className={cn(
-                            'inline-flex items-center justify-center text-blue-600 hover:text-blue-800',
-                            (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
-                          )}
-                          aria-label="Send message"
+                          onClick={() => setShowMobileMenu(!showMobileMenu)}
+                          className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
                         >
-                          <SendIcon className="h-5 w-5" />
+                          <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
+                       
                         </button>
+                        
+                        {showMobileMenu && (
+                          <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-10">
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  toggleAttachFilesPanel();
+                                  setShowMobileMenu(false);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                              >
+                                <PaperClipIcon className="h-4 w-4 mr-2 text-gray-500" />
+                                Attach files
+                              </button>
+                              <button
+                                onClick={() => {
+                                  togglePatientPanel();
+                                  setShowMobileMenu(false);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                              >
+                                <UserPlusIcon className="h-4 w-4 mr-2 text-gray-500" />
+                                Patient context
+                              </button>
+                              <button
+                                onClick={() => {
+                                  toggleDocumentListPanel();
+                                  setShowMobileMenu(false);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                              >
+                                <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
+                                Browse documents
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
+                      
+                      {/* Desktop individual buttons */}
+                      <div className="hidden md:flex items-center">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={toggleAttachFilesPanel}
+                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                            aria-label="Attach files"
+                          >
+                            <PaperClipIcon className="h-5 w-5" />
+                          </button>
+                          
+                          {/* Attach Files Dropdown */}
+                          {showAttachFilesPanel && (
+                            <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[150px] z-10">
+                            <div className="py-1">
+                              <input
+                                type="file"
+                                id="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                className="hidden"
+                              />
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                              >
+                                Upload a file
+                              </button>
+                            </div>
+                          </div>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={togglePatientPanel}
+                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                            aria-label="Set patient context"
+                          >
+                            <UserPlusIcon className="h-5 w-5" />
+                          </button>
+                          
+                          {/* Patient Panel Dropdown */}
+                          {showPatientPanel && facilityId && (
+                            <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[200px] z-10">
+                              <div className="py-1 max-h-56 overflow-y-auto">
+                                {patients.length === 0 ? (
+                                  <div className="px-4 py-2 text-sm text-gray-500">No patients found</div>
+                                ) : (
+                                  patients.map((patient: PatientBasicInfo) => (
+                                    <button
+                                      key={patient.id || patient.casefile_id || patient.mr_number}
+                                      onClick={() => selectPatient(patient)}
+                                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                    >
+                                      {patient.first_name} {patient.last_name}
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={toggleDocumentListPanel}
+                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                            aria-label="Browse documents"
+                          >
+                            <DocumentIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <textarea
+                      rows={1}
+                      name="message"
+                      id="message"
+                      disabled={isSubmitting}
+                      value={message}
+                      ref={textareaRef}
+                      onChange={(e) => {
+                        setMessage(e.target.value);
+                        // Height will be auto-adjusted by the effect hook
+                      }}
+                      onKeyDown={handleKeyPress}
+                      className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
+                      placeholder="Type your message..."
+                    />
+                    
+                    {/* Right side send button */}
+                    <div className="flex-shrink-0 ml-2 pl-2 border-l">
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
+                        className={cn(
+                          'inline-flex items-center justify-center text-blue-600 hover:text-blue-800',
+                          (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
+                        )}
+                        aria-label="Send message"
+                      >
+                        <SendIcon className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-        {/* Document List Modal */}
-        <Headless.Transition
-          show={showDocumentListPanel}
-          enter="transition duration-300 ease-out"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="transition duration-200 ease-in"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            {/* Backdrop */}
-            <div 
-              className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm" 
-              onClick={toggleDocumentListPanel}
-            />
-            
-            {/* Modal Content */}
-            <Headless.Transition.Child
-              enter="transition duration-300 ease-out"
-              enterFrom="transform scale-50 opacity-0"
-              enterTo="transform scale-100 opacity-100"
-              leave="transition duration-200 ease-in"
-              leaveFrom="transform scale-100 opacity-100"
-              leaveTo="transform scale-50 opacity-0"
-            >
-              <div className="relative bg-white rounded-xl shadow-xl w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
-                {/* Modal Header */}
-                <div className="flex items-center p-4 border-b">
-                  <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
-                </div>
-                
-                {/* Modal Body */}
-                <div className="p-4 overflow-y-auto flex-grow">
-                  {/* Use the new DynamicPaginatedDocumentList component */}
-                  <DynamicPaginatedDocumentList
-                    documents={documents}
-                    isLoading={isDocumentsLoading}
-                    onDocumentSelect={handleCheckboxChange}
-                    selectedDocumentIds={storeFileQueue.map(file => 'document_id' in file ? file.document_id : '')}
-                    className="h-full"
-                    itemHeight={40}
-                    minItemsPerPage={2}
-                    containerPadding={60}
-                  />
-                </div>
-                
-                {/* Modal Footer */}
-                <div className="border-0.5 p-4 flex justify-end space-x-3">
-                  <>
-                  <Button 
-                  plain
-                    onClick={() => {
-                      // Clear all selections and file queue before closing
-                      if (isThreadActive && currentThread) {
-                        // For active threads, we would need to clear the thread files
-                        // This would need implementation based on how thread files are managed
-                      } else {
-                        // For new chats, clear the file queue
-                        clearFileQueue();
-                      }
-                      toggleDocumentListPanel();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
+          )}
+          {/* Document List Modal */}
+          <Headless.Transition
+            show={showDocumentListPanel}
+            enter="transition duration-300 ease-out"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition duration-200 ease-in"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm" 
+                onClick={toggleDocumentListPanel}
+              />
+              
+              {/* Modal Content */}
+              <Headless.Transition.Child
+                enter="transition duration-300 ease-out"
+                enterFrom="transform scale-50 opacity-0"
+                enterTo="transform scale-100 opacity-100"
+                leave="transition duration-200 ease-in"
+                leaveFrom="transform scale-100 opacity-100"
+                leaveTo="transform scale-50 opacity-0"
+              >
+                <div className="relative bg-white rounded-xl shadow-xl w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
+                  {/* Modal Header */}
+                  <div className="flex items-center p-4 border-b">
+                    <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
+                  </div>
+                  
+                  {/* Modal Body */}
+                  <div className="p-4 overflow-y-auto flex-grow">
+                    {/* Use the new DynamicPaginatedDocumentList component */}
+                    <DynamicPaginatedDocumentList
+                      documents={documents}
+                      isLoading={isDocumentsLoading}
+                      onDocumentSelect={handleCheckboxChange}
+                      selectedDocumentIds={storeFileQueue.map(file => 'document_id' in file ? file.document_id : '')}
+                      className="h-full"
+                      itemHeight={40}
+                      minItemsPerPage={2}
+                      containerPadding={60}
+                    />
+                  </div>
+                  
+                  {/* Modal Footer */}
+                  <div className="border-0.5 p-4 flex justify-end space-x-3">
+                    <>
+                    <Button 
                     plain
+                      onClick={() => {
+                        // Clear all selections and file queue before closing
+                        if (isThreadActive && currentThread) {
+                          // For active threads, we would need to clear the thread files
+                          // This would need implementation based on how thread files are managed
+                        } else {
+                          // For new chats, clear the file queue
+                          clearFileQueue();
+                        }
+                        toggleDocumentListPanel();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      plain
 
-                    onClick={toggleDocumentListPanel}
-                  >
-                    Save
-                  </Button>
-                  </>
+                      onClick={toggleDocumentListPanel}
+                    >
+                      Save
+                    </Button>
+                    </>
+                  </div>
                 </div>
-              </div>
-            </Headless.Transition.Child>
-          </div>
-        </Headless.Transition>
-        
-        {/* Patient Context Builder Dialog */}
-        <PatientContextBuilderDialog
-          isOpen={isPatientContextBuilderOpen}
-          onClose={() => setIsPatientContextBuilderOpen(false)}
-          onApply={handleContextBuilderApply}
-        />
+              </Headless.Transition.Child>
+            </div>
+          </Headless.Transition>
+          
+          {/* Patient Context Builder Dialog */}
+          <PatientContextBuilderDialog
+            isOpen={isPatientContextBuilderOpen}
+            onClose={() => setIsPatientContextBuilderOpen(false)}
+            onApply={handleContextBuilderApply}
+          />
+        </div>
       </div>
     </div>
   )

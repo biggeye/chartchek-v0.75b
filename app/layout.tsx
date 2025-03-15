@@ -1,8 +1,10 @@
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -20,7 +22,7 @@ const geistSans = Geist({
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className="scrollbar">
+    <html lang="en" suppressHydrationWarning={true} className="scrollbar">
       <body className={`${geistSans.className}`}>
         <ThemeProvider
           attribute="class"
@@ -29,9 +31,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
         >
           {children}
+          <Suspense fallback={null}>
+            <Analytics />
+            <SpeedInsights />
+          </Suspense>
         </ThemeProvider>
       </body>
-      <Analytics />
     </html>
   );
 }
