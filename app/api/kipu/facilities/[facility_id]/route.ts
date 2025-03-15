@@ -6,10 +6,7 @@ import { createServer } from '@/utils/supabase/server';
  * GET /api/kipu/facilities/[facility_id]
  * Gets detailed information about a specific facility (KIPU location)
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { facility_id: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const supabase = await createServer();
@@ -22,10 +19,11 @@ export async function GET(
       );
     }
     
-    // Get facility ID from route params
-    const { facility_id } = params;
+    // Extract facility_id from URL path
+    const urlParts = request.nextUrl.pathname.split('/');
+    const facility_id = urlParts[urlParts.length - 1];
     
-    if (!facility_id) {
+    if (!facility_id || facility_id === '[facility_id]') {
       return NextResponse.json(
         { error: 'Facility ID is required' },
         { status: 400 }
