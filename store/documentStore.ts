@@ -101,33 +101,37 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       // Get current facility ID
       const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
       const facilityId = facilityStore.currentFacilityId;
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const userId = user?.id;
       
       // Generate a unique file path
       const timestamp = new Date().getTime();
       const file_name = `${timestamp}_${file.name}`;
-      const filePath = `${facilityId || 'general'}/${file_name}`;
-      
+      const filePath = `${userId}/${file_name}`;
+      console.log('Uploading file:', filePath)
       // Upload file to Supabase storage
       const { data: fileData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file);
       
       if (uploadError) throw uploadError;
-      
+      console.log('File uploaded successfully, now indexing');
       // Create document record in database
       const { data: documentData, error: documentError } = await supabase
         .from('documents')
         .insert([
           {
-            filePath,
+            file_path: filePath,
             file_name: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            facility_id: facilityId,
+            file_type: file.type,
+            file_size: file.size,
+            user_id: userId,
+            bucket: 'documents',
+     //       facility_id: facilityId,
             patient_id: categorization?.patient_id,
             compliance_concern: categorization?.compliance_concern,
             compliance_concern_other: categorization?.compliance_concern_other,
-            processingStatus: 'pending'
+            processing_status: 'pending'
           }
         ])
         .select()
@@ -157,9 +161,39 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         throw new Error('Failed to upload document');
       }
       
-      // TODO: Process document with vector embeddings
-      // This would integrate with the vectorChek service
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append('file', file);
       
+      // Send the file to the OpenAI files API using FormData
+      const openAIfileResponse = await fetch('/api/files', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!openAIfileResponse.ok) {
+        const errorText = await openAIfileResponse.text();
+        throw new Error(`Failed to upload file to OpenAI: ${errorText}`);
+      }
+      
+      const openAIfileData = await openAIfileResponse.json();
+      
+      // Update the document with the OpenAI file ID
+      if (openAIfileData.file_id && document.document_id) {
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({
+            openai_file_id: openAIfileData.file_id,
+            processing_status: 'processed'
+          })
+          .eq('document_id', document.document_id);
+          
+        if (updateError) {
+          console.error('Error updating document with OpenAI file ID:', updateError);
+        }
+      }
+      
+      // Return the updated document
       return document;
     } catch (error) {
       console.error('Error in uploadAndProcessDocument:', error);

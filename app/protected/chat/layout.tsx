@@ -4,7 +4,8 @@ import { ReactNode } from 'react'
 import { ThreadList } from '@/components/chat/ThreadList'
 import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput'
 import { Bars3Icon } from '@heroicons/react/24/solid'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@/components/ui/visually-hidden'
 
 interface ChatLayoutProps {
   children: ReactNode
@@ -26,6 +27,9 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
             </button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[80vw] h-[80vh] max-h-[80vh] p-0 border-none">
+            <VisuallyHidden>
+              <DialogTitle>Thread List</DialogTitle>
+            </VisuallyHidden>
             <div className="w-full h-full p-6 overflow-y-auto">
               <ThreadList />
             </div>

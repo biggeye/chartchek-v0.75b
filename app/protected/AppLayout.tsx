@@ -40,11 +40,11 @@ import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
-import { useStreamStore } from '@/store/streamStore';
 import { FacilitySelector } from '@/components/ui/facility-selector';
 import { useFacilityStore } from '@/store/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
+import PDFAutoGenerator from '@/components/dynamicForms/FormGenerator';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -255,6 +255,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         
         <main className="flex flex-1 overflow-hidden">
           {children}
+          <PDFAutoGenerator />
         </main>
       </div>
     </div>

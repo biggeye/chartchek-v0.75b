@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { 
-  PaperClipIcon, 
-  UserPlusIcon, 
-  XCircleIcon, 
-  ChatBubbleBottomCenterIcon, 
-  ChevronUpIcon, 
-  ChevronDownIcon, 
-  DocumentIcon, 
-  AdjustmentsHorizontalIcon, 
-  PlusIcon 
+import {
+  PaperClipIcon,
+  UserPlusIcon,
+  XCircleIcon,
+  ChatBubbleBottomCenterIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  DocumentIcon,
+  AdjustmentsHorizontalIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline'
 import { SendIcon, Loader2 } from 'lucide-react'
 import { useDocumentStore } from '@/store/documentStore'
@@ -61,7 +61,7 @@ export function GlobalChatInputArea() {
   const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false)
   const [selectedContextOptions, setSelectedContextOptions] = useState<PatientContextOption[]>([])
   const [showMobileMenu, setShowMobileMenu] = useState(false)
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pathname = usePathname()
@@ -87,8 +87,8 @@ export function GlobalChatInputArea() {
 
   // Use stores - declare all store variables first before using them in effects
   // Chat store
-  const { 
-    currentThread, 
+  const {
+    currentThread,
     sendMessage,
     transientFileQueue: storeFileQueue,
     addFileToQueue,
@@ -107,34 +107,34 @@ export function GlobalChatInputArea() {
   } = useStreamStore()
 
   // Document store
-  const { 
-    documents, 
-    isLoading: isDocumentsLoading, 
-    fetchDocumentsForCurrentFacility 
+  const {
+    documents,
+    isLoading: isDocumentsLoading,
+    fetchDocumentsForCurrentFacility
   } = useDocumentStore()
 
   // Patient store
-  const { 
-    isPatientContextEnabled, 
-    currentPatient, 
+  const {
+    isPatientContextEnabled,
+    currentPatient,
     currentPatientEvaluations,
     currentPatientVitalSigns,
     currentPatientAppointments,
-    setPatientContextEnabled, 
-    setCurrentPatient, 
+    setPatientContextEnabled,
+    setCurrentPatient,
     clearPatientContext,
     fetchPatients,
     fetchPatientWithDetails
   } = usePatientStore()
 
   // Facility store
-  const { 
+  const {
     currentFacilityId,
-    facilities, 
+    facilities,
     fetchFacilities,
     getCurrentFacility
   } = useFacilityStore()
-  
+
   // Current facility object
   const currentFacility = getCurrentFacility();
 
@@ -237,7 +237,7 @@ export function GlobalChatInputArea() {
     setCurrentPatient(patient)
     setPatientContextEnabled(true)
     setShowPatientPanel(false)
-    
+
     // Load patient details for context builder
     if (facilityId) {
       // Use id property first, then fall back to casefile_id property for fetching details from Kipu
@@ -266,7 +266,7 @@ export function GlobalChatInputArea() {
         // Check if the method exists before calling it
         if (typeof documentStore.uploadAndProcessDocument === 'function') {
           const result = await documentStore.uploadAndProcessDocument(file);
-          
+
           if (result) {
             console.log('Document uploaded and processed:', result)
             // Let chat store handle adding to queue
@@ -299,7 +299,7 @@ export function GlobalChatInputArea() {
       console.warn(`Document ${doc.file_name} has no OpenAI file id yet.`)
       return
     }
-    
+
     if (storeFileQueue.some((f: Document) => f.document_id === doc.document_id)) {
       removeFileFromQueue(doc)
     } else {
@@ -320,15 +320,17 @@ export function GlobalChatInputArea() {
       console.error(`No assistant found with key: ${key}`);
       return "asst_9RqcRDt3vKUEFiQeA0HfLC08"; // Default fallback
     }
-    
+
     // Map the roster key to the actual OpenAI assistant ID
     switch (key) {
       case 'default':
         return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
       case 'tjc':
-        return "asst_7rzhAUWAamYufZJjZeKYkX1t";
+        return "asst_CAjCQW3Lkif3FuAOFCQBaOh0";
       case 'dhcs':
         return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
+      case 'billing':
+        return "asst_7rzhAUWAamYufZJjZeKYkX1t";
       default:
         return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
     }
@@ -365,84 +367,84 @@ export function GlobalChatInputArea() {
 
   const handleSubmit = async () => {
     if (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Get the assistant ID based on the selected key
       const assistantId = getCurrentAssistantId(selectedAssistantKey);
-      
+
       if (!assistantId) {
         throw new Error('No assistant ID available. Please check your configuration.');
       }
-      
+
       let messageContent = message.trim();
       let additionalInstructions = '';
-      
-// Build patient context as additionalInstructions instead of embedding in message
-if (isPatientContextEnabled && currentPatient) {
-  if (selectedContextOptions.length > 0) {
-    // Create a properly formatted patient context with all selected data
-    const patientHeader = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
-    
-    // Group options by category for better organization
-    const categorizedOptions: Record<string, string[]> = {};
-    
-    selectedContextOptions.forEach(opt => {
-      if (!categorizedOptions[opt.category]) {
-        categorizedOptions[opt.category] = [];
+
+      // Build patient context as additionalInstructions instead of embedding in message
+      if (isPatientContextEnabled && currentPatient) {
+        if (selectedContextOptions.length > 0) {
+          // Create a properly formatted patient context with all selected data
+          const patientHeader = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
+
+          // Group options by category for better organization
+          const categorizedOptions: Record<string, string[]> = {};
+
+          selectedContextOptions.forEach(opt => {
+            if (!categorizedOptions[opt.category]) {
+              categorizedOptions[opt.category] = [];
+            }
+            categorizedOptions[opt.category].push(opt.value);
+          });
+
+          // Build context string with category headers
+          const contextSections: string[] = [patientHeader];
+
+          // Add Basic Info section
+          if (categorizedOptions['basic'] && categorizedOptions['basic'].length > 0) {
+            contextSections.push('--- Basic Information ---');
+            contextSections.push(categorizedOptions['basic'].join('\n'));
+          }
+
+          // Add Evaluations section
+          if (categorizedOptions['evaluation'] && categorizedOptions['evaluation'].length > 0) {
+            contextSections.push('--- Evaluations ---');
+            contextSections.push(categorizedOptions['evaluation'].join('\n'));
+          }
+
+          // Add Vital Signs section
+          if (categorizedOptions['vitalSigns'] && categorizedOptions['vitalSigns'].length > 0) {
+            contextSections.push('--- Vital Signs ---');
+            contextSections.push(categorizedOptions['vitalSigns'].join('\n'));
+          }
+
+          // Add Appointments section
+          if (categorizedOptions['appointments'] && categorizedOptions['appointments'].length > 0) {
+            contextSections.push('--- Appointments ---');
+            contextSections.push(categorizedOptions['appointments'].join('\n'));
+          }
+
+          additionalInstructions = contextSections.join('\n\n');
+
+          console.log('Patient context being sent to the API:', additionalInstructions);
+        } else {
+          // Use basic patient info if no specific options were selected
+          additionalInstructions = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
+        }
       }
-      categorizedOptions[opt.category].push(opt.value);
-    });
-    
-    // Build context string with category headers
-    const contextSections: string[] = [patientHeader];
-    
-    // Add Basic Info section
-    if (categorizedOptions['basic'] && categorizedOptions['basic'].length > 0) {
-      contextSections.push('--- Basic Information ---');
-      contextSections.push(categorizedOptions['basic'].join('\n'));
-    }
-    
-    // Add Evaluations section
-    if (categorizedOptions['evaluation'] && categorizedOptions['evaluation'].length > 0) {
-      contextSections.push('--- Evaluations ---');
-      contextSections.push(categorizedOptions['evaluation'].join('\n'));
-    }
-    
-    // Add Vital Signs section
-    if (categorizedOptions['vitalSigns'] && categorizedOptions['vitalSigns'].length > 0) {
-      contextSections.push('--- Vital Signs ---');
-      contextSections.push(categorizedOptions['vitalSigns'].join('\n'));
-    }
-    
-    // Add Appointments section
-    if (categorizedOptions['appointments'] && categorizedOptions['appointments'].length > 0) {
-      contextSections.push('--- Appointments ---');
-      contextSections.push(categorizedOptions['appointments'].join('\n'));
-    }
-    
-    additionalInstructions = contextSections.join('\n\n');
-    
-    console.log('Patient context being sent to the API:', additionalInstructions);
-  } else {
-    // Use basic patient info if no specific options were selected
-    additionalInstructions = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
-  }
-}
-      
+
       // Delegate the message sending and file handling to the chat store
       const result = await chatStore.getState().sendMessageWithFiles(
         assistantId,
         messageContent,
         storeFileQueue
       );
-      
+
       if (result.success) {
         // Start streaming the response with additionalInstructions
         if (result.threadId) {
           await useStreamStore.getState().startStream(
-            result.threadId, 
+            result.threadId,
             assistantId,
             additionalInstructions
           );
@@ -450,10 +452,10 @@ if (isPatientContextEnabled && currentPatient) {
           console.error('No threadId returned from sendMessageWithFiles');
         }
       }
-      
+
       // Clear the message input
       setMessage('');
-      
+
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -466,16 +468,16 @@ if (isPatientContextEnabled && currentPatient) {
   };
 
   return (
-    <div 
+    <div
       className="fixed bottom-0 z-1000 transition-all duration-300 ease-in-out right-0 left-0 w-full"
     >
-      <div 
+      <div
         className="w-full px-2 sm:px-4 lg:px-6 flex justify-center"
       >
-        <div 
+        <div
           className={`
-            ${!isExpanded 
-              ? 'w-auto' 
+            ${!isExpanded
+              ? 'w-auto'
               : 'w-[95%] sm:w-[95%] md:w-[95%] lg:w-[90%] xl:w-[85%] max-w-7xl mx-auto'
             }
             mb-4
@@ -484,7 +486,7 @@ if (isPatientContextEnabled && currentPatient) {
           {!isExpanded ? (
             // When collapsed, only show the CHAT button with minimal width
             <div className="flex justify-center">
-              <button 
+              <button
                 onClick={() => setIsExpanded(true)}
                 className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
               >
@@ -508,11 +510,11 @@ if (isPatientContextEnabled && currentPatient) {
                 <div className="flex items-center gap-2">
                   {assistantLogoPath ? (
                     <div className="h-5 w-5 relative">
-                      <Image 
-                        src={assistantLogoPath} 
-                        alt={`${currentAssistant?.name} logo`} 
-                        width={20} 
-                        height={20} 
+                      <Image
+                        src={assistantLogoPath}
+                        alt={`${currentAssistant?.name} logo`}
+                        width={20}
+                        height={20}
                         className="object-contain"
                       />
                     </div>
@@ -521,7 +523,7 @@ if (isPatientContextEnabled && currentPatient) {
                   )}
                   {/* Custom positioned dropdown wrapper */}
                   <div className="relative">
-                    <DropdownMenu 
+                    <DropdownMenu
                       items={assistantDropdownItems}
                       triggerLabel={currentAssistant?.name || 'Select Assistant'}
                       className="text-sm font-medium text-gray-700 hover:text-gray-900"
@@ -530,15 +532,15 @@ if (isPatientContextEnabled && currentPatient) {
                     />
                   </div>
                 </div>
-                
+
                 {/* Centered HIDE button */}
-                <button 
+                <button
                   onClick={() => setIsExpanded(false)}
                   className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
                 >
                   HIDE
                 </button>
-                
+
                 {/* Right side with New conversation button */}
                 <div className="flex items-center">
                   {/* New conversation button */}
@@ -548,7 +550,7 @@ if (isPatientContextEnabled && currentPatient) {
                         try {
                           // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
                           const assistantId = getCurrentAssistantId(selectedAssistantKey);
-                          
+
                           // Create new thread with current assistant using the chatStore
                           const threadId = await chatStore.getState().createThread(assistantId);
                           console.log(`Created new thread: ${threadId}`);
@@ -587,7 +589,7 @@ if (isPatientContextEnabled && currentPatient) {
                         </span>
                       )}
                     </div>
-                    <button 
+                    <button
                       onClick={togglePatientContext}
                       className="text-blue-800 hover:text-blue-600"
                       aria-label="Remove patient context"
@@ -596,7 +598,7 @@ if (isPatientContextEnabled && currentPatient) {
                     </button>
                   </div>
                 )}
-                
+
                 {/* File Attachments Display */}
                 {storeFileQueue.length > 0 && (
                   <div className="mb-2 pt-1">
@@ -636,9 +638,9 @@ if (isPatientContextEnabled && currentPatient) {
                           className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
                         >
                           <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
-                       
+
                         </button>
-                        
+
                         {showMobileMenu && (
                           <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-10">
                             <div className="py-1">
@@ -676,7 +678,7 @@ if (isPatientContextEnabled && currentPatient) {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Desktop individual buttons */}
                       <div className="hidden md:flex items-center">
                         <div className="relative">
@@ -688,26 +690,26 @@ if (isPatientContextEnabled && currentPatient) {
                           >
                             <PaperClipIcon className="h-5 w-5" />
                           </button>
-                          
+
                           {/* Attach Files Dropdown */}
                           {showAttachFilesPanel && (
                             <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[150px] z-10">
-                            <div className="py-1">
-                              <input
-                                type="file"
-                                id="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                className="hidden"
-                              />
-                              <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                              >
-                                Upload a file
-                              </button>
+                              <div className="py-1">
+                                <input
+                                  type="file"
+                                  id="file"
+                                  ref={fileInputRef}
+                                  onChange={handleFileSelect}
+                                  className="hidden"
+                                />
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                >
+                                  Upload a file
+                                </button>
+                              </div>
                             </div>
-                          </div>
                           )}
                         </div>
 
@@ -720,7 +722,7 @@ if (isPatientContextEnabled && currentPatient) {
                           >
                             <UserPlusIcon className="h-5 w-5" />
                           </button>
-                          
+
                           {/* Patient Panel Dropdown */}
                           {showPatientPanel && facilityId && (
                             <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[200px] z-10">
@@ -755,7 +757,7 @@ if (isPatientContextEnabled && currentPatient) {
                         </div>
                       </div>
                     </div>
-                    
+
                     <textarea
                       rows={1}
                       name="message"
@@ -771,7 +773,7 @@ if (isPatientContextEnabled && currentPatient) {
                       className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
                       placeholder="Type your message..."
                     />
-                    
+
                     {/* Right side send button */}
                     <div className="flex-shrink-0 ml-2 pl-2 border-l">
                       <button
@@ -804,11 +806,11 @@ if (isPatientContextEnabled && currentPatient) {
           >
             <div className="fixed inset-0 flex items-center justify-center z-50">
               {/* Backdrop */}
-              <div 
-                className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm" 
+              <div
+                className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={toggleDocumentListPanel}
               />
-              
+
               {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
@@ -823,7 +825,7 @@ if (isPatientContextEnabled && currentPatient) {
                   <div className="flex items-center p-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
                   </div>
-                  
+
                   {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
                     {/* Use the new DynamicPaginatedDocumentList component */}
@@ -838,40 +840,40 @@ if (isPatientContextEnabled && currentPatient) {
                       containerPadding={60}
                     />
                   </div>
-                  
+
                   {/* Modal Footer */}
                   <div className="border-0.5 p-4 flex justify-end space-x-3">
                     <>
-                    <Button 
-                    plain
-                      onClick={() => {
-                        // Clear all selections and file queue before closing
-                        if (isThreadActive && currentThread) {
-                          // For active threads, we would need to clear the thread files
-                          // This would need implementation based on how thread files are managed
-                        } else {
-                          // For new chats, clear the file queue
-                          clearFileQueue();
-                        }
-                        toggleDocumentListPanel();
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      plain
+                      <Button
+                        plain
+                        onClick={() => {
+                          // Clear all selections and file queue before closing
+                          if (isThreadActive && currentThread) {
+                            // For active threads, we would need to clear the thread files
+                            // This would need implementation based on how thread files are managed
+                          } else {
+                            // For new chats, clear the file queue
+                            clearFileQueue();
+                          }
+                          toggleDocumentListPanel();
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        plain
 
-                      onClick={toggleDocumentListPanel}
-                    >
-                      Save
-                    </Button>
+                        onClick={toggleDocumentListPanel}
+                      >
+                        Save
+                      </Button>
                     </>
                   </div>
                 </div>
               </Headless.Transition.Child>
             </div>
           </Headless.Transition>
-          
+
           {/* Patient Context Builder Dialog */}
           <PatientContextBuilderDialog
             isOpen={isPatientContextBuilderOpen}

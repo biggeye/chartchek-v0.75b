@@ -1,78 +1,64 @@
-// Define the types for the streamStore
+// types/store/stream.ts
 
 import { OpenAIStreamingEvent } from '@/types/api/openai';
 
+// Main Zustand store interface
 export interface StreamingState {
-  // State properties
+  // Core store state
   isStreamingActive: boolean;
   currentStreamContent: string;
   streamError: string | null;
   currentRunId: string | null;
   abortController: AbortController | null;
-  
-  // Additional state properties from streaming.ts
   currentFormKey: string | null;
   currentMessageId: string | null;
   isFormProcessing: boolean;
   formData: Record<string, any>;
   userId: string | null;
-  
+  toolCallsInProgress: any[];
+  pdfPreviewUrl: string | null;
+
   // Core actions
+  setIsStreamingActive: (active: boolean) => void;
+  cancelStream: (threadId?: string, runId?: string) => Promise<boolean>;
   resetStream: () => void;
   setStreamContent: (content: string) => void;
   appendStreamContent: (content: string) => void;
   finalizeMessage: () => void;
-  startStream: (threadId: string, assistantId: string, additionalInstructions?: string) => Promise<void>;
-  setIsStreamingActive: (active: boolean) => void;
-  cancelStream: (threadId?: string, runId?: string) => Promise<boolean> | void;
-  
-  // Additional actions from streaming.ts
   endStream: (savedMessageId?: string) => void;
   setStreamError: (error: string | null) => void;
   initialize: () => Promise<void>;
-  
-  // Form handling
-  setCurrentFormKey: (formKey: string | null) => void;
-  determineFormKey: (description: string) => Promise<string>;
-  updateFormData: (data: Record<string, any>) => void;
-  clearFormData: () => void;
-  setFormProcessing: (isProcessing: boolean) => void;
-  submitForm: (threadId: string, runId: string, toolCallId: string, formData: Record<string, any>) => Promise<boolean>;
-  
-  // Stream content management
   updateStreamContent: (content: string) => void;
-  processStreamEvent: (event: OpenAIStreamingEvent, threadId: string) => Promise<void>;
-  
-  // Run management
+  processStreamEvent: (event: OpenAIStreamingEvent | any, threadId: string) => Promise<void>;
   setCurrentRunId: (runId: string | null) => void;
-  processFormToolCall: (toolCallId: string, functionName: string, parameters: any, threadId: string, runId: string) => Promise<void>;
-  
-  // Utility functions
   toggleStreamEnabled: () => void;
   handleStreamError: (error: any) => void;
-  
-  // Tool handling
-  handleToolCall: (toolData: any) => void;
   setCurrentMessageId: (messageId: string | null) => void;
+  startStream: (threadId: string, assistantId: string, additionalInstructions?: string) => Promise<void>;
+
+  // Tool & PDF generation
+  handleToolCall: (toolCall: any) => void;
+  generatePDF: (patientData: Record<string, any>) => Promise<void>;
+  setPdfPreviewUrl: (url: string | null) => void;
 }
 
-// If you have any other related types, add them here
+// An example interface representing an SSE message from the OpenAI stream
 export interface StreamMessage {
   type: string;
   data: any;
 }
 
+// Example for partial deltas that may arrive from the SSE
 export interface StreamDelta {
   delta: {
     content?: Array<{
-      text: {
-        value: string;
-      }
+      text: { value: string };
     }>;
   };
   snapshot?: any;
 }
 
+// For describing a run within a thread (database model or similar)
 export interface ThreadRun {
   id: string;
   created_at?: string | null;

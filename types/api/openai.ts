@@ -71,6 +71,7 @@ export interface OpenAIFile {
           'textCreated' | 
           'messageCreated' | 
           'messageDelta' | 
+          'messageCompleted' |
           'toolCall' | 
           'toolCallCreated' | 
           'toolCallDelta' | 

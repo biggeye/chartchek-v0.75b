@@ -3,7 +3,9 @@ import { createServer } from "@/utils/supabase/server";
 import { getOpenAIClient, OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
 import { NextRequest } from 'next/server';
 import { Run } from "@/types/api/openai";
-import { handleToolCalls, submitToolOutputs } from "@/lib/services/openai/toolHandlers";
+import { handleToolCalls } from "@/lib/services/openai/toolHandlers";
+import { getToolDefinitions } from "@/lib/services/openai/toolDefinitions";
+
 const openai = getOpenAIClient()
 
 
@@ -122,11 +124,7 @@ export async function POST(req: NextRequest) {
           // Listen for all events and process based on the event type
           runStream.on('event', async (event: any) => {
             // Debug the full event structure
-            console.log(`[API] Received event:`, JSON.stringify({
-              eventType: event.type,
-              eventKeys: Object.keys(event),
-              dataKeys: event.data ? Object.keys(event.data) : null
-            }));
+          
 
             // First, map OpenAI event types to front-end expected types
             const eventTypeMapping: Record<string, string | undefined> = {
@@ -147,11 +145,8 @@ export async function POST(req: NextRequest) {
                              (event.object ? event.object : null);
             
             const mappedType = eventTypeMapping[eventType];
-            console.log(`[API] Event type: ${eventType}, mapped to: ${mappedType || 'undefined'}`);
-
-            // Get the data from the event
+             // Get the data from the event
             const eventData = event.data || event;
-
             // Always emit the event with appropriate type
             if (eventData) {
               try {
@@ -163,9 +158,9 @@ export async function POST(req: NextRequest) {
                 console.error(`[API] Error enqueueing event:`, err);
               }
             }
-
             // Run creation event
             if (event.type === 'thread.run.created') {
+              console.log(`[API] Run created:`, event.data)
               const run = event.data;
               runId = run.id;
 
@@ -174,21 +169,6 @@ export async function POST(req: NextRequest) {
                 .from('chat_threads')
                 .upsert({
                   thread_id: threadId,
-                  run_id: run.id,
-                  instructions: run.options.instructions,
-                  tools: run.options.tools,
-                  model: run.options.model,
-                  additional_instructions: run.options.additional_instructions,
-                  temperature: run.options.temperature,
-                  top_p: run.options.top_p,
-                  max_prompt_tokens: run.options.max_prompt_tokens,
-                  max_completion_tokens: run.options.max_completion_tokens,
-                  truncation_strategy: run.options.truncation_strategy,
-                  response_format: run.options.response_format,
-                  tool_choice: run.options.tool_choice,
-                  parallel_tool_calls: run.options.parallel_tool_calls,
-                  required_action: run.options.required_action,
-                  failed_at: run.options.failed_at,
                   updated_at: new Date(),
                   last_run: run.id,
                   last_run_status: run.status
@@ -210,7 +190,7 @@ export async function POST(req: NextRequest) {
                 // Update the status in the database
                 const { error: statusUpdateError } = await supabase
                   .from('thread_runs')
-                  .update({ status: event.data.status })
+                  .upsert({ run_id: runId, status: event.data.status, updated_at: new Date() })
                   .eq('run_id', runId);
 
                 if (statusUpdateError) {
@@ -230,7 +210,7 @@ export async function POST(req: NextRequest) {
                 // Within your API route (e.g., requires_action handling)
                 if (eventType === "thread.run.requires_action") {
                   const outputs = await handleToolCalls(event.data.required_action.submit_tool_outputs.tool_calls, threadId, runId);
-        //          await submitToolOutputs(outputs, runId, threadId);
+                  console.log(`[API] Tool outputs submitted: ${JSON.stringify(outputs.map(o => ({ id: o.tool_call_id })))}`);
                 }
 
 
