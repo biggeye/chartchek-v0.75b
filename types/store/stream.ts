@@ -39,8 +39,11 @@ export interface StreamingState {
   startStream: (threadId: string, assistantId: string, additionalInstructions?: string) => Promise<void>;
 
   // Tool & PDF generation
-  handleToolCall: (toolCall: any) => void;
+  handleToolCall: (toolCall: any, threadId: string, runId: string) => void;
   setPdfPreviewUrl: (url: string | null) => void;
+
+  // Helper methods
+  findTextValueInObject: (obj: any) => string | null;
 }
 
 // An example interface representing an SSE message from the OpenAI stream

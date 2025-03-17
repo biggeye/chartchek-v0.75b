@@ -41,11 +41,6 @@ type PatientContextOption = {
   category: 'basic' | 'evaluation' | 'vitalSigns' | 'appointments'
 }
 
-// Map assistant IDs to their roster entries for quick lookup
-const ASSISTANT_ID_MAP: Record<string, typeof assistantRoster[number]> = {
-  "asst_9RqcRDt3vKUEFiQeA0HfLC08": assistantRoster[0], // Default/ChartChat
-  "asst_7rzhAUWAamYufZJjZeKYkX1t": assistantRoster[1], // Joint Commission
-};
 
 export function GlobalChatInputArea() {
   // State management
@@ -147,23 +142,11 @@ export function GlobalChatInputArea() {
 
   // Facility store
   const {
-    currentFacilityId,
-    facilities,
-    fetchFacilities,
     getCurrentFacility
   } = useFacilityStore()
 
   // Current facility object
   const currentFacility = getCurrentFacility();
-
-  // Update selected assistant based on pathname
-  useEffect(() => {
-    if (pathname?.includes('/billing')) {
-      setSelectedAssistantKey('tjc'); // Joint Commission specialist
-    } else {
-      setSelectedAssistantKey('default'); // Default assistant
-    }
-  }, [pathname]);
 
   // Extract facilityId from pathname if available
   useEffect(() => {
@@ -334,24 +317,12 @@ export function GlobalChatInputArea() {
   // Get the current assistant ID based on the selected key
   const getCurrentAssistantId = (key: string): string => {
     const assistant = assistantRoster.find(a => a.key === key);
-    if (!assistant) {
+    if (!assistant || !assistant.assistant_id) {
       console.error(`No assistant found with key: ${key}`);
       return "asst_9RqcRDt3vKUEFiQeA0HfLC08"; // Default fallback
     }
 
-    // Map the roster key to the actual OpenAI assistant ID
-    switch (key) {
-      case 'default':
-        return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
-      case 'tjc':
-        return "asst_CAjCQW3Lkif3FuAOFCQBaOh0";
-      case 'dhcs':
-        return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
-      case 'billing':
-        return "asst_7rzhAUWAamYufZJjZeKYkX1t";
-      default:
-        return "asst_9RqcRDt3vKUEFiQeA0HfLC08";
-    }
+    return assistant.assistant_id;
   };
 
   // Handle assistant change
@@ -359,6 +330,7 @@ export function GlobalChatInputArea() {
     setSelectedAssistantKey(key);
     const assistantId = getCurrentAssistantId(key);
     setCurrentAssistantId(assistantId);
+    console.log(`Assistant changed to: ${key}`)
   };
   // Create dropdown items for the assistant selector
   const assistantDropdownItems = assistantRoster.map(assistant => ({

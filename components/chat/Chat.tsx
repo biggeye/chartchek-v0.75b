@@ -30,27 +30,35 @@ export default function Chat() {
   const assistantId = currentAssistantId;
 
   const handleCancelRun = async () => {
-    if (!currentThread?.thread_id || !activeRunStatus?.isActive) {
-      console.log('[Chat] No active run to cancel');
+    // Clear any existing errors first
+    setLocalError(null);
+    
+    // If there's no active thread or run, just exit gracefully
+    if (!currentThread?.thread_id) {
+      console.log('[Chat] No active thread to cancel');
       return;
     }
+    
     try {
       setIsLoading(true);
-      // Retrieve the latest run (if needed) from chatStore
-      const latestRun = await chatStore.getState().getLatestRun(currentThread.thread_id);
-      if (latestRun) {
-        console.log(`[Chat] Attempting to cancel run ${latestRun.id}`);
-        // Pass threadId and runId to cancelStream
-        cancelStream(currentThread.thread_id, latestRun.id);
-        console.log(`[Chat] Successfully cancelled run ${latestRun.id}`);
-        await chatStore.getState().checkActiveRun(currentThread.thread_id);
-      } else {
-        console.log('[Chat] No run found to cancel');
-        setLocalError('No active run found to cancel.');
+      
+      // Cancel any active stream regardless of run status
+      cancelStream(currentThread.thread_id, currentRunId || undefined);
+      console.log(`[Chat] Cancelled any active streams for thread ${currentThread.thread_id}`);
+      
+      // If we have an active run status, try to cancel it properly
+      if (activeRunStatus?.isActive) {
+        // Retrieve the latest run from chatStore
+        const latestRun = await chatStore.getState().getLatestRun(currentThread.thread_id);
+        
+        if (latestRun) {
+          console.log(`[Chat] Cancelling run ${latestRun.id}`);
+          await chatStore.getState().checkActiveRun(currentThread.thread_id);
+        }
       }
     } catch (error) {
-      console.error('[Chat] Error cancelling run:', error);
-      setLocalError(error instanceof Error ? error.message : String(error));
+      console.error('[Chat] Error during cancel operation:', error);
+      // Don't set error state - we're trying to exit gracefully
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +66,10 @@ export default function Chat() {
 
   return (
     <div className="relative flex flex-col h-full max-h-[calc(100vh-1rem)] overflow-hidden">
-      <RunStatusIndicator onCancel={handleCancelRun} />
+      {/* Status indicators are now placed in a fixed position at the bottom of the screen */}
+      <div className="fixed bottom-24 right-5 z-40 w-80">
+        <RunStatusIndicator onCancel={handleCancelRun} />
+      </div>
 
       {(localError || streamError) && (
         <div

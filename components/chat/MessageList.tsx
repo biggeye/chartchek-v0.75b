@@ -32,6 +32,11 @@ export const MessageList = React.memo(({
   const pdfUrl = useStreamStore(state => state.pdfPreviewUrl);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Get messages from the current thread
+  const messages = currentThread?.messages 
+    ? [...currentThread.messages].sort((a, b) => a.created_at - b.created_at)
+    : [];
+
   // Fetch messages when thread ID changes
   useEffect(() => {
     const loadMessages = async () => {
@@ -55,22 +60,24 @@ export const MessageList = React.memo(({
     if (isStreamingActive) {
       setShowStreamingMessage(true);
       setFadeOutActive(false);
-      if (streamingContent) setPreviousStreamContent(streamingContent);
-    } else if (showStreamingMessage && previousStreamContent) {
-      setFadeOutActive(true);
+    } else if (showStreamingMessage) {
+      // When streaming stops, wait briefly before fetching the final message
       const timer = setTimeout(() => {
         setShowStreamingMessage(false);
         if (currentThread?.thread_id) {
           fetchOpenAIMessages(currentThread.thread_id);
         }
-      }, 3000);
+      }, 500); // Reduced from 3000ms to 500ms for faster message display
       return () => clearTimeout(timer);
     }
-  }, [isStreamingActive, showStreamingMessage, previousStreamContent, currentThread?.thread_id, fetchOpenAIMessages, streamingContent]);
+  }, [isStreamingActive, showStreamingMessage, currentThread?.thread_id, fetchOpenAIMessages]);
 
+  // Always scroll to bottom when streaming content changes
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentThread?.messages?.length, streamingContent]);
+    if (streamingContent || messages?.length) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages?.length, streamingContent]);
 
   if (!currentThread) {
     return <div className="flex-1 p-4 text-center text-muted-foreground">Select or start a new conversation</div>;
@@ -94,8 +101,6 @@ export const MessageList = React.memo(({
       </div>
     );
   }
-
-  const messages = [...(currentThread.messages || [])].sort((a, b) => a.created_at - b.created_at);
 
   return (
     <ScrollArea className="h-full w-full overflow-y-auto mb-20">
@@ -138,6 +143,34 @@ export const MessageList = React.memo(({
             </div>
           </div>
         ))}
+
+        {/* Streaming message */}
+        {showStreamingMessage && streamingContent && (
+          <div
+            className={cn(
+              'flex w-full items-start gap-2 rounded-lg px-4 py-2 mr-auto bg-muted transition-opacity duration-300',
+              fadeOutActive ? 'opacity-50' : 'opacity-100'
+            )}
+          >
+            <div className="flex w-full flex-col gap-2">
+              <div className="text-sm font-semibold">
+                <div className="flex items-center gap-2">
+                  <span>
+                    {currentThread?.assistant_id
+                      ? assistantRoster.find(a => a.assistant_id === currentThread.assistant_id)?.name || 'Assistant'
+                      : 'Assistant'}
+                  </span>
+                  {isStreamingActive && (
+                    <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                  )}
+                </div>
+              </div>
+              <div className="text-sm opacity-90 whitespace-pre-wrap">
+                {renderFormattedContent(streamingContent)}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* PDF Message Bubble */}
         {pdfUrl && (

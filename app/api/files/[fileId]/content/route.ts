@@ -33,7 +33,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     });
   } catch (error) {
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Failed to retrieve thread',
+      error: error instanceof Error ? error.message : 'Failed to retrieve file',
       code: 'INTERNAL_ERROR'
     }), {
       status: 500,

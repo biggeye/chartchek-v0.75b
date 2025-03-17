@@ -15,19 +15,52 @@ export interface FormData {
 // Universal PDF generator
 export const generatePDF = async (formData: FormData): Promise<{ blob: Blob; url: string }> => {
   try {
+    console.log(`[pdfGenerator] Generating PDF for form type: ${formData.type}`, formData);
+    
     const templateModule = await import(
       `@/components/dynamicForms/pdf/template/${toPascalCase(formData.type)}-template`
     );
     const TemplateComponent = templateModule.default;
 
-    const pdfBlob = await pdf(<TemplateComponent formData={formData.data} />).toBlob();
+    // Process form data if it's an array (from the OpenAI tool call)
+    let processedData = formData.data;
+    
+    if (Array.isArray(processedData)) {
+      console.log('[pdfGenerator] Form data is an array, processing...');
+      const dataObject: Record<string, any> = {};
+      
+      // Convert array of field objects to a key-value object
+      processedData.forEach((field: any) => {
+        // Check for different possible structures
+        if (field.name && field.value !== undefined) {
+          dataObject[field.name] = field.value;
+        } else if (field.label && field.value !== undefined) {
+          // Some arrays might use label instead of name
+          const fieldName = field.name || field.label.toLowerCase().replace(/\s+/g, '');
+          dataObject[fieldName] = field.value;
+        } else if (typeof field === 'object') {
+          // If it's an object with direct key-value pairs
+          Object.keys(field).forEach(key => {
+            if (key !== 'type' && key !== 'label') {
+              dataObject[key] = field[key];
+            }
+          });
+        }
+      });
+      
+      processedData = dataObject;
+      console.log('[pdfGenerator] Processed form data:', processedData);
+    }
+
+    // Pass the processed data to the template
+    const pdfBlob = await pdf(<TemplateComponent formData={processedData} />).toBlob();
     const pdfURL = URL.createObjectURL(pdfBlob);
 
-    console.log(`[pdfGenerator] PDF generated for form: ${formData.type}`);
+    console.log(`[pdfGenerator] PDF generated successfully for form: ${formData.type}`);
     return { blob: pdfBlob, url: pdfURL };
 
   } catch (error) {
-    console.error(`[pdfGenerator] Error generating PDF: ${(error as Error).message}`);
+    console.error(`[pdfGenerator] Error generating PDF:`, error);
     throw error;
   }
 };

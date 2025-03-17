@@ -434,10 +434,12 @@ export const formDefinitions: Record<string, FormDefinition> = {
   bio_psych_social_assessment: {
     formKey: 'bio_psych_social_assessment',
     title: "Bio-Psychosocial Assessment Form",
-    sections: [
+    sections: 
+    [
       {
         title: "Patient Information",
-        fields: [
+        fields: 
+        [
           { label: "First Name", type: "text", name: "firstName" },
           { label: "Last Name", type: "text", name: "lastName" },
           { label: "Date of Birth", type: "text", name: "dateOfBirth" },
@@ -448,7 +450,8 @@ export const formDefinitions: Record<string, FormDefinition> = {
       },
       {
         title: "Clinical Assessment",
-        fields: [
+        fields: 
+        [
           { label: "Presenting Problem", type: "textarea", name: "presentingProblem" },
           { label: "Psychiatric History", type: "textarea", name: "psychiatricHistory" },
           { label: "Medical History", type: "textarea", name: "medicalHistory" },
@@ -457,7 +460,8 @@ export const formDefinitions: Record<string, FormDefinition> = {
       },
       {
         title: "Psychosocial Assessment",
-        fields: [
+        fields: 
+        [
           { label: "Social History", type: "textarea", name: "socialHistory" },
           { label: "Legal History", type: "textarea", name: "legalHistory" },
           { label: "Employment Status", type: "textarea", name: "employmentStatus" },

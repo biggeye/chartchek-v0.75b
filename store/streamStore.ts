@@ -40,6 +40,26 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
   userId: null,
   toolCallsInProgress: [],
 
+  findTextValueInObject: (obj: any): string | null => {
+    if (!obj) return null;
+    
+    if (typeof obj === 'string') return obj;
+    
+    if (typeof obj === 'object') {
+      // Check for text value in common OpenAI response structures
+      if (obj.text?.value) return obj.text.value;
+      if (obj.value) return obj.value;
+      
+      // Recursively search through object properties
+      for (const key in obj) {
+        const result = get().findTextValueInObject(obj[key]);
+        if (result) return result;
+      }
+    }
+    
+    return null;
+  },
+
   /***************************************************************
    * Basic Actions
    ***************************************************************/
@@ -113,8 +133,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
     set({ abortController: controller });
 
     try {
-      console.log('[streamStore] Starting stream with additional instructions:', additionalInstructions);
-
+      
       // Call your SSE endpoint
       const response = await fetch(`/api/threads/${threadId}/run/stream`, {
         method: 'POST',
@@ -365,7 +384,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
             // 4) Iterate
             for (const toolCall of toolCallsWithRunId) {
               console.log('[streamStore] Handling tool call:', JSON.stringify(toolCall, null, 2));
-              get().handleToolCall(toolCall);
+              get().handleToolCall(toolCall, threadId, event.data.id);
             }
           } else {
             console.warn('[streamStore] Unknown required_action type:', event.data?.required_action?.type);
@@ -386,14 +405,46 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
           // Example: handle partial text deltas
           if (event.data?.delta?.step_details?.message_creation?.delta?.content) {
             const content = event.data.delta.step_details.message_creation.delta.content;
+            console.log('[streamStore] Received content delta:', typeof content, Array.isArray(content) ? content.length : 'not array');
+            
             if (Array.isArray(content)) {
               for (const item of content) {
-                if (item.type === 'text' && item.text?.value) {
+                if (item.text?.value) {
+                  console.log('[streamStore] Appending text value:', item.text.value);
                   get().appendStreamContent(item.text.value);
+                } else if (item.type === 'text' && item.text) {
+                  console.log('[streamStore] Appending text from type:text:', item.text.value);
+                  get().appendStreamContent(item.text.value);
+                } else {
+                  console.log('[streamStore] Unhandled content item type:', item.type);
                 }
               }
             } else if (typeof content === 'string') {
+              console.log('[streamStore] Appending string content:', content);
               get().appendStreamContent(content);
+            } else {
+              console.log('[streamStore] Unhandled content type:', typeof content);
+            }
+            
+            // Set streaming active to ensure UI shows streaming content
+            if (!get().isStreamingActive) {
+              set({ isStreamingActive: true });
+            }
+          } else {
+            // Look for other potential delta content locations
+            const deltaContent = get().findTextValueInObject(event.data?.delta);
+            if (deltaContent) {
+              // Check if the text is just "tool_calls" or similar and ignore it
+              const text = deltaContent.trim().toLowerCase();
+              if (text === 'tool_calls' || text === 'tool calls' || text.includes('tool calls')) {
+                console.log('[streamStore] Ignoring tool calls text:', deltaContent);
+              } else {
+                console.log('[streamStore] Found text in delta object:', deltaContent);
+                get().appendStreamContent(deltaContent);
+                if (!get().isStreamingActive) {
+                  set({ isStreamingActive: true });
+                }
+              }
             }
           }
           break;
@@ -478,7 +529,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
    * Tool Handling (like PDF generation)
    ***************************************************************/
 
-  handleToolCall: async (toolCall: any) => {
+  handleToolCall: async (toolCall: any, threadId: string, runId: string) => {
     try {
       const { name, arguments: argsJson } = toolCall.function;
       const args = JSON.parse(argsJson);
@@ -487,7 +538,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
         case 'GeneratePDFForm': {
           const { formKey, formData } = args;
   
-          if (!formKey || !formData || Object.keys(formData).length === 0) {
+          if (!formKey || !formData || (Array.isArray(formData) && formData.length === 0) || (!Array.isArray(formData) && Object.keys(formData).length === 0)) {
             throw new Error(`Incomplete or missing formData provided for form: ${formKey}`);
           }
   
@@ -497,14 +548,58 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
             throw new Error(`Unsupported form type: ${formKey}`);
           }
   
+          console.log(`[streamStore] Handling GeneratePDFForm:`, { formKey, formData });
+          
+          // Process form data if it's an array (from the OpenAI tool call)
+          let processedFormData: Record<string, any> = {};
+          
+          if (Array.isArray(formData)) {
+            console.log('[streamStore] Form data is an array, processing...');
+            // Convert array of field objects to a key-value object
+            formData.forEach((field: any) => {
+              if (field.name && field.value !== undefined) {
+                processedFormData[field.name] = field.value;
+              }
+            });
+            console.log('[streamStore] Processed form data:', processedFormData);
+          } else {
+            // Use the object as is
+            processedFormData = formData;
+          }
+          
+          // Get the form definition to determine required fields
+          const formDefinition = formDefinitions[formKey];
+          if (formDefinition) {
+            // Extract all field names from the form definition
+            const fieldNames: string[] = [];
+            formDefinition.sections.forEach(section => {
+              section.fields.forEach(field => {
+                fieldNames.push(field.name);
+              });
+            });
+            
+            // Ensure all required fields are present with fallback values
+            fieldNames.forEach(fieldName => {
+              if (processedFormData[fieldName] === undefined) {
+                processedFormData[fieldName] = '';
+              }
+            });
+            
+            console.log(`[streamStore] Validated form data against definition for ${formKey}`);
+          }
+          
+          // Structure the form data properly for the PDF generator
           set({
             currentFormKey: formKey,
-            formData: { type: formKey, data: formData },
+            formData: { 
+              type: formKey, 
+              data: processedFormData 
+            },
             isFormProcessing: true,
             streamError: null,
           });
   
-          console.log('[streamStore] Handling GeneratePDFForm:', formKey, formData);
+          console.log('[streamStore] Form processing started for:', formKey, 'with data:', processedFormData);
           break;
         }
   
@@ -532,7 +627,122 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
             isAwaitingUserInput: true,
             streamError: null,
           });
-  
+
+          // here we should submit_tool_outputs back to the Assistant
+          const submitToolOutputs = async () => {
+            try {
+              const response = await fetch(`/api/threads/${threadId}/run/${runId}/submit-tool-outputs`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  tool_outputs: [
+                    {
+                      tool_call_id: toolCall.id,
+                      output: JSON.stringify({ requiredFields })
+                    }
+                  ],
+                  stream: true
+                }),
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Failed to submit tool outputs: ${response.statusText}`);
+              }
+              
+              console.log('[streamStore] Submitted tool outputs successfully');
+              
+              // Continue listening to the stream after submitting tool outputs
+              // This ensures we receive the next response from the Assistant
+              const reader = response.body?.getReader();
+              if (reader) {
+                // Process the stream to ensure conversation continues
+                const processStream = async () => {
+                  try {
+                    // Set streaming active to ensure UI shows streaming content
+                    set({ 
+                      isStreamingActive: true,
+                      currentStreamContent: '' // Reset streaming content for the new response
+                    });
+                    
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) {
+                        console.log('[streamStore] Stream completed after tool submission');
+                        break;
+                      }
+                      
+                      // Process the chunks as they come in
+                      const chunk = new TextDecoder().decode(value);
+                      console.log('[streamStore] Stream chunk after tool submission:', chunk);
+                      
+                      // Parse and process events from the chunk
+                      const lines = chunk.split('\n').filter(line => line.trim() !== '');
+                      for (const line of lines) {
+                        if (!line.trim().startsWith('data:')) continue;
+                        
+                        const jsonStr = line.trim().slice(5).trim();
+                        if (jsonStr === '[DONE]') {
+                          console.log('[streamStore] Stream completed after tool submission');
+                          break;
+                        }
+                        
+                        try {
+                          const event = JSON.parse(jsonStr);
+                          if (event.type) {
+                            await get().processStreamEvent(event, threadId);
+                          } else if (event.delta?.content) {
+                            // Handle direct content deltas that might not have a type
+                            const content = event.delta.content;
+                            if (typeof content === 'string') {
+                              get().appendStreamContent(content);
+                            } else if (Array.isArray(content)) {
+                              for (const item of content) {
+                                if (item.text?.value) {
+                                  get().appendStreamContent(item.text.value);
+                                }
+                              }
+                            }
+                          } else {
+                            // Try to find any text content in the event
+                            const textContent = get().findTextValueInObject(event);
+                            if (textContent) {
+                              get().appendStreamContent(textContent);
+                            }
+                          }
+                        } catch (err) {
+                          console.error('[streamStore] Error parsing event after tool submission:', err);
+                        }
+                      }
+                    }
+                  } catch (err) {
+                    console.error('[streamStore] Error processing stream after tool submission:', err);
+                    set({ streamError: (err as Error).message });
+                  } finally {
+                    // Ensure we properly handle stream completion
+                    if (get().isStreamingActive) {
+                      // Don't immediately end the stream - allow the UI to show the content
+                      setTimeout(() => {
+                        if (get().currentStreamContent && get().isStreamingActive) {
+                          get().finalizeMessage();
+                        }
+                      }, 1000);
+                    }
+                  }
+                };
+                
+                // Start processing the stream but don't await it
+                // This allows the function to return while still processing the stream
+                processStream();
+              }
+            } catch (error) {
+              console.error('[streamStore] Error submitting tool outputs:', error);
+              set({ streamError: (error as Error).message, isFormProcessing: false });
+            }
+          };
+          
+          await submitToolOutputs();
           console.log(`[streamStore] Retrieved required fields for ${formKey}:`, requiredFields);
           break;
         }

@@ -4,6 +4,7 @@ import React, { useEffect, useCallback } from 'react';
 import { useStreamStore } from '@/store/streamStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { generateAndUploadPDF, FormType } from '@/lib/services/functions/pdfGenerator';
+import PDFGenerationIndicator from '@/components/ui/PDFGenerationIndicator';
 
 export const PDFGeneratorListener = () => {
   // Minimize store dependencies by selecting only what's needed
@@ -21,16 +22,24 @@ export const PDFGeneratorListener = () => {
   // Memoize the PDF processing function to prevent it from changing on every render
   const processPDF = useCallback(async () => {
     if (!formData || Object.keys(formData).length === 0) {
+      console.log('[PDFGeneratorListener] No form data available, skipping PDF generation');
       return null;
     }
 
+    console.log('[PDFGeneratorListener] Processing PDF with form data:', formData);
+
     try {
-      // Simplify the form data preparation
+      // Prepare the form data structure
+      const pdfFormData = {
+        type: formData.type as FormType,
+        data: formData.data || formData
+      };
+      
+      console.log('[PDFGeneratorListener] Prepared form data for PDF generation:', pdfFormData);
+      
+      // Generate and upload the PDF
       const result = await generateAndUploadPDF(
-        {
-          type: formData.type as FormType,
-          data: formData
-        },
+        pdfFormData,
         uploadDocument,
         {
           // Use callbacks for cleaner flow control
@@ -40,7 +49,7 @@ export const PDFGeneratorListener = () => {
 
       if (result?.document && result.url) {
         setPdfPreviewUrl(result.url);
-        console.log('[PDF Listener] PDF uploaded successfully');
+        console.log('[PDFGeneratorListener] PDF uploaded successfully');
         return result.url;
       }
     } catch (error) {
@@ -49,7 +58,7 @@ export const PDFGeneratorListener = () => {
       setIsStreamingActive(false);
     }
     return null;
-  }, [formData, uploadDocument]);
+  }, [formData, uploadDocument, setPdfPreviewUrl, setStreamError, setIsStreamingActive]);
 
   useEffect(() => {
     // Skip processing if conditions aren't met
@@ -73,6 +82,6 @@ export const PDFGeneratorListener = () => {
     };
   }, [isFormProcessing, processPDF]);
 
-  // No UI rendering needed
-  return null;
+  // Return the loading indicator component
+  return <PDFGenerationIndicator />;
 };
