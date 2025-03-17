@@ -82,12 +82,12 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
   setFormType: (formType) => set({ currentFormType: formType }),
   
   // Update form data for a specific form type
-  updateFormData: (formType, field, value) => set((state) => {
+  updateFormData: <T extends FormType>(formType: T, field: string, value: any) => set((state) => {
     // Create a new form data object with the updated field
     const updatedFormData = {
       ...state.formData,
       [formType]: {
-        ...state.formData[formType],
+        ...(state.formData[formType as keyof typeof state.formData] || {}),
         [field]: value,
       },
     };
@@ -162,6 +162,6 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
   // Get the current form data based on the current form type
   getCurrentFormData: () => {
     const { currentFormType, formData } = get();
-    return formData[currentFormType];
+    return formData[currentFormType as keyof typeof formData] || {};
   },
 }));
