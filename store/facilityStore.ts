@@ -1,3 +1,5 @@
+// (store/facilityStore.ts)
+
 'use client';
 
 import { create } from 'zustand';

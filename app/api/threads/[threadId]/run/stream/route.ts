@@ -4,7 +4,6 @@ import { getOpenAIClient, OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
 import { NextRequest } from 'next/server';
 import { Run } from "@/types/api/openai";
 import { handleToolCalls } from "@/lib/services/openai/toolHandlers";
-import { getToolDefinitions } from "@/lib/services/openai/toolDefinitions";
 
 const openai = getOpenAIClient()
 
@@ -126,32 +125,20 @@ export async function POST(req: NextRequest) {
             // Debug the full event structure
           
 
-            // First, map OpenAI event types to front-end expected types
-            const eventTypeMapping: Record<string, string | undefined> = {
-              'thread.run.created': 'thread.run.created',
-              'thread.run.queued': 'thread.run.in_progress',
-              'thread.run.in_progress': 'thread.run.in_progress',
-              'thread.run.completed': 'thread.run.completed',
-              'thread.run.failed': 'thread.run.failed',
-              'thread.run.cancelled': 'thread.run.cancelled',
-              'thread.message.created': 'thread.message.created',
-              'thread.message.delta': 'thread.message.delta',
-              'thread.message.completed': 'thread.message.completed'
-            };
-
             // Try to get the event type from different possible locations
             const eventType = event.type || 
                              (event.event ? event.event : null) || 
                              (event.object ? event.object : null);
             
-            const mappedType = eventTypeMapping[eventType];
+            // Use original event type instead of mapping
+            // const mappedType = eventTypeMapping[eventType];
              // Get the data from the event
             const eventData = event.data || event;
             // Always emit the event with appropriate type
             if (eventData) {
               try {
                 controller.enqueue(`data: ${JSON.stringify({
-                  type: mappedType || eventType || 'unknown',
+                  type: eventType || 'unknown',
                   data: eventData
                 })}\n\n`);
               } catch (err) {

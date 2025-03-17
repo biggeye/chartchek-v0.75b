@@ -1,18 +1,21 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import ReactPDF from '@react-pdf/renderer';
-import BioPsychSocialTemplate from '@/components/dynamicForms/pdf/biopsychsocialassessment-template';
+import { generatePDF, FormData } from '@/lib/services/functions/pdfGenerator';
 
 export async function POST(request: NextRequest) {
   const data = await request.json();
 
-  // Properly render the document to a blob directly
-  const document = <BioPsychSocialTemplate patientData={data.patientData} />;
-  const pdfBlob = await ReactPDF.pdf(document).toBlob();
+  // Use the generic PDF generator function
+  const formData: FormData = {
+    type: 'bio_psych_social_assessment',
+    data: data.patientData
+  };
+  
+  const { blob } = await generatePDF(formData);
 
   // Send PDF file directly as response
-  return new NextResponse(pdfBlob, {
+  return new NextResponse(blob, {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

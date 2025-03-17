@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { DocumentCategorization, ComplianceConcernType } from '@/types/store/document';
 import DocumentCategorizationForm from '@/components/documents/DocumentCategorizationForm';
 import { Card } from '@/components/ui/card';
+import { createClient } from '@/utils/supabase/client';
 
 // Define processing status enum if it doesn't exist in types
 enum ProcessingStatus {
@@ -33,6 +34,7 @@ export default function DocumentDetail() {
   const params = useParams();
   const { documents, fetchDocuments, updateDocumentCategorization } = useDocumentStore();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [categorization, setCategorization] = useState<DocumentCategorization>({});
   const [isEditing, setIsEditing] = useState(false);
@@ -57,7 +59,7 @@ export default function DocumentDetail() {
 
   if (!document) return <div>Document not found</div>;
 
-  const { document_id, file_name, file_type, metadata, openai_file_id, processing_status, processing_error, has_embeddings } = document;
+  const { document_id, file_name, file_type, metadata, openai_file_id, processing_status, processing_error, has_embeddings, file_path, bucket } = document;
   const category = metadata?.[0]?.category;
   const notes = metadata?.[0]?.notes;
   const tags = metadata?.[0]?.tags;
@@ -71,24 +73,110 @@ export default function DocumentDetail() {
     // Implement vector creation logic
   };
 
+  // Function to upload document to OpenAI
+  const handleUploadToOpenAI = async () => {
+    if (!document_id) {
+      console.error('Document ID is missing');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Create Supabase client
+      const supabase = createClient();
+      
+      if (!document?.file_path || !document?.bucket) {
+        console.error('File path or bucket is missing');
+        return;
+      }
+      
+      // Get file from Supabase storage
+      const { data, error } = await supabase.storage
+        .from(document.bucket)
+        .download(document.file_path);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Create a File object from the blob
+      const file = new File([data], file_name || 'document', { type: file_type || 'application/octet-stream' });
+      
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Send the file to the OpenAI files API using FormData
+      const openAIfileResponse = await fetch('/api/files', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!openAIfileResponse.ok) {
+        const errorText = await openAIfileResponse.text();
+        throw new Error(`Failed to upload file to OpenAI: ${errorText}`);
+      }
+      
+      const openAIfileData = await openAIfileResponse.json();
+      
+      // Update the document with the OpenAI file ID
+      if (openAIfileData.file_id) {
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({
+            openai_file_id: openAIfileData.file_id,
+            processing_status: 'processed'
+          })
+          .eq('document_id', document_id);
+          
+        if (updateError) {
+          console.error('Error updating document with OpenAI file ID:', updateError);
+          throw updateError;
+        }
+        
+        // Refresh the document data
+        await fetchDocuments();
+      }
+      
+      alert('File successfully uploaded to OpenAI');
+    } catch (error) {
+      console.error('Error uploading file to OpenAI:', error);
+      alert('Error uploading file to OpenAI');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Function to handle file download
   const handleDownload = async () => {
-    if (!document_id || !openai_file_id) {
-      console.error('Document ID or OpenAI File ID is missing');
+    if (!document_id) {
+      console.error('Document ID is missing');
       return;
     }
 
     try {
       setIsDownloading(true);
-      // Use the new API endpoint to download the file
-      const response = await fetch(`/api/documents/${document_id}/download`);
       
-      if (!response.ok) {
-        throw new Error(`Failed to download file: ${response.statusText}`);
+      // Create Supabase client
+      const supabase = createClient();
+      
+      if (!document?.file_path || !document?.bucket) {
+        console.error('File path or bucket is missing');
+        return;
       }
       
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Get file from Supabase storage
+      const { data, error } = await supabase.storage
+        .from(document.bucket)
+        .download(document.file_path);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Create a URL for the blob and trigger download
+      const url = window.URL.createObjectURL(data);
       const a = window.document.createElement('a');
       a.style.display = 'none';
       a.href = url;
@@ -124,21 +212,25 @@ export default function DocumentDetail() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Document Info */}
         <div className="lg:col-span-2">
-          <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+          <div className="overflow-hidden gray-800 bg-white shadow sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-medium leading-6 text-gray-900">Document Information</h3>
                 <p className="mt-1 max-w-2xl text-sm text-gray-500">Details about the document.</p>
               </div>
               <div className="flex items-center space-x-2">
-                <Button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="flex items-center"
-                >
-                  <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                  {isDownloading ? 'Downloading...' : 'Download'}
-                </Button>
+                {!openai_file_id ? (
+                  <Button
+                    onClick={handleUploadToOpenAI}
+                    disabled={isUploading}
+                    className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-2"
+                  >
+                    <PaperClipIcon className="h-4 w-4 mr-1" />
+                    {isUploading ? 'Uploading to OpenAI...' : 'Upload to OpenAI'}
+                  </Button>
+                ) : (
+                  null
+                )}
                 
                 <Menu as="div" className="relative inline-block text-left">
                   <MenuButton className="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
@@ -153,9 +245,22 @@ export default function DocumentDetail() {
                             className={`${
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
                             } block px-4 py-2 text-sm`}
+                            onClick={handleDownload}
+                          >
+                            Download Document
+                          </a>
+                        )}
+                      </MenuItem>
+                      <MenuItem>
+                        {({ active }) => (
+                          <a
+                            href="#"
+                            className={`${
+                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                            } block px-4 py-2 text-sm`}
                             onClick={handleCreateVector}
                           >
-                            Generate Embeddings
+                            Generate Embeddings 
                           </a>
                         )}
                       </MenuItem>
@@ -196,6 +301,18 @@ export default function DocumentDetail() {
                     <dd className="mt-1 text-sm text-red-600 sm:col-span-2 sm:mt-0">{processing_error}</dd>
                   </div>
                 )}
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">OpenAI File ID</dt>
+                  <dd className="mt-1 text-sm sm:col-span-2 sm:mt-0 flex justify-between items-center">
+                    <div>
+                      {openai_file_id ? (
+                        <span className="text-green-600">{openai_file_id})</span>
+                      ) : (
+                        <span className="text-red-600">None</span>
+                      )}
+                    </div>
+                  </dd>
+                </div>
                 {category && (
                   <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">Category</dt>
@@ -241,7 +358,7 @@ export default function DocumentDetail() {
               {!isEditing ? (
                 <Button 
                   onClick={() => setIsEditing(true)}
-                  className="text-sm"
+                  className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2"
                 >
                   Edit
                 </Button>
@@ -249,14 +366,14 @@ export default function DocumentDetail() {
                 <div className="flex space-x-2">
                   <Button 
                     onClick={() => setIsEditing(false)}
-                    className="text-sm bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleSaveCategorization}
                     disabled={isSaving}
-                    className="text-sm bg-indigo-600 text-white hover:bg-indigo-700"
+                    className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2"
                   >
                     {isSaving ? 'Saving...' : 'Save'}
                   </Button>
@@ -313,7 +430,7 @@ export default function DocumentDetail() {
                 {!has_embeddings && (
                   <Button
                     onClick={handleCreateVector}
-                    className="text-sm bg-indigo-600 text-white hover:bg-indigo-700"
+                    className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2"
                   >
                     Generate Embeddings
                   </Button>

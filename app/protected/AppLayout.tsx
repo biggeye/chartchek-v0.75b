@@ -44,7 +44,7 @@ import { FacilitySelector } from '@/components/ui/facility-selector';
 import { useFacilityStore } from '@/store/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
-import PDFAutoGenerator from '@/components/dynamicForms/FormGenerator';
+import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -255,7 +255,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         
         <main className="flex flex-1 overflow-hidden">
           {children}
-          <PDFAutoGenerator />
+          <PDFGeneratorListener />
         </main>
       </div>
     </div>

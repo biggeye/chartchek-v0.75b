@@ -1,3 +1,5 @@
+// (/store/streamStore.ts)
+
 'use client';
 
 import { create } from 'zustand';
@@ -6,7 +8,7 @@ import { chatStore } from './chatStore';
 import { StreamingState } from '../types/store/stream';
 import { OpenAIStreamingEvent } from '@/types/api/openai';
 import { useDocumentStore } from './documentStore';
-
+import { formDefinitions } from '@/lib/forms/formDefinitions';
 // If you need form definitions, import them, but let's keep it minimal for clarity
 // import { formDefinitions } from '@/components/dynamicForms/formDefinitions';
 
@@ -22,6 +24,8 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
   /***************************************************************
    * Store State
    ***************************************************************/
+  isAwaitingUserInput: false,
+  requiredFields: [],
   isStreamingActive: false,
   currentStreamContent: '',
   streamError: null,
@@ -223,9 +227,15 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
   processStreamEvent: async (event: OpenAIStreamingEvent, threadId: string) => {
     try {
       switch (event.type) {
-        // ------------- Examples of message events -------------
+        // ------------- Message events -------------
         case 'thread.message.created':
           if (event.data?.id) set({ currentMessageId: event.data.id });
+          break;
+
+        case 'textCreated':
+          if (event.data?.id) set({ currentMessageId: event.data.id });
+          // Reset stream content for a new message bubble
+          get().setStreamContent('');
           break;
 
         case 'thread.message.in_progress':
@@ -247,8 +257,29 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
           }
           break;
 
+        case 'messageDelta':
+          if (event.data?.delta?.content) {
+            const content = event.data.delta.content;
+            if (Array.isArray(content)) {
+              for (const item of content) {
+                if (item.text?.value) {
+                  get().appendStreamContent(item.text.value);
+                }
+              }
+            } else if (typeof content === 'string') {
+              get().appendStreamContent(content);
+            }
+          }
+          break;
+
         case 'thread.message.completed':
           console.log('[streamStore] Message completed');
+          get().finalizeMessage();
+          break;
+
+        case 'messageCompleted':
+          console.log('[streamStore] Message completed:', event.data);
+          get().finalizeMessage();
           break;
 
         case 'thread.message.incomplete':
@@ -256,7 +287,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
           set({ streamError: 'Message generation incomplete', isStreamingActive: false });
           break;
 
-        // ------------- Examples of run events -------------
+        // ------------- Run events -------------
         case 'thread.run.created':
           if (event.data?.id) set({ currentRunId: event.data.id });
           break;
@@ -303,43 +334,43 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
           set({ streamError: 'Run expired', isStreamingActive: false });
           break;
 
-          case 'thread.run.requires_action':
-            console.log('[streamStore] Run requires action:', JSON.stringify(event.data, null, 2));
-          
-            if (event.data?.id) set({ currentRunId: event.data.id });
-          
-            if (event.data?.required_action?.type === 'submit_tool_outputs') {
-              console.log('[streamStore] Tool outputs required:', event.data.required_action.submit_tool_outputs);
-          
-              // 1) Save the toolCalls array in a local variable
-              const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
+        case 'thread.run.requires_action':
+          console.log('[streamStore] Run requires action:', JSON.stringify(event.data, null, 2));
+        
+          if (event.data?.id) set({ currentRunId: event.data.id });
+        
+          if (event.data?.required_action?.type === 'submit_tool_outputs') {
+            console.log('[streamStore] Tool outputs required:', event.data.required_action.submit_tool_outputs);
+        
+            // 1) Save the toolCalls array in a local variable
+            const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
 
-              console.log('[streamStore] EXACT toolCalls array shape:', JSON.stringify(toolCalls, null, 2));
-          
-              // 2) If it's empty or undefined, you'll see it here
-              if (!toolCalls || !Array.isArray(toolCalls) || toolCalls.length === 0) {
-                console.warn('[streamStore] toolCalls is empty or invalid, skipping');
-                return;
-              }
-          
-              console.log('[streamStore] Processing tool calls now...');
-          
-              // 3) Build the array with run_id
-              const toolCallsWithRunId = toolCalls.map((tc: any) => ({
-                ...tc,
-                run_id: event.data.id,
-              }));
-              console.log('[streamStore] toolCallsWithRunId:', JSON.stringify(toolCallsWithRunId, null, 2));
-          
-              // 4) Iterate
-              for (const toolCall of toolCallsWithRunId) {
-                console.log('[streamStore] Handling tool call:', JSON.stringify(toolCall, null, 2));
-                get().handleToolCall(toolCall);
-              }
-            } else {
-              console.warn('[streamStore] Unknown required_action type:', event.data?.required_action?.type);
+            console.log('[streamStore] EXACT toolCalls array shape:', JSON.stringify(toolCalls, null, 2));
+        
+            // 2) If it's empty or undefined, you'll see it here
+            if (!toolCalls || !Array.isArray(toolCalls) || toolCalls.length === 0) {
+              console.warn('[streamStore] toolCalls is empty or invalid, skipping');
+              return;
             }
-            break;
+        
+            console.log('[streamStore] Processing tool calls now...');
+        
+            // 3) Build the array with run_id
+            const toolCallsWithRunId = toolCalls.map((tc: any) => ({
+              ...tc,
+              run_id: event.data.id,
+            }));
+            console.log('[streamStore] toolCallsWithRunId:', JSON.stringify(toolCallsWithRunId, null, 2));
+        
+            // 4) Iterate
+            for (const toolCall of toolCallsWithRunId) {
+              console.log('[streamStore] Handling tool call:', JSON.stringify(toolCall, null, 2));
+              get().handleToolCall(toolCall);
+            }
+          } else {
+            console.warn('[streamStore] Unknown required_action type:', event.data?.required_action?.type);
+          }
+          break;
           
 
         // ------------- Additional steps (thread.run.step.*) -------------
@@ -391,10 +422,6 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
             console.error('[streamStore] Stream error event:', errorMessage);
             set({ streamError: errorMessage, isStreamingActive: false });
           }
-          break;
-
-        case 'messageCompleted':
-          console.log('[streamStore] Message completed:', event.data);
           break;
 
         default:
@@ -451,60 +478,72 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
    * Tool Handling (like PDF generation)
    ***************************************************************/
 
-  handleToolCall: (toolCall: any) => {
+  handleToolCall: async (toolCall: any) => {
     try {
-      if (toolCall.function?.name === 'BioPsychSocialAssessmentForm') {
-        console.log('[streamStore] Received BioPsychSocialAssessmentForm tool call with args: ', toolCall.function.arguments);
-
-        const args = JSON.parse(toolCall.function.arguments);
-
-        set({
-          currentFormKey: 'biopsychsocial',
-          formData: args,
-          isFormProcessing: true,
-        });
-
-      } else {
-        console.log('Unknown function call:', toolCall.function?.name);
+      const { name, arguments: argsJson } = toolCall.function;
+      const args = JSON.parse(argsJson);
+  
+      switch (name) {
+        case 'GeneratePDFForm': {
+          const { formKey, formData } = args;
+  
+          if (!formKey || !formData || Object.keys(formData).length === 0) {
+            throw new Error(`Incomplete or missing formData provided for form: ${formKey}`);
+          }
+  
+          // Ensure formKey is supported
+          const validFormKeys = Object.keys(formDefinitions);
+          if (!validFormKeys.includes(formKey)) {
+            throw new Error(`Unsupported form type: ${formKey}`);
+          }
+  
+          set({
+            currentFormKey: formKey,
+            formData: { type: formKey, data: formData },
+            isFormProcessing: true,
+            streamError: null,
+          });
+  
+          console.log('[streamStore] Handling GeneratePDFForm:', formKey, formData);
+          break;
+        }
+  
+        case 'getFormFields': {
+          const { formKey } = args;
+  
+          if (!formKey) {
+            throw new Error('No formKey provided for retrieving fields.');
+          }
+  
+          const validFormKeys = Object.keys(formDefinitions);
+          if (!validFormKeys.includes(formKey)) {
+            throw new Error(`Unsupported form type requested: ${formKey}`);
+          }
+  
+          const definition = formDefinitions[formKey];
+          const requiredFields = definition.sections.flatMap((section) =>
+            section.fields.map((field) => field.name)
+          );
+  
+          set({
+            currentFormKey: formKey,
+            requiredFields,
+            formData: {},
+            isAwaitingUserInput: true,
+            streamError: null,
+          });
+  
+          console.log(`[streamStore] Retrieved required fields for ${formKey}:`, requiredFields);
+          break;
+        }
+  
+        default:
+          console.warn('[streamStore] Unsupported function call:', name);
+          set({ streamError: `Unsupported function: ${name}` });
       }
     } catch (error) {
       console.error('[streamStore] Error handling tool call:', error);
-    }
-  },
-
-  generatePDF: async (patientData: Record<string, any>) => {
-    try {
-      console.log('[streamStore] Generating PDF from patient data:', patientData);
-
-      const response = await fetch('/api/tools/biopsychsocial-assessment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientData }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`PDF generation failed. Status: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const pdfUrl = URL.createObjectURL(blob);
-
-      console.log('[streamStore] PDF generated, preview URL:', pdfUrl);
-
-      // Store or display
-      get().setPdfPreviewUrl(pdfUrl);
-
-      const file = new File([blob], `BioPsychSocialAssessment-${Date.now()}.pdf`, { type: 'application/pdf' });
-
-      const { uploadDocument } = useDocumentStore.getState();
-      const uploadResponse = await uploadDocument(file);  // 📤 Uploading file
-  
-      console.log('PDF successfully uploaded:', uploadResponse);
-    } catch (error) {
-      console.error('[streamStore] Error generating PDF:', error);
-      set({ streamError: error instanceof Error ? error.message : String(error) });
-    } finally {
-      set({ isFormProcessing: false });
+      set({ streamError: (error as Error).message, isFormProcessing: false });
     }
   },
 }));

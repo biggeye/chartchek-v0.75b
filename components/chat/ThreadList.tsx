@@ -18,7 +18,8 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     error,
     isLoading,
     updateThreadTitle,
-    fetchOpenAIMessages
+    fetchOpenAIMessages,
+    checkActiveRun
   } = chatStore()
 
   const [isEditing, setIsEditing] = useState<boolean>(false)
@@ -38,8 +39,98 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
       const selectedThread = historicalThreads.find((t: Thread) => t.thread_id === threadId)
       if (selectedThread) {
         setCurrentThread(selectedThread)
+        
         // Fetch messages after setting the thread
-        await fetchOpenAIMessages(threadId)
+        const messages = await fetchOpenAIMessages(threadId)
+        
+        // Check for active run on thread load
+        const runStatus = await checkActiveRun(threadId)
+        
+        // If the thread has a default title, generate a better one from the first user message
+        console.log('Thread selected:', selectedThread);
+        console.log('Messages:', messages);
+        
+        // Check for default title with more flexible matching
+        const hasDefaultTitle = selectedThread.title && (
+          selectedThread.title.toLowerCase().includes('new chat') || 
+          selectedThread.title === 'New conversation' ||
+          selectedThread.title === 'New thread'
+        );
+        
+        if (hasDefaultTitle && messages && messages.length > 0) {
+          console.log('Found thread with default title:', selectedThread.title);
+          // Find the first user message
+          const firstUserMessage = messages.find(msg => msg.role === 'user')
+          if (firstUserMessage && firstUserMessage.content) {
+            console.log('Found first user message:', firstUserMessage);
+            console.log('Message content type:', typeof firstUserMessage.content);
+            
+            // Extract content text from the message
+            let messageContent = ''
+            
+            if (Array.isArray(firstUserMessage.content)) {
+              console.log('Content is array, length:', firstUserMessage.content.length);
+              // Handle array content format
+              const textContent = firstUserMessage.content.find(item => item.type === 'text')
+              if (textContent && textContent.text) {
+                messageContent = textContent.text.value || ''
+                console.log('Extracted text from array content:', messageContent);
+              } else {
+                // Try to extract text from any content item that might have text
+                for (const item of firstUserMessage.content) {
+                  console.log('Content item:', item);
+                  if (item.text && item.text.value) {
+                    messageContent = item.text.value;
+                    console.log('Found text in item:', messageContent);
+                    break;
+                  }
+                }
+              }
+            } else if (typeof firstUserMessage.content === 'string') {
+              // Handle string content format
+              messageContent = firstUserMessage.content
+              console.log('Content is string:', messageContent);
+            } else {
+              console.log('Unexpected content format:', firstUserMessage.content);
+              // Try to extract text from the content object if it's not an array or string
+              if (firstUserMessage.content && typeof firstUserMessage.content === 'object') {
+                const contentStr = JSON.stringify(firstUserMessage.content);
+                console.log('Content as JSON:', contentStr);
+                messageContent = contentStr.substring(0, 100); // Use first 100 chars for title generation
+              }
+            }
+            
+            if (messageContent.trim()) {
+              console.log('Extracted message content:', messageContent);
+              try {
+                // Generate a title using the API
+                console.log('Calling title generation API...');
+                const response = await fetch('/api/generate-title', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: messageContent })
+                })
+                
+                console.log('API response status:', response.status);
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log('Received title from API:', data);
+                  if (data.title) {
+                    // Update the thread title
+                    console.log('Updating thread title to:', data.title);
+                    await updateThreadTitle(threadId, data.title);
+                    
+                    // Refresh the thread list to show the updated title
+                    fetchHistoricalThreads();
+                  }
+                }
+              } catch (titleError) {
+                console.error('Error generating title:', titleError)
+                // Continue with the default title if generation fails
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error changing thread:', error)

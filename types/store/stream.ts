@@ -5,6 +5,8 @@ import { OpenAIStreamingEvent } from '@/types/api/openai';
 // Main Zustand store interface
 export interface StreamingState {
   // Core store state
+  isAwaitingUserInput: boolean;
+  requiredFields: string[];
   isStreamingActive: boolean;
   currentStreamContent: string;
   streamError: string | null;
@@ -38,7 +40,6 @@ export interface StreamingState {
 
   // Tool & PDF generation
   handleToolCall: (toolCall: any) => void;
-  generatePDF: (patientData: Record<string, any>) => Promise<void>;
   setPdfPreviewUrl: (url: string | null) => void;
 }
 

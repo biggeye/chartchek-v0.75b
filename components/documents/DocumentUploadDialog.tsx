@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ArrowUpTrayIcon } from '@heroicons/react/20/solid'
+import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import DocumentCategorizationForm from './DocumentCategorizationForm'
 import { DocumentCategorization } from '@/types/store/document'
+import { Transition } from '@headlessui/react'
 
 interface DocumentUploadDialogProps {
   isOpen: boolean
@@ -53,86 +53,117 @@ export default function DocumentUploadDialog({
   }
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Upload Document</DialogTitle>
-          <DialogDescription>
-            Upload a document and categorize it by facility, patient, and compliance concern.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-6 py-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-          {!selectedFile ? (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12">
-              <ArrowUpTrayIcon className="h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500 mb-4">Click to select or drag and drop a file</p>
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.txt"
-                disabled={isLoading}
-              />
-              <label
-                htmlFor="file-upload"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
+    <Transition
+      show={isOpen}
+      enter="transition duration-300 ease-out"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="transition duration-200 ease-in"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+    >
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
+          onClick={onClose}
+        />
+
+        {/* Modal Content */}
+        <Transition.Child
+          enter="transition duration-300 ease-out"
+          enterFrom="transform scale-50 opacity-0"
+          enterTo="transform scale-100 opacity-100"
+          leave="transition duration-200 ease-in"
+          leaveFrom="transform scale-100 opacity-100"
+          leaveTo="transform scale-50 opacity-0"
+        >
+          <div className="relative bg-white rounded-xl shadow-xl w-[80vw] max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">Upload Document</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
               >
-                Select File
-              </label>
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                <div className="truncate">
-                  <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type || 'Unknown type'}
-                  </p>
+
+            {/* Modal Body */}
+            <div className="p-4 overflow-y-auto flex-grow">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+                  <p className="text-sm">{error}</p>
                 </div>
-                <Button
-                  onClick={() => setSelectedFile(null)}
-                  className="text-sm"
-                >
-                  Change
-                </Button>
-              </div>
-              
-              <div className="border rounded-md p-4">
-                <h3 className="text-sm font-medium mb-3">Document Categorization</h3>
-                <DocumentCategorizationForm
-                  value={categorization}
-                  onChange={setCategorization}
-                  isDisabled={isLoading}
-                />
-              </div>
+              )}
+              {!selectedFile ? (
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12">
+                  <ArrowUpTrayIcon className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 mb-4">Click to select or drag and drop a file</p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.txt"
+                    disabled={isLoading}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    Select File
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                    <div className="truncate">
+                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type || 'Unknown type'}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setSelectedFile(null)}
+                      className="text-sm"
+                    >
+                      Change
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-3">Document Categorization</h3>
+                    <DocumentCategorizationForm
+                      value={categorization}
+                      onChange={setCategorization}
+                      isDisabled={isLoading}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        
-        <DialogFooter className="sm:justify-between">
-          <Button 
-            onClick={onClose} 
-            disabled={isLoading}
-            className="bg-gray-100 text-gray-800 hover:bg-gray-200"
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleUpload} 
-            disabled={!selectedFile || isLoading}
-            className="ml-2 bg-indigo-600 text-white hover:bg-indigo-700"
-          >
-            {isLoading ? 'Uploading...' : 'Upload Document'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+            {/* Modal Footer */}
+            <div className="border-t p-4 flex justify-between">
+              <Button 
+                onClick={onClose} 
+                disabled={isLoading}
+                plain
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpload} 
+                disabled={!selectedFile || isLoading}
+              >
+                {isLoading ? 'Uploading...' : 'Upload Document'}
+              </Button>
+            </div>
+          </div>
+        </Transition.Child>
+      </div>
+    </Transition>
   )
 }

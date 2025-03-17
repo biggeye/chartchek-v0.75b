@@ -28,24 +28,7 @@ export default function DocumentsTable({
 
   return (
     <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-     
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Input
-            id="document-upload"
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            accept=".pdf,.doc,.docx,.txt"
-            disabled={isLoading}
-          />
-          <label 
-            htmlFor="document-upload"
-            className={`block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-          </label>
-        </div>
-      </div>
+      
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">

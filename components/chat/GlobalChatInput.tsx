@@ -1,4 +1,4 @@
-'use client'
+  'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import {
@@ -31,6 +31,7 @@ import { useFacilityStore } from '@/store/facilityStore'
 import { PatientBasicInfo } from '@/lib/kipu/types'
 import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog'
 import { useSidebarStore } from '@/store/sidebarStore'
+import { XMarkIcon, UserIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 
 // Define a type for patient context options
 type PatientContextOption = {
@@ -96,7 +97,8 @@ export function GlobalChatInputArea() {
     setCurrentAssistantId,
     clearFileQueue,
     sendMessageWithFiles,
-    createThread
+    createThread,
+    activeRunStatus
   } = chatStore()
 
   // Streaming store
@@ -105,6 +107,22 @@ export function GlobalChatInputArea() {
     startStream,
     cancelStream
   } = useStreamStore()
+
+  // Sync isSubmitting state with isStreamingActive
+  useEffect(() => {
+    if (!isStreamingActive && isSubmitting) {
+      setIsSubmitting(false);
+    }
+  }, [isStreamingActive, isSubmitting]);
+
+  // Sync isSubmitting state with activeRunStatus
+  useEffect(() => {
+    if (activeRunStatus?.isActive) {
+      setIsSubmitting(true);
+    } else if (!isStreamingActive && !activeRunStatus?.isActive && isSubmitting) {
+      setIsSubmitting(false);
+    }
+  }, [activeRunStatus, isStreamingActive, isSubmitting]);
 
   // Document store
   const {
@@ -505,295 +523,363 @@ export function GlobalChatInputArea() {
             // When expanded and not streaming, show the redesigned chat interface
             <div className="relative">
               {/* Tabs on top of input field */}
-              <div className="flex items-center justify-between mb-1 px-2">
-                {/* Left side with assistant selector */}
-                <div className="flex items-center gap-2">
-                  {assistantLogoPath ? (
-                    <div className="h-5 w-5 relative">
-                      <Image
-                        src={assistantLogoPath}
-                        alt={`${currentAssistant?.name} logo`}
-                        width={20}
-                        height={20}
-                        className="object-contain"
+              <div className="flex items-center justify-between mb-0 px-0 relative z-10">
+                {/* Left side with assistant selector in a tab */}
+                <div className="flex items-center z-10">
+                  <div className="flex items-center gap-0 bg-gray-100 rounded-t-lg px-2 py-1.5 border-2 border-gray-300 border-b-0">
+                    {selectedAssistantKey === 'tjc' ? (
+                      <div className="h-5 w-5 relative">
+                        <Image
+                          src="/ext-logos/tjc-logo-goldSymbol.jpg"
+                          alt="TJC Logo"
+                          width={20}
+                          height={20}
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : assistantLogoPath ? (
+                      <div className="h-5 w-5 relative">
+                        <Image
+                          src={assistantLogoPath}
+                          alt={`${currentAssistant?.name} logo`}
+                          width={20}
+                          height={20}
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <ChatBubbleBottomCenterIcon className="h-5 w-5 text-gray-500" />
+                    )}
+                    {/* Custom positioned dropdown wrapper */}
+                    <div className="relative">
+                      <DropdownMenu
+                        items={assistantDropdownItems}
+                        triggerLabel={currentAssistant?.name || 'Select Assistant'}
+                        className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                        position="top"
+                        align="right"
                       />
                     </div>
-                  ) : (
-                    <ChatBubbleBottomCenterIcon className="h-5 w-5 text-gray-500" />
-                  )}
-                  {/* Custom positioned dropdown wrapper */}
-                  <div className="relative">
-                    <DropdownMenu
-                      items={assistantDropdownItems}
-                      triggerLabel={currentAssistant?.name || 'Select Assistant'}
-                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
-                      position="top"
-                      align="right"
-                    />
                   </div>
                 </div>
 
                 {/* Centered HIDE button */}
                 <button
                   onClick={() => setIsExpanded(false)}
-                  className="px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 rounded-sm shadow-sm"
                 >
                   HIDE
                 </button>
 
-                {/* Right side with New conversation button */}
+                {/* Right side with New conversation button in a tab */}
                 <div className="flex items-center">
                   {/* New conversation button */}
-                  <Button
-                    onClick={async () => {
-                      if (selectedAssistantKey) {
-                        try {
-                          // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
-                          const assistantId = getCurrentAssistantId(selectedAssistantKey);
+                  <div className="bg-gray-100 rounded-t-lg px-1 py-1 border-2 border-gray-300 border-b-0">
+                    <Button
+                      onClick={async () => {
+                        if (selectedAssistantKey) {
+                          try {
+                            // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
+                            const assistantId = getCurrentAssistantId(selectedAssistantKey);
 
-                          // Create new thread with current assistant using the chatStore
-                          const threadId = await chatStore.getState().createThread(assistantId);
-                          console.log(`Created new thread: ${threadId}`);
-                          // Thread state is already updated by the createThread function
-                        } catch (error) {
-                          console.error('Error creating new thread:', error);
+                            // Create new thread with current assistant using the chatStore
+                            const threadId = await chatStore.getState().createThread(assistantId);
+                            console.log(`Created new thread: ${threadId}`);
+                            // Thread state is already updated by the createThread function
+                          } catch (error) {
+                            console.error('Error creating new thread:', error);
+                          }
                         }
-                      }
-                    }}
-                    className="p-1 rounded-full hover:bg-gray-200 transition-colors"
-                    title="Start new conversation"
-                  >
-                    <PlusIcon className="h-5 w-5 text-gray-600" />
-                  </Button>
+                      }}
+                      className="p-1 rounded-full hover:bg-gray-200 transition-colors"
+                      title="Start new conversation"
+                    >
+                      <PlusIcon className="h-5 w-5 text-gray-600" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              {/* Chat input area - Now directly below the tabs without card wrapper */}
-              <div className="bg-transparent">
-                {/* Patient Context Indicator */}
-                {isPatientContextEnabled && currentPatient && (
-                  <div className="mb-2 flex items-center justify-between bg-blue-50 p-2 rounded-md">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-blue-800 font-medium">
-                        Patient Context: {currentPatient.first_name} {currentPatient.last_name}
-                      </span>
+              {/* Unified Context and Attachments Row - Only show when there's content */}
+              {((isPatientContextEnabled && currentPatient) || storeFileQueue.length > 0) && (
+                <div className="flex flex-wrap gap-2 px-3 py-2 border-x-2 border-t-2 border-gray-300 bg-gray-50">
+                  {/* Patient Context Tag */}
+                  {isPatientContextEnabled && currentPatient && (
+                    <div className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs group">
+                      <UserIcon className="h-3 w-3 mr-1" />
+                      <button 
+                        onClick={openPatientContextBuilder}
+                        className="font-medium mr-1 hover:underline focus:outline-none"
+                      >
+                        {currentPatient.first_name} {currentPatient.last_name}
+                      </button>
+                      <button
+                        onClick={togglePatientContext}
+                        className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                        aria-label="Remove patient context"
+                      >
+                        <XMarkIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  {/* Patient Context Options Tags */}
+                  {isPatientContextEnabled && currentPatient && selectedContextOptions.length > 0 && (
+                    <div className="flex items-center bg-blue-50 text-blue-700 rounded-full px-3 py-1 text-xs">
+                      <AdjustmentsHorizontalIcon className="h-3 w-3 mr-1" />
                       <button
                         onClick={openPatientContextBuilder}
-                        className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 p-1 text-blue-700 shadow-sm hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        className="font-medium hover:underline focus:outline-none"
                       >
-                        <AdjustmentsHorizontalIcon className="h-3 w-3" aria-hidden="true" />
+                        {selectedContextOptions.length} details
                       </button>
-                      {selectedContextOptions.length > 0 && (
-                        <span className="text-xs text-blue-600">
-                          ({selectedContextOptions.length} details selected)
-                        </span>
-                      )}
                     </div>
-                    <button
-                      onClick={togglePatientContext}
-                      className="text-blue-800 hover:text-blue-600"
-                      aria-label="Remove patient context"
+                  )}
+
+                  {/* Document Attachment Tags */}
+                  {storeFileQueue.map((file, index) => (
+                    <div 
+                      key={'document_id' in file ? file.document_id : index} 
+                      className="flex items-center bg-indigo-100 text-indigo-800 rounded-full px-3 py-1 text-xs"
                     >
-                      <XCircleIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-
-                {/* File Attachments Display */}
-                {storeFileQueue.length > 0 && (
-                  <div className="mb-2 pt-1">
-                    <div className="flex flex-wrap gap-2">
-                      {storeFileQueue.map((file, index) => (
-                        <div key={'document_id' in file ? file.document_id : index} className="flex items-center bg-gray-100 rounded-md px-2 py-1">
-                          <span className="text-xs text-gray-800 truncate max-w-[150px]">{file.file_name}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            className="ml-1 text-gray-500 hover:text-gray-700"
-                            aria-label={`Remove ${file.file_name}`}
-                          >
-                            <XCircleIcon className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Main Input Area - Expanded to full width */}
-                <div className="relative">
-                  <div
-                    className={cn(
-                      'flex w-full items-center rounded-lg border-2 border-gray-300 bg-white px-3 py-2.5 shadow-sm',
-                      isSubmitting && 'opacity-50'
-                    )}
-                  >
-                    {/* Action buttons - responsive implementation */}
-                    <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
-                      {/* Mobile dropdown menu */}
-                      <div className="md:hidden relative">
-                        <button
-                          type="button"
-                          onClick={() => setShowMobileMenu(!showMobileMenu)}
-                          className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
-                        >
-                          <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
-
-                        </button>
-
-                        {showMobileMenu && (
-                          <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-10">
-                            <div className="py-1">
-                              <button
-                                onClick={() => {
-                                  toggleAttachFilesPanel();
-                                  setShowMobileMenu(false);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                              >
-                                <PaperClipIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                Attach files
-                              </button>
-                              <button
-                                onClick={() => {
-                                  togglePatientPanel();
-                                  setShowMobileMenu(false);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                              >
-                                <UserPlusIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                Patient context
-                              </button>
-                              <button
-                                onClick={() => {
-                                  toggleDocumentListPanel();
-                                  setShowMobileMenu(false);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
-                              >
-                                <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
-                                Browse documents
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Desktop individual buttons */}
-                      <div className="hidden md:flex items-center">
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={toggleAttachFilesPanel}
-                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                            aria-label="Attach files"
-                          >
-                            <PaperClipIcon className="h-5 w-5" />
-                          </button>
-
-                          {/* Attach Files Dropdown */}
-                          {showAttachFilesPanel && (
-                            <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[150px] z-10">
-                              <div className="py-1">
-                                <input
-                                  type="file"
-                                  id="file"
-                                  ref={fileInputRef}
-                                  onChange={handleFileSelect}
-                                  className="hidden"
-                                />
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                >
-                                  Upload a file
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={togglePatientPanel}
-                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                            aria-label="Set patient context"
-                          >
-                            <UserPlusIcon className="h-5 w-5" />
-                          </button>
-
-                          {/* Patient Panel Dropdown */}
-                          {showPatientPanel && facilityId && (
-                            <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[200px] z-10">
-                              <div className="py-1 max-h-56 overflow-y-auto">
-                                {patients.length === 0 ? (
-                                  <div className="px-4 py-2 text-sm text-gray-500">No patients found</div>
-                                ) : (
-                                  patients.map((patient: PatientBasicInfo) => (
-                                    <button
-                                      key={patient.id || patient.casefile_id || patient.mr_number}
-                                      onClick={() => selectPatient(patient)}
-                                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                    >
-                                      {patient.first_name} {patient.last_name}
-                                    </button>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={toggleDocumentListPanel}
-                            className="inline-flex items-center justify-center px-1 hover:text-blue-600"
-                            aria-label="Browse documents"
-                          >
-                            <DocumentIcon className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <textarea
-                      rows={1}
-                      name="message"
-                      id="message"
-                      disabled={isSubmitting}
-                      value={message}
-                      ref={textareaRef}
-                      onChange={(e) => {
-                        setMessage(e.target.value);
-                        // Height will be auto-adjusted by the effect hook
-                      }}
-                      onKeyDown={handleKeyPress}
-                      className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
-                      placeholder="Type your message..."
-                    />
-
-                    {/* Right side send button */}
-                    <div className="flex-shrink-0 ml-2 pl-2 border-l">
+                      <DocumentTextIcon className="h-3 w-3 mr-1" />
+                      <span className="font-medium truncate max-w-[150px]">{file.file_name}</span>
                       <button
                         type="button"
-                        onClick={handleSubmit}
-                        disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
-                        className={cn(
-                          'inline-flex items-center justify-center text-blue-600 hover:text-blue-800',
-                          (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
-                        )}
-                        aria-label="Send message"
+                        onClick={() => removeFile(index)}
+                        className="ml-1 text-indigo-600 hover:text-indigo-800 focus:outline-none"
+                        aria-label="Remove file"
                       >
-                        <SendIcon className="h-5 w-5" />
+                        <XMarkIcon className="h-3 w-3" />
                       </button>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Main Input Area - Expanded to full width */}
+              <div className="relative">
+                <div
+                  className={cn(
+                    'flex w-full items-center rounded-lg rounded-t-none border-2 border-gray-300 bg-white px-3 py-2.5 shadow-sm',
+                    isPatientContextEnabled && currentPatient && 'border-t-0',
+                    isSubmitting && 'opacity-50'
+                  )}
+                >
+                  {/* Action buttons - responsive implementation */}
+                  <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
+                    {/* Mobile dropdown menu */}
+                    <div className="md:hidden relative z-[100]">
+                      <button
+                        type="button"
+                        onClick={() => setShowMobileMenu(!showMobileMenu)}
+                        className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
+                      >
+                        <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
+
+                      </button>
+
+                      {showMobileMenu && (
+                        <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-[100]">
+                          <div className="py-1">
+                            <button
+                              onClick={() => {
+                                toggleAttachFilesPanel();
+                                setShowMobileMenu(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                            >
+                              <PaperClipIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              Attach files
+                            </button>
+                            <button
+                              onClick={() => {
+                                togglePatientPanel();
+                                setShowMobileMenu(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                            >
+                              <UserPlusIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              Patient context
+                            </button>
+                            <button
+                              onClick={() => {
+                                toggleDocumentListPanel();
+                                setShowMobileMenu(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                            >
+                              <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              Browse documents
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop individual buttons */}
+                    <div className="hidden md:flex items-center">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={toggleAttachFilesPanel}
+                          className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                          aria-label="Attach files"
+                        >
+                          <PaperClipIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <div className="relative z-[100]">
+                        <button
+                          type="button"
+                          onClick={togglePatientPanel}
+                          className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                          aria-label="Set patient context"
+                        >
+                          <UserPlusIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={toggleDocumentListPanel}
+                          className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                          aria-label="Browse documents"
+                        >
+                          <DocumentIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={1}
+                    name="message"
+                    id="message"
+                    disabled={isSubmitting}
+                    value={message}
+                    ref={textareaRef}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      // Height will be auto-adjusted by the effect hook
+                    }}
+                    onKeyDown={handleKeyPress}
+                    className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
+                    placeholder="Type your message..."
+                  />
+
+                  {/* Right side send button */}
+                  <div className="flex-shrink-0 ml-2 pl-2 border-l">
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting || (!message.trim() && storeFileQueue.length === 0)}
+                      className={cn(
+                        'inline-flex items-center justify-center text-blue-600 hover:text-blue-800',
+                        (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) && 'opacity-50 cursor-not-allowed'
+                      )}
+                      aria-label="Send message"
+                    >
+                      <SendIcon className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
+          {/* File Attachment Modal */}
+          <Headless.Transition
+            show={showAttachFilesPanel}
+            enter="transition duration-300 ease-out"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition duration-200 ease-in"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
+                onClick={toggleAttachFilesPanel}
+              />
+
+              {/* Modal Content */}
+              <Headless.Transition.Child
+                enter="transition duration-300 ease-out"
+                enterFrom="transform scale-50 opacity-0"
+                enterTo="transform scale-100 opacity-100"
+                leave="transition duration-200 ease-in"
+                leaveFrom="transform scale-100 opacity-100"
+                leaveTo="transform scale-50 opacity-0"
+              >
+                <div className="relative bg-white rounded-xl shadow-xl w-[80vw] max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <h2 className="text-lg font-semibold text-gray-900">Attach Files</h2>
+                    <button
+                      onClick={toggleAttachFilesPanel}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="p-4 overflow-y-auto flex-grow">
+                    <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 w-full">
+                        <div className="bg-gray-100 rounded-full p-4 mb-4">
+                          <PaperClipIcon className="h-8 w-8 text-gray-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900">Upload files</h3>
+                        <p className="text-sm text-gray-500 text-center max-w-xs mb-4">
+                          Click to select or drag and drop a file
+                        </p>
+                        <input
+                          type="file"
+                          id="file"
+                          ref={fileInputRef}
+                          onChange={(e) => {
+                            handleFileSelect(e);
+                            toggleAttachFilesPanel();
+                          }}
+                          className="hidden"
+                        />
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="mt-2"
+                        >
+                          Choose File
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="border-t p-4 flex justify-between">
+                    <Button
+                      plain
+                      onClick={toggleAttachFilesPanel}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      plain
+                      onClick={() => {
+                        toggleDocumentListPanel();
+                        toggleAttachFilesPanel();
+                      }}
+                    >
+                      Browse Documents
+                    </Button>
+                  </div>
+                </div>
+              </Headless.Transition.Child>
+            </div>
+          </Headless.Transition>
+
           {/* Document List Modal */}
           <Headless.Transition
             show={showDocumentListPanel}
@@ -868,6 +954,90 @@ export function GlobalChatInputArea() {
                         Save
                       </Button>
                     </>
+                  </div>
+                </div>
+              </Headless.Transition.Child>
+            </div>
+          </Headless.Transition>
+
+          {/* Patient Selection Modal */}
+          <Headless.Transition
+            show={showPatientPanel}
+            enter="transition duration-300 ease-out"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition duration-200 ease-in"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
+                onClick={togglePatientPanel}
+              />
+
+              {/* Modal Content */}
+              <Headless.Transition.Child
+                enter="transition duration-300 ease-out"
+                enterFrom="transform scale-50 opacity-0"
+                enterTo="transform scale-100 opacity-100"
+                leave="transition duration-200 ease-in"
+                leaveFrom="transform scale-100 opacity-100"
+                leaveTo="transform scale-50 opacity-0"
+              >
+                <div className="relative bg-white rounded-xl shadow-xl w-[80vw] max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <h2 className="text-lg font-semibold text-gray-900">Select Patient</h2>
+                    <button
+                      onClick={togglePatientPanel}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="p-4 overflow-y-auto flex-grow">
+                    {patients.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">No patients found</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {patients.map((patient: PatientBasicInfo) => (
+                          <button
+                            key={patient.id || patient.casefile_id || patient.mr_number}
+                            onClick={() => {
+                              selectPatient(patient);
+                              togglePatientPanel();
+                            }}
+                            className="flex items-center w-full p-3 text-left rounded-md hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex-shrink-0 bg-gray-200 rounded-full p-2 mr-3">
+                              <UserIcon className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{patient.first_name} {patient.last_name}</p>
+                              {patient.mr_number && (
+                                <p className="text-sm text-gray-500">MR# {patient.mr_number}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="border-t p-4 flex justify-end">
+                    <Button
+                      plain
+                      onClick={togglePatientPanel}
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               </Headless.Transition.Child>

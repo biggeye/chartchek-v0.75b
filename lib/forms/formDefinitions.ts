@@ -406,7 +406,7 @@ export const formDefinitions: Record<string, FormDefinition> = {
     ]
   },
   patient_intake: {
-    formKey: 'patient_intake',
+    formKey: 'patient_intake_form',
     title: "Patient Intake Form",
     sections: [
       {
@@ -427,6 +427,41 @@ export const formDefinitions: Record<string, FormDefinition> = {
           { label: "Allergies", type: "textarea", name: "allergies" },
           { label: "Previous Diagnoses", type: "textarea", name: "diagnoses" },
           { label: "Current Symptoms", type: "select", name: "symptoms", options: ["Depression", "Anxiety", "Mood Swings", "Sleep Issues", "Other"] }
+        ]
+      }
+    ]
+  },
+  bio_psych_social_assessment: {
+    formKey: 'bio_psych_social_assessment',
+    title: "Bio-Psychosocial Assessment Form",
+    sections: [
+      {
+        title: "Patient Information",
+        fields: [
+          { label: "First Name", type: "text", name: "firstName" },
+          { label: "Last Name", type: "text", name: "lastName" },
+          { label: "Date of Birth", type: "text", name: "dateOfBirth" },
+          { label: "Gender", type: "text", name: "gender" },
+          { label: "Assessment Date", type: "text", name: "assessmentDate" },
+          { label: "Clinician Name", type: "text", name: "clinicianName" }
+        ]
+      },
+      {
+        title: "Clinical Assessment",
+        fields: [
+          { label: "Presenting Problem", type: "textarea", name: "presentingProblem" },
+          { label: "Psychiatric History", type: "textarea", name: "psychiatricHistory" },
+          { label: "Medical History", type: "textarea", name: "medicalHistory" },
+          { label: "Substance Use History", type: "textarea", name: "substanceUseHistory" }
+        ]
+      },
+      {
+        title: "Psychosocial Assessment",
+        fields: [
+          { label: "Social History", type: "textarea", name: "socialHistory" },
+          { label: "Legal History", type: "textarea", name: "legalHistory" },
+          { label: "Employment Status", type: "textarea", name: "employmentStatus" },
+          { label: "Educational History", type: "textarea", name: "educationalHistory" }
         ]
       }
     ]
