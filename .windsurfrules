@@ -5,6 +5,13 @@
 5.  openai assistant api
 6.  kipu emr
 
+### KIPU INTEGRATION ###
+** DO AWAY WITH ALL LEGACY / MOCK DATABASE REFERENCES **
+** WE ARE LIVE WITH KIPU EMR API **
+always check /lib/kipu/integration/ref/endpoint.json for the source of truth regarding KIPU EMR API endpoints.
+always check /lib/kipu/integration/ref/schemas.json for the source of truth regarding KIPU EMR API schemas.
+
+
 ### UI / UX DEVELOPMENT ###
 always check the /components/* and /components/ui/* directory for the current component being developed, in case one already exists, please utilize.
 
@@ -22,7 +29,6 @@ we are using zustand for state management.
 we have an api system for interacting with the OpenAI API, specifically the Assistant API (v2 beta).
 
 We are integrating with KIPU EMR, a platform for managing the medical records of behavioral health and substance abuse treatment facilities.
-Currently there is a mock database in place which we are using to test different functionalities and interactions with the OpenAI API.
 
 *** GUIDELINES ***
 -supabase instantiations exist as utility files (/utils/supabase/ *) and are to be utilized whenever needed.

@@ -2,7 +2,14 @@
 
 import { create } from 'zustand';
 import { PatientBasicInfo } from '@/lib/kipu/types';
-import { getFacilityData } from '@/lib/kipu';
+import { 
+  listPatients, 
+  getPatient, 
+  getPatientEvaluations, 
+  getPatientVitalSigns, 
+  getPatientAppointments,
+  getFacilityData
+} from '@/lib/kipu/service/patient-service';
 import { useFacilityStore } from './facilityStore';
 import { chatStore } from './chatStore';
 
@@ -58,34 +65,42 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   isLoading: false,
   error: null,
   
-  // Fetch patients for a facility using KIPU data
+  // Fetch patients for a facility using KIPU API
   fetchPatients: async (facilityId: string): Promise<PatientBasicInfo[]> => {
     try {
       set({ isLoading: true, error: null });
       
-      // Get facility data from KIPU
-      const facilityData = getFacilityData(facilityId);
+      console.log('PatientStore - Fetching patients for facility:', facilityId);
       
-      if (!facilityData) {
-        throw new Error('Facility not found');
+      // Get patients from KIPU API
+  const response = await listPatients(facilityId);
+      
+      console.log('PatientStore - API response:', {
+        hasPatients: !!response.patients,
+        patientsCount: response.patients?.length || 0,
+        pagination: response.pagination
+      });
+      
+      if (!response.patients || response.patients.length === 0) {
+        console.log('PatientStore - No patients returned from API');
+        set({
+          patients: [],
+          isLoading: false
+        });
+        return [];
       }
       
-      const rawPatients = facilityData.data.patients || [];
-      
-      // Transform the raw patient data to ensure it matches the PatientBasicInfo interface
-      const patients = rawPatients.map((patient: any) => ({
-        ...patient,
-        // Ensure patients have casefile_id or mr_number for unique keys
-        casefile_id: patient.id || `casefile_${patient.id}`,
-        mr_number: patient.id || `mr_${patient.id}`,
-      }));
+      // Log a sample patient to verify structure
+      if (response.patients.length > 0) {
+        console.log('PatientStore - Sample patient:', response.patients[0]);
+      }
       
       set({
-        patients,
+        patients: response.patients,
         isLoading: false
       });
       
-      return patients;
+      return response.patients;
     } catch (error: any) {
       console.error('Error fetching patients:', error);
       set({ 
@@ -119,13 +134,7 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       
-      const facilityData = getFacilityData(facilityId);
-      
-      if (!facilityData) {
-        throw new Error('Facility not found');
-      }
-      
-      const patient = facilityData.data.patients?.find(p => p.id === patientId) || null;
+      const patient = await getPatient(facilityId, patientId);
       
       if (!patient) {
         throw new Error('Patient not found');
@@ -150,13 +159,7 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   // Fetch patient evaluations
   fetchPatientEvaluations: async (facilityId: string, patientId: string): Promise<any[]> => {
     try {
-      const facilityData = getFacilityData(facilityId);
-      
-      if (!facilityData) {
-        throw new Error('Facility not found');
-      }
-      
-      const evaluations = facilityData.data.evaluations?.filter(e => e.patient_id === patientId) || [];
+      const evaluations = await getPatientEvaluations(facilityId, patientId);
       
       set({
         currentPatientEvaluations: evaluations
@@ -172,13 +175,7 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   // Fetch patient vital signs
   fetchPatientVitalSigns: async (facilityId: string, patientId: string): Promise<any[]> => {
     try {
-      const facilityData = getFacilityData(facilityId);
-      
-      if (!facilityData) {
-        throw new Error('Facility not found');
-      }
-      
-      const vitalSigns = facilityData.data.vital_signs?.filter(v => v.patient_id === patientId) || [];
+      const vitalSigns = await getPatientVitalSigns(facilityId, patientId);
       
       set({
         currentPatientVitalSigns: vitalSigns
@@ -194,13 +191,7 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   // Fetch patient appointments
   fetchPatientAppointments: async (facilityId: string, patientId: string): Promise<any[]> => {
     try {
-      const facilityData = getFacilityData(facilityId);
-      
-      if (!facilityData) {
-        throw new Error('Facility not found');
-      }
-      
-      const appointments = facilityData.data.appointments?.filter(a => a.patient_id === patientId) || [];
+      const appointments = await getPatientAppointments(facilityId, patientId);
       
       set({
         currentPatientAppointments: appointments
@@ -214,47 +205,48 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   },
   
   // Fetch patient with all related details in one call
-  fetchPatientWithDetails: async (facilityId: string, patientId: string) => {
+  fetchPatientWithDetails: async (facilityId: string, patientId: string): Promise<{
+    patient: any | null;
+    evaluations: any[];
+    vitalSigns: any[];
+    appointments: any[];
+  }> => {
     try {
       set({ isLoading: true, error: null });
       
-      const facilityData = getFacilityData(facilityId);
+      console.log(`PatientStore - Fetching patient details for facility: ${facilityId}, patient: ${patientId}`);
       
-      if (!facilityData) {
-        throw new Error('Facility not found');
-      }
-      
-      // First try to find the patient using casefile_id (which is what we receive from UI)
-      // If not found, try using it directly as id (internal Kipu ID)
-      let patient = facilityData.data.patients?.find(p => p.casefile_id === patientId) || null;
-      
-      // If not found by casefile_id, try with direct id match
-      if (!patient) {
-        patient = facilityData.data.patients?.find(p => p.id === patientId) || null;
-      }
+      // Fetch patient details
+      const patient = await get().fetchPatient(facilityId, patientId);
       
       if (!patient) {
+        console.error(`PatientStore - Patient not found: ${patientId}`);
         throw new Error('Patient not found');
       }
       
-      // Now that we have the patient, we can use the internal Kipu ID (patient.id)
-      // to get all related data that references this ID
-      const internalPatientId = patient.id;
+      console.log(`PatientStore - Successfully fetched patient: ${patient.first_name} ${patient.last_name}`);
       
-      // Get related data using the internal ID
-      const evaluations = facilityData.data.evaluations?.filter(e => e.patient_id === internalPatientId) || [];
-      const vitalSigns = facilityData.data.vital_signs?.filter(v => v.patient_id === internalPatientId) || [];
-      const appointments = facilityData.data.appointments?.filter(a => a.patient_id === internalPatientId) || [];
+      // Fetch related data in parallel
+      console.log(`PatientStore - Fetching related data for patient: ${patientId}`);
       
-      // Update state
+      const [evaluations, vitalSigns, appointments] = await Promise.all([
+        get().fetchPatientEvaluations(facilityId, patientId),
+        get().fetchPatientVitalSigns(facilityId, patientId),
+        get().fetchPatientAppointments(facilityId, patientId)
+      ]);
+      
+      console.log(`PatientStore - Related data fetched:`, {
+        evaluationsCount: evaluations.length,
+        vitalSignsCount: vitalSigns.length,
+        appointmentsCount: appointments.length
+      });
+      
       set({
         currentPatient: patient,
         currentPatientEvaluations: evaluations,
         currentPatientVitalSigns: vitalSigns,
         currentPatientAppointments: appointments,
-        isLoading: false,
-        // Auto-enable patient context when fetching a patient
-        isPatientContextEnabled: patient !== null
+        isLoading: false
       });
       
       return {
@@ -267,7 +259,11 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
       console.error('Error fetching patient with details:', error);
       set({ 
         error: error.message || 'Failed to fetch patient details',
-        isLoading: false
+        isLoading: false,
+        currentPatient: null,
+        currentPatientEvaluations: [],
+        currentPatientVitalSigns: [],
+        currentPatientAppointments: []
       });
       
       return {
@@ -281,17 +277,16 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   
   // Set the current patient and update context
   setCurrentPatient: (patient: any | null) => {
-    set({ 
-      currentPatient: patient,
-      isPatientContextEnabled: !!patient
-    });
+    set({ currentPatient: patient });
     
-    // If patient is being cleared, also clear context options
-    if (!patient) {
-      set({ selectedContextOptions: [] });
-      
+    // If patient context is enabled, update the chat context
+    if (get().isPatientContextEnabled && patient) {
       // Update chat context
-      chatStore.getState().updatePatientContext(null);
+      const patientContext = get().buildPatientContextString();
+      chatStore.getState().updatePatientContext(patientContext);
+    } else if (get().isPatientContextEnabled && !patient) {
+      // Clear patient context if no patient is selected
+      get().clearPatientContext();
     }
   },
   
@@ -299,18 +294,14 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
   setPatientContextEnabled: (enabled: boolean) => {
     set({ isPatientContextEnabled: enabled });
     
-    // If disabling, clear the context in chat store
-    if (!enabled) {
-      chatStore.getState().updatePatientContext(null);
-    } else {
-      // If enabling, update the chat context with current patient
-      const { currentPatient } = get();
-      if (currentPatient) {
-        const patientContext = get().buildPatientContextString();
-        if (patientContext) {
-          chatStore.getState().updatePatientContext(patientContext);
-        }
-      }
+    // Update chat context based on the new setting
+    if (enabled && get().currentPatient) {
+      // Update chat context with patient info
+      const patientContext = get().buildPatientContextString();
+      chatStore.getState().updatePatientContext(patientContext);
+    } else if (!enabled) {
+      // Clear patient context
+      get().clearPatientContext();
     }
   },
   
@@ -319,107 +310,128 @@ export const usePatientStore = create<PatientStoreState>((set, get) => ({
     set({ selectedContextOptions: options });
     
     // Update chat context if patient context is enabled
-    const { isPatientContextEnabled } = get();
-    if (isPatientContextEnabled) {
+    if (get().isPatientContextEnabled && get().currentPatient) {
       const patientContext = get().buildPatientContextString();
-      if (patientContext) {
-        chatStore.getState().updatePatientContext(patientContext);
-      }
+      chatStore.getState().updatePatientContext(patientContext);
     }
   },
   
   // Build a formatted patient context string based on selected options
   buildPatientContextString: () => {
-    const { currentPatient, selectedContextOptions, isPatientContextEnabled } = get();
+    const { currentPatient, currentPatientEvaluations, currentPatientVitalSigns, 
+            currentPatientAppointments, isPatientContextEnabled, selectedContextOptions } = get();
     
     if (!isPatientContextEnabled || !currentPatient) {
       return null;
     }
     
-    // Create a properly formatted patient context header
-    const patientHeader = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id || currentPatient.id})`;
+    let contextString = '### Patient Context\n';
     
-    // If no specific options selected, return just the header
-    if (selectedContextOptions.length === 0) {
-      return patientHeader;
+    // Add basic patient info if selected
+    const basicInfoOptions = selectedContextOptions.filter(opt => opt.category === 'basic');
+    if (basicInfoOptions.length > 0) {
+      contextString += '#### Basic Information\n';
+      basicInfoOptions.forEach(option => {
+        const value = option.value.split('.').reduce((obj, key) => obj && obj[key], currentPatient);
+        if (value) {
+          contextString += `- ${option.label}: ${value}\n`;
+        }
+      });
     }
     
-    // Group options by category for better organization
-    const categorizedOptions: Record<string, string[]> = {};
-    
-    selectedContextOptions.forEach(opt => {
-      if (!categorizedOptions[opt.category]) {
-        categorizedOptions[opt.category] = [];
-      }
-      categorizedOptions[opt.category].push(opt.value);
-    });
-    
-    // Build context string with category headers
-    const contextSections: string[] = [patientHeader];
-    
-    // Add Basic Info section
-    if (categorizedOptions['basic'] && categorizedOptions['basic'].length > 0) {
-      contextSections.push('--- Basic Information ---');
-      contextSections.push(categorizedOptions['basic'].join('\n'));
+    // Add evaluation info if selected
+    const evaluationOptions = selectedContextOptions.filter(opt => opt.category === 'evaluation');
+    if (evaluationOptions.length > 0 && currentPatientEvaluations.length > 0) {
+      contextString += '\n#### Recent Evaluations\n';
+      // Sort evaluations by date (newest first)
+      const sortedEvaluations = [...currentPatientEvaluations]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3); // Only include the 3 most recent
+      
+      sortedEvaluations.forEach(evaluation => {
+        contextString += `- ${evaluation.evaluation_type} (${new Date(evaluation.created_at).toLocaleDateString()})\n`;
+        evaluationOptions.forEach(option => {
+          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], evaluation);
+          if (value) {
+            contextString += `  - ${option.label}: ${value}\n`;
+          }
+        });
+      });
     }
     
-    // Add Evaluations section
-    if (categorizedOptions['evaluation'] && categorizedOptions['evaluation'].length > 0) {
-      contextSections.push('--- Evaluations ---');
-      contextSections.push(categorizedOptions['evaluation'].join('\n'));
+    // Add vital signs if selected
+    const vitalSignOptions = selectedContextOptions.filter(opt => opt.category === 'vitalSigns');
+    if (vitalSignOptions.length > 0 && currentPatientVitalSigns.length > 0) {
+      contextString += '\n#### Recent Vital Signs\n';
+      // Sort vital signs by date (newest first)
+      const sortedVitalSigns = [...currentPatientVitalSigns]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3); // Only include the 3 most recent
+      
+      sortedVitalSigns.forEach(vs => {
+        contextString += `- Recorded on ${new Date(vs.created_at).toLocaleDateString()}\n`;
+        vitalSignOptions.forEach(option => {
+          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], vs);
+          if (value) {
+            contextString += `  - ${option.label}: ${value}\n`;
+          }
+        });
+      });
     }
     
-    // Add Vital Signs section
-    if (categorizedOptions['vitalSigns'] && categorizedOptions['vitalSigns'].length > 0) {
-      contextSections.push('--- Vital Signs ---');
-      contextSections.push(categorizedOptions['vitalSigns'].join('\n'));
+    // Add appointments if selected
+    const appointmentOptions = selectedContextOptions.filter(opt => opt.category === 'appointments');
+    if (appointmentOptions.length > 0 && currentPatientAppointments.length > 0) {
+      contextString += '\n#### Upcoming Appointments\n';
+      // Sort appointments by date (soonest first)
+      const sortedAppointments = [...currentPatientAppointments]
+        .filter(apt => new Date(apt.date) >= new Date())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3); // Only include the 3 soonest
+      
+      sortedAppointments.forEach(apt => {
+        contextString += `- ${apt.type} on ${new Date(apt.date).toLocaleDateString()}\n`;
+        appointmentOptions.forEach(option => {
+          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], apt);
+          if (value) {
+            contextString += `  - ${option.label}: ${value}\n`;
+          }
+        });
+      });
     }
     
-    // Add Appointments section
-    if (categorizedOptions['appointments'] && categorizedOptions['appointments'].length > 0) {
-      contextSections.push('--- Appointments ---');
-      contextSections.push(categorizedOptions['appointments'].join('\n'));
-    }
-    
-    return contextSections.join('\n\n');
+    return contextString;
   },
   
   // Clear all patient context
   clearPatientContext: () => {
-    set({
-      currentPatient: null,
-      currentPatientEvaluations: [],
-      currentPatientVitalSigns: [],
-      currentPatientAppointments: [],
-      isPatientContextEnabled: false,
-      selectedContextOptions: []
-    });
-    
-    // Update chat context
+    // Update chat context to remove patient info
     chatStore.getState().updatePatientContext(null);
-  },
+    
+    // If we're disabling patient context entirely, update the state
+    if (get().isPatientContextEnabled) {
+      set({ isPatientContextEnabled: false });
+    }
+  }
 }));
 
 // Initialize facility subscription - moved to a function to avoid circular dependency
-export const initPatientStoreSubscriptions = () => {
-  if (typeof window !== 'undefined') {
-    // Only run on client-side
-    // Import the facility store dynamically to avoid circular dependency
-    const { useFacilityStore } = require('./facilityStore');
-    
-    const unsubscribe = useFacilityStore.subscribe((state: any) => {
-      const currentFacilityId = state.currentFacilityId;
-      if (currentFacilityId) {
-        usePatientStore.getState().fetchPatientsForCurrentFacility();
+export function initPatientStoreSubscriptions() {
+  // Subscribe to facility changes to automatically load patients when facility changes
+  const unsubscribe = useFacilityStore.subscribe(
+    (state) => {
+      // When facility changes, load patients for that facility
+      if (state.currentFacilityId) {
+        const patientState = usePatientStore.getState();
+        patientState.fetchPatients(state.currentFacilityId);
+        
+        // Clear current patient when facility changes
+        patientState.setCurrentPatient(null);
       }
-    });
-    
-    // Return unsubscribe function in case we need to clean up
-    return unsubscribe;
-  }
+    }
+  );
   
-  // Return a no-op function if not on client
-  return () => {};
-};
+  return unsubscribe;
+}
 
 export const patientStore = usePatientStore;

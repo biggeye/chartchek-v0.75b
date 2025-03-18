@@ -26,9 +26,13 @@ interface Page {
 
 export default function PatientDetailsPage() {
   const params = useParams();
-  const patientId = params.id as string;
+  // Ensure we properly decode the patient ID from the URL
+  const encodedPatientId = params.id as string;
+  const patientId = decodeURIComponent(encodedPatientId);
+  
   const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false);
   const [isChartChekModalOpen, setIsChartChekModalOpen] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   
   const { 
     currentPatient, 
@@ -47,8 +51,48 @@ export default function PatientDetailsPage() {
   const { currentFacilityId } = useFacilityStore();
 
   useEffect(() => {
+    console.log(`PatientDetailsPage - Rendering with patientId: ${patientId} (from URL: ${encodedPatientId}), facilityId: ${currentFacilityId}`);
+    
     if (currentFacilityId && patientId) {
-      fetchPatientWithDetails(currentFacilityId, patientId);
+      console.log(`PatientDetailsPage - Fetching patient details for patient ${patientId} in facility ${currentFacilityId}`);
+      
+      // Collect debug info
+      setDebugInfo({
+        timestamp: new Date().toISOString(),
+        patientId,
+        encodedPatientId,
+        facilityId: currentFacilityId
+      });
+      
+      fetchPatientWithDetails(currentFacilityId, patientId)
+        .then(result => {
+          console.log('PatientDetailsPage - Patient details fetch result:', {
+            hasPatient: !!result.patient,
+            evaluationsCount: result.evaluations.length,
+            vitalSignsCount: result.vitalSigns.length,
+            appointmentsCount: result.appointments.length
+          });
+          
+          // Update debug info
+          setDebugInfo((prev: any) => ({
+            ...prev,
+            fetchResult: {
+              hasPatient: !!result.patient,
+              patientData: result.patient ? {
+                id: result.patient.id,
+                first_name: result.patient.first_name,
+                last_name: result.patient.last_name
+              } : null
+            }
+          }));
+        })
+        .catch(err => {
+          console.error('PatientDetailsPage - Error fetching patient details:', err);
+          setDebugInfo((prev: any) => ({
+            ...prev,
+            error: err.message
+          }));
+        });
     }
   }, [currentFacilityId, patientId, fetchPatientWithDetails]);
 
@@ -81,6 +125,12 @@ export default function PatientDetailsPage() {
             <Skeleton className="h-64" />
             <Skeleton className="h-64" />
           </div>
+          {debugInfo && (
+            <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <h3 className="text-sm font-semibold mb-2">Debug Information (Loading)</h3>
+              <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -94,6 +144,23 @@ export default function PatientDetailsPage() {
           <p className="text-sm text-muted-foreground mt-2">
             Please select a valid patient.
           </p>
+          {debugInfo && (
+            <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50 text-left">
+              <h3 className="text-sm font-semibold mb-2">Debug Information (Error)</h3>
+              <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold">Current Store State:</h4>
+                <pre className="text-xs overflow-auto">
+                  {JSON.stringify({
+                    currentFacilityId,
+                    patientId,
+                    isLoading,
+                    error
+                  }, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -172,6 +239,13 @@ export default function PatientDetailsPage() {
         onClose={() => setIsChartChekModalOpen(false)}
         patientId={patientId}
       />
+      
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50">
+          <h3 className="text-sm font-semibold mb-2">Debug Information (Success)</h3>
+          <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
 }

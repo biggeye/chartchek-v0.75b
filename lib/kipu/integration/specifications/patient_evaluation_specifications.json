@@ -5,24 +5,23 @@
     "endpoints": [
       {
         "name": "patient_evaluations_list",
-        "path": "/api/kipu/facilities/{facility_id}/patients/{patient_id}/evaluations",
+        "path": "/api/kipu/patients/{patient_id}/evaluations",
         "method": "GET",
         "description": "List all evaluations for a specific patient",
         "kipu_mapping": {
-          "endpoint": "/patients/{patient_id}/patient_evaluations",
+          "endpoint": "/api/patients/{patient_id}/patient_evaluations",
           "method": "GET",
           "terminology_mapping": {
             "facility_id": "Used to retrieve KIPU API credentials, not directly mapped to KIPU endpoint"
+          },
+          "required_parameters": {
+            "app_id": "string",
+            "location_id": "string",
+            "phi_level": "high"
           }
         },
         "request": {
           "path_parameters": [
-            {
-              "name": "facility_id",
-              "type": "string",
-              "required": true,
-              "description": "Facility ID used to retrieve KIPU API credentials"
-            },
             {
               "name": "patient_id",
               "type": "string",
@@ -312,7 +311,7 @@
         "implementation_details": {
           "caching": {
             "strategy": "Cache for 15 minutes with invalidation on evaluation updates",
-            "key_format": "evaluations:{facility_id}:{patient_id}:{page}:{limit}:{status}"
+            "key_format": "evaluations:{patient_id}:{page}:{limit}:{status}"
           },
           "fallback": {
             "strategy": "Use local JSON data if KIPU API is unavailable",
@@ -332,28 +331,26 @@
             ]
           },
           "nextjs_integration": {
-            "api_route": "app/api/kipu/facilities/[facility_id]/patients/[patient_id]/evaluations/route.ts",
+            "api_route": "app/api/kipu/patients/[patient_id]/evaluations/route.ts",
             "component_usage": "components/PatientEvaluationsList.tsx"
           }
         }
       },
       {
         "name": "patient_evaluation_detail",
-        "path": "/api/kipu/facilities/{facility_id}/evaluations/{evaluation_id}",
+        "path": "/api/kipu/evaluations/{evaluation_id}",
         "method": "GET",
         "description": "Get detailed information about a specific patient evaluation",
         "kipu_mapping": {
-          "endpoint": "/patient_evaluations/{patient_evaluation_id}",
-          "method": "GET"
+          "endpoint": "/api/patient_evaluations/{patient_evaluation_id}",
+          "method": "GET",
+          "required_parameters": {
+            "app_id": "string",
+            "phi_level": "high"
+          }
         },
         "request": {
           "path_parameters": [
-            {
-              "name": "facility_id",
-              "type": "string",
-              "required": true,
-              "description": "Facility ID used to retrieve KIPU API credentials"
-            },
             {
               "name": "evaluation_id",
               "type": "string",
@@ -518,7 +515,7 @@
         "implementation_details": {
           "caching": {
             "strategy": "Cache for 15 minutes with invalidation on evaluation updates",
-            "key_format": "evaluation:{facility_id}:{evaluation_id}"
+            "key_format": "evaluation:{evaluation_id}"
           },
           "fallback": {
             "strategy": "Use local JSON data if KIPU API is unavailable",
@@ -537,28 +534,26 @@
             ]
           },
           "nextjs_integration": {
-            "api_route": "app/api/kipu/facilities/[facility_id]/evaluations/[evaluation_id]/route.ts",
+            "api_route": "app/api/kipu/evaluations/[evaluation_id]/route.ts",
             "component_usage": "components/PatientEvaluationDetail.tsx"
           }
         }
       },
       {
         "name": "create_patient_evaluation",
-        "path": "/api/kipu/facilities/{facility_id}/patients/{patient_id}/evaluations",
+        "path": "/api/kipu/patients/{patient_id}/evaluations",
         "method": "POST",
-        "description": "Create a new patient evaluation",
+        "description": "Create a new evaluation for a specific patient",
         "kipu_mapping": {
-          "endpoint": "/patients/{patient_id}/patient_evaluations",
-          "method": "POST"
+          "endpoint": "/api/patients/{patient_id}/patient_evaluations",
+          "method": "POST",
+          "required_parameters": {
+            "app_id": "string",
+            "phi_level": "high"
+          }
         },
         "request": {
           "path_parameters": [
-            {
-              "name": "facility_id",
-              "type": "string",
-              "required": true,
-              "description": "Facility ID used to retrieve KIPU API credentials"
-            },
             {
               "name": "patient_id",
               "type": "string",
@@ -762,7 +757,7 @@
             ]
           },
           "nextjs_integration": {
-            "api_route": "app/api/kipu/facilities/[facility_id]/patients/[patient_id]/evaluations/route.ts",
+            "api_route": "app/api/kipu/patients/[patient_id]/evaluations/route.ts",
             "component_usage": "components/CreatePatientEvaluation.tsx"
           },
           "security_considerations": [

@@ -5,11 +5,11 @@
     "endpoints": [
       {
         "name": "patients",
-        "path": "/api/kipu/facilities/{facility_id}/patients",
+        "path": "/api/kipu/patients",
         "method": "GET",
         "description": "Lists all patients for a specific facility",
         "kipu_mapping": {
-          "endpoint": "/patients",
+          "endpoint": "/api/patients",
           "method": "GET",
           "terminology_mapping": {
             "facility_id": "location_id",
@@ -17,15 +17,13 @@
           }
         },
         "request": {
-          "path_parameters": [
+          "query_parameters": [
             {
               "name": "facility_id",
               "type": "string",
               "required": true,
               "description": "ID of the facility to list patients for"
-            }
-          ],
-          "query_parameters": [
+            },
             {
               "name": "page",
               "type": "integer",
@@ -362,25 +360,24 @@
       },
       {
         "name": "patient",
-        "path": "/api/kipu/facilities/{facility_id}/patients/{patient_id}",
+        "path": "/api/kipu/patients/{patient_id}",
         "method": "GET",
         "description": "Get detailed information about a specific patient",
         "kipu_mapping": {
-          "endpoint": "/patients/{casefile_id}",
+          "endpoint": "/api/patients/{casefile_id}",
           "method": "GET",
           "terminology_mapping": {
-            "facility_id": "location_id",
             "patient_id": "casefile_id"
+          },
+          "required_parameters": {
+            "app_id": "string",
+            "location_id": "string",
+            "phi_level": "high",
+            "patient_master_id": "string"
           }
         },
         "request": {
           "path_parameters": [
-            {
-              "name": "facility_id",
-              "type": "string",
-              "required": true,
-              "description": "ID of the facility the patient belongs to"
-            },
             {
               "name": "patient_id",
               "type": "string",

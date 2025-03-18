@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useFacilityStore } from '@/store/facilityStore';
-import { FacilityApiSettings } from '@/types/store/facility';
+import { UserApiSettings } from '@/types/store/user';
+import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, Key, Globe, User, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Custom card components to extend the existing ones
@@ -65,198 +66,486 @@ const AlertDescription = ({ className, children, ...props }: React.HTMLAttribute
 );
 
 export default function SettingsPage() {
-  const { facilities, currentFacilityId, getCurrentFacility, updateFacilityApiSettings, getFacilityApiSettings, isLoading } = useFacilityStore();
+  const { facilities, currentFacilityId, getCurrentFacility, isLoading } = useFacilityStore();
   const currentFacility = getCurrentFacility();
   
-  const [apiSettings, setApiSettings] = useState<FacilityApiSettings>({
-    kipu_api_key: '',
-    kipu_api_endpoint: '',
+  // Add client-side only rendering state
+  const [isClient, setIsClient] = useState(false);
+  
+  const [apiSettings, setApiSettings] = useState<UserApiSettings>({
+    kipu_access_id: '',
+    kipu_secret_key: '',
+    kipu_app_id: '',
+    kipu_api_endpoint: 'https://api.kipuapi.com',
     has_api_key_configured: false
   });
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState('');
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testConnectionResult, setTestConnectionResult] = useState<{success: boolean; message: string} | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
   
-  // Load API settings when the page loads or when the facility changes
+  // Set isClient to true when component mounts on client
   useEffect(() => {
-    if (currentFacilityId) {
-      loadApiSettings(currentFacilityId);
-    }
-  }, [currentFacilityId]);
+    setIsClient(true);
+  }, []);
   
-  const loadApiSettings = async (facilityId: string) => {
-    const settings = await getFacilityApiSettings(facilityId);
-    if (settings) {
-      setApiSettings(settings);
+  // Load API settings when the page loads
+  useEffect(() => {
+    loadApiSettings();
+  }, []);
+  
+  const loadApiSettings = async () => {
+    try {
+      const supabase = createClient();
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+      
+      // Get the user API settings
+      const { data, error } = await supabase
+        .from('user_api_settings')
+        .select('*')
+        .eq('owner_id', user.id)
+        .single();
+      
+      if (error) {
+        console.warn('Error fetching user API settings:', error);
+        // Set default values
+        setApiSettings({
+          kipu_access_id: '',
+          kipu_secret_key: '',
+          kipu_app_id: '',
+          kipu_api_endpoint: 'https://api.kipuapi.com',
+          has_api_key_configured: false
+        });
+        return;
+      }
+      
+      if (data) {
+        setApiSettings({
+          kipu_access_id: data.kipu_access_id || '',
+          kipu_secret_key: data.kipu_secret_key || '',
+          kipu_app_id: data.kipu_app_id || '',
+          kipu_api_endpoint: data.kipu_api_endpoint || 'https://api.kipuapi.com',
+          has_api_key_configured: Boolean(
+            data.kipu_access_id && 
+            data.kipu_secret_key && 
+            data.kipu_app_id && 
+            data.kipu_api_endpoint
+          )
+        });
+      }
+    } catch (error) {
+      console.error('Error loading API settings:', error);
     }
   };
   
+  /**
+   * Handles saving API settings
+   */
   const handleSaveSettings = async () => {
-    if (!currentFacilityId) return;
-    
     setIsSaving(true);
+    setSaveError('');
     setSaveSuccess(false);
-    setSaveError(null);
     
     try {
-      // Update the has_api_key_configured flag based on whether an API key is provided
-      const updatedSettings = {
-        ...apiSettings,
-        has_api_key_configured: !!apiSettings.kipu_api_key
+      const supabase = createClient();
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setSaveError('No authenticated user found');
+        setIsSaving(false);
+        return;
+      }
+      
+      // Validate required fields
+      if (!apiSettings.kipu_access_id || !apiSettings.kipu_secret_key || !apiSettings.kipu_app_id) {
+        setSaveError('Please fill in all required fields');
+        setIsSaving(false);
+        return;
+      }
+      
+      // Check if API settings are configured
+      const hasApiKeyConfigured = !!(
+        apiSettings.kipu_access_id && 
+        apiSettings.kipu_secret_key && 
+        apiSettings.kipu_app_id
+      );
+      
+      // Create the API settings object to save
+      const apiSettingsToSave = {
+        owner_id: user.id,
+        kipu_access_id: apiSettings.kipu_access_id,
+        kipu_secret_key: apiSettings.kipu_secret_key,
+        kipu_app_id: apiSettings.kipu_app_id,
+        kipu_api_endpoint: apiSettings.kipu_api_endpoint || 'https://api.kipuapi.com',
+        has_api_key_configured: hasApiKeyConfigured
       };
       
-      const success = await updateFacilityApiSettings(currentFacilityId, updatedSettings);
+      // Save API settings to Supabase
+      // First check if the user already has settings
+      const { data: existingSettings } = await supabase
+        .from('user_api_settings')
+        .select('id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
       
-      if (success) {
-        setSaveSuccess(true);
-        setApiSettings(updatedSettings);
+      let saveError;
+      
+      if (existingSettings) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('user_api_settings')
+          .update(apiSettingsToSave)
+          .eq('owner_id', user.id);
         
-        // Reset the success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
+        saveError = error;
       } else {
-        setSaveError('Failed to save API settings. Please try again.');
+        // Insert new settings
+        const { error } = await supabase
+          .from('user_api_settings')
+          .insert(apiSettingsToSave);
+        
+        saveError = error;
       }
+      
+      if (saveError) {
+        console.error('Error saving API settings:', saveError);
+        setSaveError(`Failed to save API settings: ${saveError.message}`);
+        setIsSaving(false);
+        return;
+      }
+      
+      // If API settings were saved successfully and credentials are configured,
+      // fetch and store facilities using the server-side API route
+      if (hasApiKeyConfigured) {
+        try {
+          // Make a request to the test API endpoint to fetch facilities
+          console.log('Fetching facilities... from /api/kipu/facilities')
+          const response = await fetch('/api/kipu/facilities');
+          const result = await response.json();
+          console.log('Facilities response:', result)
+          
+          if (result.success && result.apiResponse && result.apiResponse.success) {
+            // Extract facilities from the response
+            const facilities = result.apiResponse.data.locations.map((location: any) => ({
+              id: location.location_id.toString(),
+              name: location.location_name,
+              status: location.enabled ? 'active' : 'inactive',
+              // Add other required fields with default values
+              code: '',
+              address: '',
+              city: '',
+              state: '',
+              zip: '',
+              phone: '',
+              created_at: '',
+              updated_at: '',
+              buildings: [],
+              data: {
+                beds: { total: 0, available: 0, occupied: 0 },
+                patients: { total: 0, admitted: 0, discharged: 0 },
+                insights: {}
+              },
+              api_settings: { has_api_key_configured: true }
+            }));
+            
+            // Update the facility store
+            const { useFacilityStore } = await import('@/store/facilityStore');
+            const store = useFacilityStore.getState();
+            
+            store.facilities = facilities;
+            useFacilityStore.setState({ 
+              facilities,
+              pagination: {
+                total: facilities.length,
+                page: 1,
+                limit: facilities.length,
+                pages: 1
+              },
+              isLoading: false,
+              error: null
+            });
+            
+            // If there are facilities and no current facility is selected, select the first one
+            if (facilities.length > 0 && !store.currentFacilityId) {
+              store.setCurrentFacility(facilities[0].id);
+            }
+            
+            if (facilities.length > 0) {
+              setSaveSuccess(true);
+              setSuccessMessage(`Your API settings have been saved successfully. ${facilities.length} facilities were loaded from KIPU. You can now use the facility selector to switch between facilities.`);
+            } else {
+              setSaveError('No facilities were found. Please check your credentials and try testing the connection.');
+            }
+          } else {
+            setSaveError('Failed to fetch facilities. Please check your credentials and try testing the connection.');
+          }
+        } catch (facilityError) {
+          console.error('Error fetching facilities:', facilityError);
+          setSaveError('Failed to fetch facilities. Please check your credentials and try testing the connection.');
+        }
+      } else {
+        setSaveSuccess(true);
+        setSuccessMessage('Your API settings have been saved successfully.');
+      }
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 5000);
+      
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'An unknown error occurred');
+      console.error('Error saving API settings:', error);
+      setSaveError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
   
-  if (!currentFacility) {
-    return (
-      <div className="container mx-auto py-10">
-        <CustomAlert variant="destructive">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>No facility selected</AlertTitle>
-          </div>
-          <AlertDescription>
-            Please select a facility to configure its settings.
-          </AlertDescription>
-        </CustomAlert>
-      </div>
-    );
-  }
+  const handleTestConnection = async () => {
+    if (!currentFacilityId) {
+      setTestConnectionResult({
+        success: false,
+        message: 'Please select a facility first'
+      });
+      return;
+    }
+    
+    setTestingConnection(true);
+    setTestConnectionResult(null);
+    
+    try {
+      // Test the connection by calling the KIPU API
+      const response = await fetch(`/api/kipu/test-connection?facilityId=${currentFacilityId}`);
+      const result = await response.json();
+      
+      if (response.ok) {
+        setTestConnectionResult({
+          success: true,
+          message: 'Connection successful! Your API credentials are working correctly.'
+        });
+      } else {
+        setTestConnectionResult({
+          success: false,
+          message: result.error || 'Connection failed. Please check your API credentials.'
+        });
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      setTestConnectionResult({
+        success: false,
+        message: 'Connection test failed due to a network error. Please try again.'
+      });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
   
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">Facility Settings</h1>
-      
-      <Tabs defaultValue="kipu" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="kipu">KIPU EMR Integration</TabsTrigger>
-          <TabsTrigger value="general">General Settings</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="kipu">
-          <Card>
-            <CardHeader>
-              <CardTitle>KIPU EMR API Configuration</CardTitle>
-              <CardDescription>
-                Configure the KIPU EMR API settings for {currentFacility.name}. These settings are required to connect to the KIPU EMR system.
-              </CardDescription>
-            </CardHeader>
+    <div className="container py-8">
+      {isClient ? (
+        <>
+          <h1 className="text-3xl font-bold mb-8">Settings</h1>
+          
+          <Tabs defaultValue="api" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="api">API Configuration</TabsTrigger>
+              <TabsTrigger value="account">Account</TabsTrigger>
+              <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            </TabsList>
             
-            <CardContent className="space-y-4">
-              {saveSuccess && (
-                <CustomAlert variant="success">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle>Success</AlertTitle>
+            <TabsContent value="api" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>KIPU EMR API Configuration</CardTitle>
+                  <CardDescription>
+                    Configure your KIPU EMR API credentials to enable integration with ChartChek.
+                    These credentials will be used to access all facilities you have permission for.
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {saveSuccess && (
+                    <CustomAlert variant="success">
+                      <div className="flex">
+                        <CheckCircle2 className="h-4 w-4 mr-2 mt-0.5" />
+                        <div>
+                          <AlertTitle>Success</AlertTitle>
+                          <AlertDescription>{successMessage}</AlertDescription>
+                        </div>
+                      </div>
+                    </CustomAlert>
+                  )}
+                  
+                  {saveError && (
+                    <CustomAlert variant="destructive">
+                      <div className="flex">
+                        <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                        <div>
+                          <AlertTitle>Error</AlertTitle>
+                          <AlertDescription>{saveError}</AlertDescription>
+                        </div>
+                      </div>
+                    </CustomAlert>
+                  )}
+                  
+                  <CustomAlert>
+                    <div className="flex">
+                      <Info className="h-4 w-4 mr-2 mt-0.5" />
+                      <div>
+                        <AlertTitle>About KIPU API Credentials</AlertTitle>
+                        <AlertDescription>
+                          You need to obtain API credentials from your KIPU EMR administrator.
+                          These credentials will allow ChartChek to securely access patient data
+                          across all facilities you have permission to access in KIPU.
+                        </AlertDescription>
+                      </div>
+                    </div>
+                  </CustomAlert>
+                  
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="kipu_access_id" className="flex items-center">
+                        <Key className="h-4 w-4 mr-2" />
+                        Access ID
+                      </Label>
+                      <Input
+                        id="kipu_access_id"
+                        value={apiSettings.kipu_access_id}
+                        onChange={(e) => setApiSettings({...apiSettings, kipu_access_id: e.target.value})}
+                        placeholder="Enter your KIPU Access ID"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="kipu_secret_key" className="flex items-center">
+                        <Lock className="h-4 w-4 mr-2" />
+                        Secret Key
+                      </Label>
+                      <Input
+                        id="kipu_secret_key"
+                        type="password"
+                        value={apiSettings.kipu_secret_key}
+                        onChange={(e) => setApiSettings({...apiSettings, kipu_secret_key: e.target.value})}
+                        placeholder="Enter your KIPU Secret Key"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="kipu_app_id" className="flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        App ID (Recipient ID)
+                      </Label>
+                      <Input
+                        id="kipu_app_id"
+                        value={apiSettings.kipu_app_id}
+                        onChange={(e) => setApiSettings({...apiSettings, kipu_app_id: e.target.value})}
+                        placeholder="Enter your KIPU App ID"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="kipu_api_endpoint" className="flex items-center">
+                        <Globe className="h-4 w-4 mr-2" />
+                        API Endpoint URL
+                      </Label>
+                      <Input
+                        id="kipu_api_endpoint"
+                        value={apiSettings.kipu_api_endpoint}
+                        onChange={(e) => setApiSettings({...apiSettings, kipu_api_endpoint: e.target.value})}
+                        placeholder="Enter the KIPU API endpoint URL"
+                      />
+                    </div>
                   </div>
-                  <AlertDescription>
-                    API settings saved successfully.
-                  </AlertDescription>
-                </CustomAlert>
+                </CardContent>
+                
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    outline
+                    onClick={handleTestConnection}
+                    disabled={testingConnection || !apiSettings.has_api_key_configured || !currentFacilityId}
+                  >
+                    {testingConnection ? 'Testing...' : 'Test Connection'}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleSaveSettings}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {testConnectionResult && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <CustomAlert variant={testConnectionResult.success ? 'success' : 'destructive'}>
+                      <div className="flex">
+                        {testConnectionResult.success ? (
+                          <CheckCircle2 className="h-4 w-4 mr-2 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                        )}
+                        <div>
+                          <AlertTitle>{testConnectionResult.success ? 'Success' : 'Error'}</AlertTitle>
+                          <AlertDescription>{testConnectionResult.message}</AlertDescription>
+                        </div>
+                      </div>
+                    </CustomAlert>
+                  </CardContent>
+                </Card>
               )}
-              
-              {saveError && (
-                <CustomAlert variant="destructive">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                  </div>
-                  <AlertDescription>{saveError}</AlertDescription>
-                </CustomAlert>
-              )}
-              
-              <CustomAlert>
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Important</AlertTitle>
-                </div>
-                <AlertDescription>
-                  Your KIPU API key is sensitive information. It will be stored securely and used only for connecting to the KIPU EMR system.
-                </AlertDescription>
-              </CustomAlert>
-              
-              <div className="space-y-2">
-                <Label htmlFor="kipu_api_key">KIPU API Key</Label>
-                <Input
-                  id="kipu_api_key"
-                  type="password"
-                  placeholder="Enter your KIPU API key"
-                  value={apiSettings.kipu_api_key || ''}
-                  onChange={(e) => setApiSettings({ ...apiSettings, kipu_api_key: e.target.value })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="kipu_api_endpoint">KIPU API Endpoint (Optional)</Label>
-                <Input
-                  id="kipu_api_endpoint"
-                  type="text"
-                  placeholder="https://api.kipuemr.com/v1"
-                  value={apiSettings.kipu_api_endpoint || ''}
-                  onChange={(e) => setApiSettings({ ...apiSettings, kipu_api_endpoint: e.target.value })}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Leave blank to use the default KIPU API endpoint.
-                </p>
-              </div>
-            </CardContent>
+            </TabsContent>
             
-            <CardFooter>
-              <Button 
-                onClick={handleSaveSettings} 
-                disabled={isSaving}
-                className="mr-2"
-              >
-                {isSaving ? 'Saving...' : 'Save Settings'}
-              </Button>
-              
-              <Button 
-                outline
-                onClick={() => loadApiSettings(currentFacilityId!)}
-                disabled={isSaving}
-              >
-                Reset
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>
-                Configure general settings for {currentFacility.name}.
-              </CardDescription>
-            </CardHeader>
+            <TabsContent value="account">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>
+                    Manage your account settings and preferences.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Account settings will be available in a future update.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
             
-            <CardContent>
-              <p className="text-muted-foreground">
-                Additional facility settings will be available in future updates.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="preferences">
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Preferences</CardTitle>
+                  <CardDescription>
+                    Customize your experience with ChartChek.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    User preferences will be available in a future update.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : (
+        // Loading state while client-side rendering is not ready
+        <div>Loading settings...</div>
+      )}
     </div>
   );
 }

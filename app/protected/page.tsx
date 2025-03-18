@@ -5,10 +5,10 @@ import MetricCard from '@/components/ui/metric-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, BrainCircuit, MessageSquare, FileText } from 'lucide-react';
-import RecentConversations from '@/components/dashboard/RecentConversations';
-import DocumentInsightsPreview from '@/components/dashboard/DocumentInsights';
-import { getMetrics, getPatientStats, getDocumentInsights, getRecentConversations } from '@/lib/kipu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+// Import components as needed for future implementation
+// import RecentConversations from '@/components/dashboard/RecentConversations';
+// import DocumentInsightsPreview from '@/components/dashboard/DocumentInsights';
 
 export default function ProtectedPage() {
   const [metrics, setMetrics] = useState({ 
@@ -20,16 +20,30 @@ export default function ProtectedPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real application, this would be an API call
-    // For now, we're using our mock data utility functions
-    try {
-      const kipuMetrics = getMetrics();
-      setMetrics(kipuMetrics);
-    } catch (error) {
-      console.error("Error fetching metrics:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Placeholder for future API implementation
+    const fetchMetrics = async () => {
+      try {
+        // Future implementation: Replace with actual API calls
+        // Example: const response = await fetch('/api/metrics');
+        // const data = await response.json();
+        
+        // For now, just use placeholder data
+        const placeholderMetrics = {
+          activeConversations: 5,
+          insightsGenerated: 12,
+          newMessages: 8,
+          documentsAnalyzed: 24
+        };
+        
+        setMetrics(placeholderMetrics);
+      } catch (error) {
+        console.error("Error fetching metrics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchMetrics();
   }, []);
 
   return (
@@ -89,14 +103,29 @@ export default function ProtectedPage() {
           </Card>
           
           <Suspense fallback={<div>Loading insights...</div>}>
-            <DocumentInsightsPreview />
+            {/* Placeholder for DocumentInsightsPreview component */}
+            <Card>
+              <CardHeader>
+                <h3 className="font-semibold">Document Insights</h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Document insights will be displayed here</p>
+              </CardContent>
+            </Card>
           </Suspense>
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
-  
-          <RecentConversations />
+          {/* Placeholder for RecentConversations component */}
+          <Card>
+            <CardHeader>
+              <h3 className="font-semibold">Recent Conversations</h3>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Recent conversations will be displayed here</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

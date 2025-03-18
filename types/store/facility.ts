@@ -1,14 +1,11 @@
 // Extend the existing facility types to include API key management
-import { Facility } from '@/lib/kipu/types';
+import { Facility, FacilityApiSettings as KipuFacilityApiSettings, FacilityApiSettingsDisplay } from '@/types/kipu';
 
-export interface FacilityApiSettings {
-  kipu_api_key?: string;
-  kipu_api_endpoint?: string;
-  has_api_key_configured: boolean;
-}
+// Re-export the FacilityApiSettings interface from KIPU types to maintain backward compatibility
+export type FacilityApiSettings = KipuFacilityApiSettings;
 
 export interface FacilityWithApiSettings extends Facility {
-  api_settings?: FacilityApiSettings;
+  api_settings?: FacilityApiSettingsDisplay;
 }
 
 // Update the FacilityStore interface to include API key management

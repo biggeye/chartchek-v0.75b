@@ -11,12 +11,17 @@ export interface PatientBasicInfo {
   id?: string; // Added to match facility JSON structure
   casefile_id: Casefile;
   first_name: string;
-  middle_name: string;
+  middle_name?: string;
   last_name: string;
   dob: string;
   admission_date: string;
   discharge_date: string;
   mr_number: string;
+  gender?: string;
+  contact?: {
+    email?: string;
+    phone?: string;
+  };
 }
 
 export interface PatientOrderWithSchedules {
@@ -336,6 +341,32 @@ export interface FacilityData {
   lab_results?: any[];
   patient_orders?: any[];
   medications?: any[];
+  insights?: {
+    beds?: { total: number; available: number; occupied: number };
+    staff?: { total: number; active: number };
+    patients?: { total: number; admitted: number; discharged: number };
+    metrics?: Record<string, any>;
+  };
+  facility_insights?: {
+    currentCensus: number;
+    bedCapacity: number;
+    occupancyRate: number;
+    recentAdmissions: number;
+    recentDischarges: number;
+    upcomingAdmissions: number;
+    staffOnDuty: number;
+    patientToStaffRatio: string;
+    alerts: string[];
+  };
+  metrics?: {
+    patient_satisfaction?: number;
+    staff_efficiency?: number;
+    bed_utilization?: number;
+    readmission_rate?: number;
+    average_length_of_stay?: number;
+    treatment_completion_rate?: number;
+    [key: string]: any;
+  };
   billing_data?: {
     insurancePlans: Array<{
       type: string;
@@ -351,17 +382,11 @@ export interface FacilityData {
     outstandingPayments: number;
     activeAppeals: number;
     claimsToAppeal: number;
-  };
-  facility_insights?: {
-    currentCensus: number;
-    bedCapacity: number;
-    occupancyRate: number;
-    recentAdmissions: number;
-    recentDischarges: number;
-    upcomingAdmissions: number;
-    staffOnDuty: number;
-    patientToStaffRatio: string;
-    alerts: string[];
+    total_revenue?: number;
+    outstanding_claims?: number;
+    average_days_to_payment?: number;
+    denial_rate?: number;
+    payer_mix?: Array<any>;
   };
   compliance_data?: {
     documentationStatus: {

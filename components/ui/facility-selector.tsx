@@ -35,8 +35,27 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
   
   // Fetch facilities on component mount
   useEffect(() => {
-    fetchFacilities();
+    console.log('FacilitySelector: Fetching facilities');
+    fetchFacilities().then(result => {
+      console.log('FacilitySelector: Facilities fetched', result);
+    });
   }, [fetchFacilities]);
+  
+  // For debugging
+  useEffect(() => {
+    console.log('FacilitySelector: Current facilities state:', facilities);
+    console.log('FacilitySelector: Current facility:', currentFacility);
+    
+    // Check each facility's properties
+    facilities.forEach((facility, index) => {
+      console.log(`Facility ${index}:`, {
+        id: facility.id,
+        name: facility.name,
+        hasName: Boolean(facility.name),
+        nameType: typeof facility.name
+      });
+    });
+  }, [facilities, currentFacility]);
   
   // Handle facility selection
   const handleSelectFacility = async (facilityId: string) => {
@@ -176,11 +195,11 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
                     ) : (
                       facilities.map((facility) => (
                         <button
-                          key={facility.facility_id}
-                          onClick={() => handleSelectFacility(facility.facility_id)}
+                          key={facility.id || `facility-${Math.random()}`}
+                          onClick={() => facility.id && handleSelectFacility(facility.id)}
                           className={cn(
                             "w-full flex items-center justify-between px-4 py-3 rounded-lg text-left",
-                            facility.facility_id === currentFacilityId
+                            facility.id === currentFacilityId
                               ? "bg-primary/10 border border-primary/20"
                               : "hover:bg-muted border border-border"
                           )}
@@ -189,7 +208,7 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
                             <h4 className="font-medium">{facility.name}</h4>
                             <p className="text-sm text-foreground-muted">{facility.address}</p>
                           </div>
-                          {facility.facility_id === currentFacilityId && (
+                          {facility.id === currentFacilityId && (
                             <CheckIcon className="h-5 w-5 text-primary" />
                           )}
                         </button>

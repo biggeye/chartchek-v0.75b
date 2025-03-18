@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listFacilities } from '@/lib/kipu/service/facility-service';
 import { createServer } from '@/utils/supabase/server';
+import { kipuServerGet } from '@/lib/kipu/auth/server';
+import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { Facility } from '@/types/kipu';
+import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
 
 /**
  * GET /api/kipu/facilities
@@ -8,72 +11,84 @@ import { createServer } from '@/utils/supabase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const supabase = await createServer();
-    const { data: { session } } = await supabase.auth.getSession();
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const status = url.searchParams.get('status') || 'active';
+    const sort = url.searchParams.get('sort') || 'name_asc';
     
-    if (!session) {
+    // Get the KIPU credentials for the current user
+    const credentials = await getKipuCredentials();
+    // Check if KIPU credentials are configured
+    if (!credentials) {
       return NextResponse.json(
-        { error: 'Unauthorized - Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    // Parse query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const page = searchParams.has('page') ? parseInt(searchParams.get('page') as string, 10) : 1;
-    const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit') as string, 10) : 20;
-    const status = searchParams.get('status') as 'active' | 'inactive' | 'all' || 'active';
-    const sort = searchParams.get('sort') as 'name_asc' | 'name_desc' | 'created_at_asc' | 'created_at_desc' || 'name_asc';
-    
-    // Validate parameters
-    if (isNaN(page) || page < 1) {
-      return NextResponse.json(
-        { error: 'Invalid page parameter' },
+        { 
+          success: false, 
+          error: 'KIPU API credentials are not configured. Please configure your API settings first.' 
+        },
         { status: 400 }
       );
     }
+    // Create masked credentials for logging (we'll mask the secret key)
+    const maskedCredentials = {
+      ...credentials,
+      secretKey: credentials.secretKey ? '********' : 'not set',
+    };
+
+    console.log('Fetching facilities from KIPU API with credentials:', maskedCredentials);
+    const response = await kipuServerGet<{ locations?: any[] }>('/api/locations', credentials);
     
-    if (isNaN(limit) || limit < 1 || limit > 100) {
-      return NextResponse.json(
-        { error: 'Invalid limit parameter (must be between 1 and 100)' },
-        { status: 400 }
-      );
-    }
-    
-    if (status && !['active', 'inactive', 'all'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status parameter (must be active, inactive, or all)' },
-        { status: 400 }
-      );
-    }
-    
-    if (sort && !['name_asc', 'name_desc', 'created_at_asc', 'created_at_desc'].includes(sort)) {
-      return NextResponse.json(
-        { error: 'Invalid sort parameter' },
-        { status: 400 }
-      );
-    }
-    
-    // Get facilities from service
-    const response = await listFacilities({
-      page,
-      limit,
-      status,
-      sort
+    // Log the raw data structure to understand the format
+    console.log('Facility API Route - Data Structure:', {
+      hasLocations: !!response.data?.locations,
+      locationsIsArray: Array.isArray(response.data?.locations),
+      locationCount: Array.isArray(response.data?.locations) ? response.data.locations.length : 'N/A'
     });
     
-    // Add caching headers (15 minutes)
-    return NextResponse.json(response, {
+    // Map KIPU locations to our facility format
+    const facilities: Facility[] = [];
+    
+    // Check if we have valid data from KIPU
+    if (response.success && response.data) {
+      // Safely access the locations array with proper type checking
+      const locations = response.data.locations as any[] || [];
+      if (Array.isArray(locations)) {
+        // Map KIPU locations to our facility structure using the dedicated mapping function
+        facilities.push(...locations.map(location => mapKipuLocationToFacility(location)));
+      }
+    }
+    
+    // Filter facilities by status if needed
+    const filteredFacilities = status === 'all' 
+      ? facilities 
+      : facilities.filter(f => status === 'active' ? f.status === 'active' : f.status === 'inactive');
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
+    
+    // Add caching headers (5 minutes with stale-while-revalidate for 1 minute)
+    // This implements the multi-level caching strategy mentioned in the integration README
+    return NextResponse.json({
+      facilities: paginatedFacilities,
+      pagination: {
+        total: filteredFacilities.length,
+        page,
+        limit,
+        pages: Math.ceil(filteredFacilities.length / limit)
+      }
+    }, {
       headers: {
-        'Cache-Control': 'public, max-age=900, stale-while-revalidate=60'
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+        'Vary': 'Authorization' // Ensure cache varies by user authentication
       }
     });
+
   } catch (error) {
-    console.error('Error in facilities endpoint:', error);
-    
+    console.error('Error in facilities list endpoint:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Failed to retrieve facilities from KIPU API' },
       { status: 500 }
     );
   }

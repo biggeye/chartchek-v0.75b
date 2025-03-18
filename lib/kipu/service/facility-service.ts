@@ -1,75 +1,20 @@
 /**
- * Facility Service for KIPU Integration
+ * Facility Service
  * 
- * This service handles the communication with the KIPU EMR system
- * for facility-related operations. It provides a consistent interface
- * for both real API calls and fallback to JSON files.
+ * This service handles interactions with the KIPU API for facility-related operations.
+ * It provides functions for listing facilities, getting facility details, and updating facilities.
  */
 
+import { Facility, KipuCredentials, KipuApiResponse } from '@/types/kipu';
+import { createKipuRequestConfig } from '@/lib/kipu/auth/signature';
+import { getFacilityKipuCredentials } from '@/lib/kipu/service/user-api-settings';
 import { createClient } from '@/utils/supabase/client';
-import { Facility, FacilityData } from '../types';
-import facility1Data from '../facilities/facility_1.json';
-import facility2Data from '../facilities/facility_2.json';
-
-// Environment variables
-const USE_KIPU_API = process.env.USE_KIPU_API === 'true' || false; // Default to JSON fallback
+import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
 
 /**
- * Get a facility by ID
- * 
- * @param facilityId - The ID of the facility to retrieve
- * @returns Promise resolving to a Facility object or null if not found
+ * Paginated response for facilities
  */
-export async function getFacility(facilityId: string): Promise<Facility | null> {
-  try {
-    if (USE_KIPU_API) {
-      // Attempt to use KIPU API
-      const apiSettings = await getFacilityApiSettings(facilityId);
-      
-      if (apiSettings && apiSettings.kipu_api_key && apiSettings.kipu_api_endpoint) {
-        // Make API call to KIPU
-        console.log(`Making API call to KIPU for facility ${facilityId}`);
-        
-        // TODO: Implement actual KIPU API call with proper authentication
-        // const response = await fetch(...);
-        
-        // For now, fall back to JSON files
-        console.log('KIPU API call not implemented yet, falling back to JSON');
-        return getFacilityFromJson(facilityId);
-      } else {
-        console.log(`No API settings found for facility ${facilityId}, falling back to JSON`);
-        return getFacilityFromJson(facilityId);
-      }
-    } else {
-      // Use JSON files directly
-      console.log(`Using JSON files for facility ${facilityId}`);
-      return getFacilityFromJson(facilityId);
-    }
-  } catch (error) {
-    console.error('Error fetching facility:', error);
-    // Attempt fallback to JSON files on error
-    try {
-      console.log('Error in KIPU API call, falling back to JSON');
-      return getFacilityFromJson(facilityId);
-    } catch (fallbackError) {
-      console.error('Error in JSON fallback:', fallbackError);
-      return null;
-    }
-  }
-}
-
-/**
- * List all facilities with optional filtering and pagination
- * 
- * @param options - Optional parameters for filtering and pagination
- * @returns Promise resolving to an object with facilities array and pagination info
- */
-export async function listFacilities(options: {
-  page?: number;
-  limit?: number;
-  status?: 'active' | 'inactive' | 'all';
-  sort?: 'name_asc' | 'name_desc' | 'created_at_asc' | 'created_at_desc';
-} = {}): Promise<{
+export interface PaginatedFacilitiesResponse {
   facilities: Facility[];
   pagination: {
     total: number;
@@ -77,351 +22,504 @@ export async function listFacilities(options: {
     limit: number;
     pages: number;
   };
-}> {
+}
+
+/**
+ * Default pagination values
+ */
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+
+/**
+ * Lists all facilities available to the authenticated user
+ * 
+ * @param page - Page number for pagination (default: 1)
+ * @param limit - Number of facilities per page (default: 20)
+ * @param status - Filter facilities by status (default: 'active')
+ * @param sort - Sort order for facilities (default: 'name_asc')
+ * @returns Promise resolving to a paginated list of facilities
+ */
+export async function listFacilities(
+  page: number = DEFAULT_PAGE,
+  limit: number = DEFAULT_LIMIT,
+  status: 'active' | 'inactive' | 'all' = 'active',
+  sort: 'name_asc' | 'name_desc' | 'created_at_asc' | 'created_at_desc' = 'name_asc'
+): Promise<PaginatedFacilitiesResponse> {
   try {
-    if (USE_KIPU_API) {
-      // Attempt to use KIPU API
-      // TODO: Implement actual KIPU API call with proper authentication
-      // const response = await fetch(...);
-      
-      // For now, fall back to JSON files
-      console.log('KIPU API call not implemented yet, falling back to JSON');
-      return listFacilitiesFromJson(options);
-    } else {
-      // Use JSON files directly
-      console.log('Using JSON files for facility listing');
-      return listFacilitiesFromJson(options);
-    }
-  } catch (error) {
-    console.error('Error listing facilities:', error);
-    // Attempt fallback to JSON files on error
-    try {
-      console.log('Error in KIPU API call, falling back to JSON');
-      return listFacilitiesFromJson(options);
-    } catch (fallbackError) {
-      console.error('Error in JSON fallback:', fallbackError);
-      return {
-        facilities: [],
-        pagination: {
-          total: 0,
-          page: options.page || 1,
-          limit: options.limit || 20,
-          pages: 0
+    // Call the API endpoint for listing facilities
+    const response = await fetch(`/api/kipu/facilities?status=${status}&sort=${sort}&page=${page}&limit=${limit}`);
+    
+    if (!response.ok) {
+      let errorMessage = 'Failed to fetch facilities';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
         }
-      };
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+      }
+      throw new Error(errorMessage);
     }
+    
+    const data = await response.json();
+    console.log("facility-service (listFacilities) - API response data:", data);
+
+    // Map KIPU locations to our Facility type
+    const facilities = data.facilities ? data.facilities : [];
+    
+    return {
+      facilities,
+      pagination: {
+        total: data.pagination?.total || 0,
+        page,
+        limit,
+        pages: data.pagination?.pages || 0
+      }
+    };
+  } catch (error) {
+    console.error('Error in listFacilities:', error);
+    // Return empty response with pagination
+    return {
+      facilities: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        pages: 0
+      }
+    };
   }
 }
 
 /**
- * Update facility information
+ * Gets detailed information about a specific facility
  * 
- * @param facilityId - The ID of the facility to update
- * @param data - The updated facility data
- * @returns Promise resolving to the updated Facility or null if update failed
+ * @param facilityId - The ID of the facility to retrieve
+ * @returns Promise resolving to the facility details or null if not found
  */
-export async function updateFacility(
-  facilityId: string, 
-  data: Partial<Facility>
-): Promise<Facility | null> {
+export async function getFacility(facilityId: string): Promise<Facility | null> {
   try {
-    if (USE_KIPU_API) {
-      // Attempt to use KIPU API
-      const apiSettings = await getFacilityApiSettings(facilityId);
-      
-      if (apiSettings && apiSettings.kipu_api_key && apiSettings.kipu_api_endpoint) {
-        // Make API call to KIPU
-        console.log(`Making API call to KIPU to update facility ${facilityId}`);
-        
-        // TODO: Implement actual KIPU API call with proper authentication
-        // const response = await fetch(...);
-        
-        // For now, just return the existing facility
-        console.log('KIPU API update not implemented yet');
-        return getFacilityFromJson(facilityId);
-      } else {
-        console.log(`No API settings found for facility ${facilityId}`);
-        return getFacilityFromJson(facilityId);
+    // Call the API endpoint for getting a facility
+    const response = await fetch(`/api/kipu/facilities/${facilityId}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`Facility ${facilityId} not found`);
+        return null;
       }
-    } else {
-      // For JSON files, we can't actually update them, so just return the existing facility
-      console.log(`Using JSON files for facility ${facilityId} (no actual update performed)`);
-      return getFacilityFromJson(facilityId);
+
+      let errorMessage = 'Failed to fetch facility';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+      }
+      throw new Error(errorMessage);
     }
+    
+    const data = await response.json();
+    console.log("facility-service (getFacility) - API response data:", data);
+
+    // Map KIPU location to our Facility type
+    return mapKipuLocationToFacility(data);
   } catch (error) {
-    console.error('Error updating facility:', error);
+    if (error instanceof Error) {
+      console.error(`Error in getFacility for facility ${facilityId}:`, error.message);
+    } else {
+      console.error(`Error in getFacility for facility ${facilityId}:`, error);
+    }
     return null;
   }
 }
 
 /**
- * Get facility API settings from Supabase or local storage
+ * Updates a facility (server-side function)
  * 
- * @param facilityId - The ID of the facility
- * @returns Promise resolving to API settings or null if not found
+ * @param facilityId - The ID of the facility to update
+ * @param facilityData - The updated facility data
+ * @returns Promise resolving to the updated facility or null if update failed
  */
-export async function getFacilityApiSettings(facilityId: string): Promise<{
-  kipu_api_key?: string;
-  kipu_api_endpoint?: string;
-  has_api_key_configured: boolean;
-  updated_at?: string;
-} | null> {
+export async function updateFacility(
+  facilityId: string,
+  facilityData: Partial<Facility>
+): Promise<Facility | null> {
   try {
-    // Try to get API settings from Supabase
-    const supabase = createClient();
-    const { data: apiSettings, error } = await supabase
-      .from('facility_api_settings')
-      .select('*')
-      .eq('facility_id', facilityId)
-      .single();
+    // Call the API endpoint for updating a facility
+    const response = await fetch(`/api/kipu/facilities/${facilityId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(facilityData)
+    });
     
-    if (error || !apiSettings) {
-      // Fall back to JSON files
-      return getLocalJsonApiSettings(facilityId);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update facility');
     }
     
-    return apiSettings;
+    const data = await response.json();
+    console.log("facility-service (updateFacility) - API response data:", data);
+
+    return data as Facility;
   } catch (error) {
-    console.error('Error fetching API settings:', error);
-    // Fall back to JSON files
-    return getLocalJsonApiSettings(facilityId);
+    console.error(`Error in updateFacility for facility ${facilityId}:`, error);
+    return null;
   }
 }
 
 /**
- * Get API settings from JSON files
+ * Direct KIPU API call to list facilities (server-side function)
+ * This function is used internally by the API routes
  * 
- * @param facilityId - The ID of the facility
- * @returns API settings or null if not found
+ * @param credentials - KIPU API credentials
+ * @param includeBuildings - Whether to include buildings in the response
+ * @returns Promise resolving to the KIPU API response
  */
-function getLocalJsonApiSettings(facilityId: string): {
-  kipu_api_key?: string;
-  kipu_api_endpoint?: string;
-  has_api_key_configured: boolean;
-  updated_at?: string;
-} | null {
-  if (facilityId === 'facility_1' && 'api_settings' in facility1Data) {
-    return (facility1Data as any).api_settings || {
-      kipu_api_key: '',
-      kipu_api_endpoint: '',
-      has_api_key_configured: false,
-      updated_at: new Date().toISOString()
-    };
-  } else if (facilityId === 'facility_2' && 'api_settings' in facility2Data) {
-    return (facility2Data as any).api_settings || {
-      kipu_api_key: '',
-      kipu_api_endpoint: '',
-      has_api_key_configured: false,
-      updated_at: new Date().toISOString()
-    };
-  }
-  
-  return null;
-}
+export async function kipuListFacilities(
+  credentials: KipuCredentials,
+  includeBuildings: boolean = true
+): Promise<KipuApiResponse> {
+  try {
+    // Construct the endpoint with query parameters
+    const endpoint = `/locations?app_id=${credentials.appId}&include_buildings=${includeBuildings}`;
+    
+    // Create request configuration with authentication headers
+    const requestConfig = createKipuRequestConfig('GET', endpoint, credentials);
+    
+    // Make the API call
+    const response = await fetch(`${credentials.baseUrl}${endpoint}`, requestConfig);
+    
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`KIPU API error (${response.status}):`, errorText);
+      
+      let errorMessage = `KIPU API error: ${response.statusText}`;
+      let errorDetails = undefined;
+      
+      try {
+        // Try to parse error as JSON if possible
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorMessage;
+        errorDetails = errorJson;
+      } catch (e) {
+        // If not JSON, use the raw text
+        errorDetails = { raw: errorText };
+      }
+      
+      return {
+        success: false,
+        error: {
+          code: response.status.toString(),
+          message: errorMessage,
+          details: errorDetails
+        }
+      };
+    }
+    
+    // Check content type to ensure it's JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.warn('KIPU API returned non-JSON response:', text);
+      
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_CONTENT_TYPE',
+          message: `Expected JSON but got ${contentType || 'unknown content type'}`,
+          details: { raw: text }
+        }
+      };
+    }
+    
+    // Parse JSON response
+    try {
+      const data = await response.json();
+      console.log("facility-service (kipuListFacilities) - API response data:", data);
 
-/**
- * Transform JSON data to match the FacilityData type
- * 
- * @param data - The raw data from JSON
- * @returns Properly formatted FacilityData object
- */
-function transformFacilityData(data: any): FacilityData {
-  // Create a deep copy to avoid modifying the original data
-  const transformedData = JSON.parse(JSON.stringify(data));
-  
-  // Fix billing_data.upcomingReviews if it exists
-  if (transformedData?.billing_data?.upcomingReviews) {
-    transformedData.billing_data.upcomingReviews = transformedData.billing_data.upcomingReviews.map((review: any) => {
-      // Add reviewType if missing
-      if (!review.reviewType && review.insuranceProvider) {
+      // Validate that the response contains locations
+      if (!data || !data.locations || !Array.isArray(data.locations)) {
+        console.error('KIPU API returned invalid data structure:', data);
         return {
-          patientName: review.patientName,
-          date: review.date,
-          reviewType: review.insuranceProvider || 'Standard Review' // Use insuranceProvider as reviewType or default
+          success: false,
+          error: {
+            code: 'INVALID_RESPONSE',
+            message: 'KIPU API response does not contain locations array',
+            details: data
+          }
         };
       }
-      return review;
+      
+      return {
+        success: true,
+        data: data
+      };
+    } catch (parseError) {
+      console.error('Error parsing response as JSON:', parseError);
+      
+      // Try to get the raw text to help with debugging
+      let rawText = '';
+      try {
+        rawText = await response.text();
+      } catch (e) {
+        rawText = 'Could not retrieve raw response text';
+      }
+      
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_JSON',
+          message: 'Failed to parse KIPU API response as JSON',
+          details: { error: parseError instanceof Error ? parseError.message : String(parseError), raw: rawText }
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error in kipuListFacilities:', error);
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: error instanceof Error ? error.message : 'Network error occurred',
+        details: error
+      }
+    };
+  }
+}
+
+/**
+ * Direct KIPU API call to get a facility (server-side function)
+ * This function is used internally by the API routes
+ * 
+ * @param facilityId - The KIPU location ID
+ * @param credentials - KIPU API credentials
+ * @returns Promise resolving to the KIPU API response
+ */
+export async function kipuGetFacility(
+  facilityId: string,
+  credentials: KipuCredentials
+): Promise<KipuApiResponse> {
+  try {
+    // Construct the endpoint with query parameters
+    const endpoint = `/locations/${facilityId}?app_id=${credentials.appId}`;
+    
+    // Create request configuration with authentication headers
+    const requestConfig = createKipuRequestConfig('GET', endpoint, credentials);
+    
+    // Make the API call
+    const response = await fetch(`${credentials.baseUrl}${endpoint}`, requestConfig);
+    const data = await response.json();
+    console.log("facility-service (kipuGetFacility) - API response data:", data);
+
+    return {
+      success: response.ok,
+      data: response.ok ? data : undefined,
+      error: !response.ok ? {
+        code: response.status.toString(),
+        message: data.error || 'Failed to get facility from KIPU API'
+      } : undefined
+    };
+  } catch (error) {
+    console.error(`Error in kipuGetFacility for facility ${facilityId}:`, error);
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: error instanceof Error ? error.message : 'Network error occurred'
+      }
+    };
+  }
+}
+
+/**
+ * Tests the connection to the KIPU API for a specific facility
+ * This function is used by the test-connection API endpoint
+ * 
+ * @param facilityId - The ID of the facility to test
+ * @returns Promise resolving to a success/failure result with message
+ */
+export async function testKipuConnection(
+  facilityId: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // Get the KIPU credentials for the facility
+    const credentials = await getFacilityKipuCredentials(facilityId);
+    
+    if (!credentials) {
+      return {
+        success: false,
+        message: 'No KIPU API credentials configured for this facility'
+      };
+    }
+    
+    // Try to list facilities as a test
+    const result = await kipuListFacilities(credentials, false);
+    
+    if (result.success) {
+      return {
+        success: true,
+        message: 'Successfully connected to KIPU API'
+      };
+    } else {
+      return {
+        success: false,
+        message: result.error?.message || 'Failed to connect to KIPU API'
+      };
+    }
+  } catch (error) {
+    console.error(`Error testing KIPU connection for facility ${facilityId}:`, error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred while testing the connection'
+    };
+  }
+}
+
+/**
+ * Enriches a facility with additional data from other KIPU API endpoints
+ * This function is used to add patient counts, document counts, etc.
+ * 
+ * @param facility - The base facility object
+ * @param credentials - KIPU API credentials
+ * @returns Promise resolving to the enriched facility
+ */
+export async function enrichFacilityWithData(
+  facility: Facility,
+  credentials: KipuCredentials
+): Promise<Facility> {
+  try {
+    // Get patient census data
+    const patientCensusEndpoint = `/patients/census?app_id=${credentials.appId}&location_id=${facility.id}`;
+    const patientCensusConfig = createKipuRequestConfig('GET', patientCensusEndpoint, credentials);
+    const patientCensusResponse = await fetch(`${credentials.baseUrl}${patientCensusEndpoint}`, patientCensusConfig);
+    
+    if (patientCensusResponse.ok) {
+      const patientCensusData = await patientCensusResponse.json();
+      console.log("facility-service (enrichFacilityWithData) - Patient census data:", patientCensusData);
+
+      // Update facility data with patient counts
+      if (facility.data && facility.data.patients) {
+        facility.data.patients.total = patientCensusData.total || 0;
+        facility.data.patients.admitted = patientCensusData.admitted || 0;
+        facility.data.patients.discharged = patientCensusData.discharged || 0;
+      }
+      
+      // Update occupancy data if available
+      if (facility.data && facility.data.beds && patientCensusData.occupancy) {
+        facility.data.beds.total = patientCensusData.occupancy.total_beds || 0;
+        facility.data.beds.occupied = patientCensusData.occupancy.occupied_beds || 0;
+        facility.data.beds.available = patientCensusData.occupancy.available_beds || 0;
+      }
+    }
+    
+    // Check if API settings are configured for this facility
+    const supabase = await createClient();
+    const { data: apiSettings } = await supabase
+      .from('user_api_settings')
+      .select('has_api_key_configured, updated_at')
+      .eq('facility_id', facility.id)
+      .eq('has_api_key_configured', true)
+      .limit(1)
+      .single();
+    
+    if (apiSettings) {
+      facility.api_settings = {
+        has_api_key_configured: apiSettings.has_api_key_configured,
+        updated_at: apiSettings.updated_at
+      };
+    }
+    
+    return facility;
+  } catch (error) {
+    console.error(`Error enriching facility ${facility.id} with data:`, error);
+    // Return the original facility if enrichment fails
+    return facility;
+  }
+}
+
+/**
+ * Fetches facilities directly from KIPU API and updates the facility store
+ * This function is used when saving API credentials to immediately populate the facility list
+ * 
+ * @param credentials - KIPU API credentials
+ * @returns Promise resolving to the list of facilities
+ */
+export async function fetchAndStoreFacilities(
+  credentials: KipuCredentials
+): Promise<Facility[]> {
+  try {
+    console.log('Fetching facilities with credentials:', {
+      ...credentials,
+      secretKey: credentials.secretKey ? '********' : 'not set'
     });
-  }
-  
-  return transformedData as FacilityData;
-}
-
-/**
- * Get a facility from JSON files
- * 
- * @param facilityId - The ID of the facility
- * @returns Facility object or null if not found
- */
-function getFacilityFromJson(facilityId: string): Facility | null {
-  if (facilityId === 'facility_1') {
-    const patients1Count = facility1Data.data?.patients ? facility1Data.data.patients.length : 0;
-    const documents1Count = 
-      (facility1Data.data?.evaluations ? facility1Data.data.evaluations.length : 0) + 
-      (facility1Data.data?.contacts ? facility1Data.data.contacts.length : 0);
     
-    // Transform the data to match the expected types
-    const transformedData = transformFacilityData(facility1Data.data);
-    
-    return {
-      id: facility1Data.facility_id,
-      facility_id: facility1Data.facility_id,
-      name: facility1Data.name,
-      address: facility1Data.address,
-      phone: facility1Data.phone,
-      email: facility1Data.email,
-      created_at: facility1Data.created_at,
-      data: transformedData,
-      api_settings: facility1Data.api_settings || {
-        kipu_api_key: '',
-        kipu_api_endpoint: '',
-        has_api_key_configured: false,
-        updated_at: new Date().toISOString()
+    // Use the server-side API route to avoid CORS issues
+    const response = await fetch('/api/kipu/facilities/fetch-with-credentials', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      meta: {
-        name: facility1Data.name,
-        address: facility1Data.address,
-        phone: facility1Data.phone,
-        email: facility1Data.email,
-        patients_count: patients1Count,
-        documents_count: documents1Count
-      }
-    };
-  } else if (facilityId === 'facility_2') {
-    const patients2Count = facility2Data.data?.patients ? facility2Data.data.patients.length : 0;
-    const documents2Count = 
-      (facility2Data.data?.evaluations ? facility2Data.data.evaluations.length : 0) + 
-      (facility2Data.data?.contacts ? facility2Data.data.contacts.length : 0);
+      body: JSON.stringify({ credentials })
+    });
     
-    // Transform the data to match the expected types
-    const transformedData = transformFacilityData(facility2Data.data);
+    const result = await response.json();
+    console.log("facility-service (fetchAndStoreFacilities) - API response data:", result);
+
+    if (!result.success || !result.data) {
+      console.error('Failed to fetch facilities from KIPU API:', result.error || 'Unknown error');
+      return [];
+    }
     
-    return {
-      id: facility2Data.facility_id,
-      facility_id: facility2Data.facility_id,
-      name: facility2Data.name,
-      address: facility2Data.address,
-      phone: facility2Data.phone,
-      email: facility2Data.email,
-      created_at: facility2Data.created_at,
-      data: transformedData,
-      api_settings: facility2Data.api_settings || {
-        kipu_api_key: '',
-        kipu_api_endpoint: '',
-        has_api_key_configured: false,
-        updated_at: new Date().toISOString()
+    if (!Array.isArray(result.data.locations)) {
+      console.error('Invalid response format. Expected locations array, got:', result.data);
+      return [];
+    }
+    
+    // Define the expected location type based on the API response
+    interface KipuLocation {
+      location_id: number;
+      location_name: string;
+      enabled: boolean;
+      [key: string]: any;
+    }
+    
+    // Map KIPU locations to our Facility type
+    const facilities = result.data.locations.map((location: KipuLocation) => mapKipuLocationToFacility(location));
+    
+    console.log(`Mapped ${facilities.length} facilities from KIPU API`);
+    
+    // Update the facility store with the fetched facilities
+    const { useFacilityStore } = await import('@/store/facilityStore');
+    const store = useFacilityStore.getState();
+    
+    // Set the facilities in the store
+    store.facilities = facilities;
+    useFacilityStore.setState({ 
+      facilities,
+      pagination: {
+        total: facilities.length,
+        page: 1,
+        limit: facilities.length,
+        pages: 1
       },
-      meta: {
-        name: facility2Data.name,
-        address: facility2Data.address,
-        phone: facility2Data.phone,
-        email: facility2Data.email,
-        patients_count: patients2Count,
-        documents_count: documents2Count
-      }
-    };
-  }
-  
-  return null;
-}
-
-/**
- * List facilities from JSON files
- * 
- * @param options - Optional parameters for filtering and pagination
- * @returns Object with facilities array and pagination info
- */
-function listFacilitiesFromJson(options: {
-  page?: number;
-  limit?: number;
-  status?: 'active' | 'inactive' | 'all';
-  sort?: 'name_asc' | 'name_desc' | 'created_at_asc' | 'created_at_desc';
-} = {}): {
-  facilities: Facility[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
-} {
-  const {
-    page = 1,
-    limit = 20,
-    status = 'active',
-    sort = 'name_asc'
-  } = options;
-  
-  // Get all facilities
-  const facilities: Facility[] = [];
-  
-  // Add facility 1
-  const facility1 = getFacilityFromJson('facility_1');
-  if (facility1) facilities.push(facility1);
-  
-  // Add facility 2
-  const facility2 = getFacilityFromJson('facility_2');
-  if (facility2) facilities.push(facility2);
-  
-  // Filter by status if not 'all' (all facilities are active in our JSON data)
-  let filteredFacilities = status === 'all' 
-    ? [...facilities]
-    : facilities.filter(facility => status === 'active'); // All our facilities are active
-  
-  // Sort facilities
-  switch (sort) {
-    case 'name_asc':
-      filteredFacilities.sort((a, b) => a.name.localeCompare(b.name));
-      break;
-    case 'name_desc':
-      filteredFacilities.sort((a, b) => b.name.localeCompare(a.name));
-      break;
-    case 'created_at_asc':
-      filteredFacilities.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      break;
-    case 'created_at_desc':
-      filteredFacilities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      break;
-  }
-  
-  // Calculate pagination
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
-  
-  return {
-    facilities: paginatedFacilities,
-    pagination: {
-      total: filteredFacilities.length,
-      page,
-      limit,
-      pages: Math.ceil(filteredFacilities.length / limit)
+      isLoading: false,
+      error: null
+    });
+    
+    // If there are facilities and no current facility is selected, select the first one
+    if (facilities.length > 0 && !store.currentFacilityId) {
+      store.setCurrentFacility(facilities[0].id);
     }
-  };
-}
-
-/**
- * Map KIPU location terminology to our facility terminology
- * 
- * @param kipuLocation - The location object from KIPU API
- * @returns A Facility object with mapped fields
- */
-export function mapKipuLocationToFacility(kipuLocation: any): Facility {
-  // This function maps the KIPU location object to our Facility type
-  return {
-    id: kipuLocation.location_id || kipuLocation.id,
-    facility_id: kipuLocation.location_id || kipuLocation.id,
-    name: kipuLocation.location_name || kipuLocation.name,
-    address: kipuLocation.address || '',
-    phone: kipuLocation.phone || '',
-    email: kipuLocation.email || '',
-    created_at: kipuLocation.created_at || new Date().toISOString(),
-    data: transformFacilityData(kipuLocation.data || {}),
-    meta: {
-      name: kipuLocation.location_name || kipuLocation.name,
-      address: kipuLocation.address || '',
-      phone: kipuLocation.phone || '',
-      email: kipuLocation.email || '',
-    }
-  };
+    
+    return facilities;
+  } catch (error) {
+    console.error('Error fetching and storing facilities:', error);
+    return [];
+  }
 }

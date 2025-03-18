@@ -35,9 +35,14 @@ export default function PatientsPage() {
   const filteredPatients = patients.filter(patient => {
     const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
     const query = searchQuery.toLowerCase();
+    
+    // Enhanced search to include more fields
     return fullName.includes(query) || 
-           (patient.id && patient.id.toString().includes(query)) ||
-           (patient.mr_number && patient.mr_number.toString().includes(query));
+           (patient.id && patient.id.toString().toLowerCase().includes(query)) ||
+           (patient.mr_number && patient.mr_number.toString().toLowerCase().includes(query)) ||
+           (patient.gender && patient.gender.toLowerCase().includes(query)) ||
+           (patient.contact?.email && patient.contact.email.toLowerCase().includes(query)) ||
+           (patient.contact?.phone && patient.contact.phone.toLowerCase().includes(query));
   });
 
   return (
@@ -85,15 +90,16 @@ export default function PatientsPage() {
               {filteredPatients.map((patient) => {
                 // Create a patient object that matches the PatientListItem component requirements
                 const patientForList: PatientListItemType = {
-                  id: patient.id || patient.mr_number || '',
+                  id: patient.id || patient.casefile_id || patient.mr_number || '',
                   first_name: patient.first_name,
                   last_name: patient.last_name,
-                  dob: patient.dob
-                  // Note: gender and contact are not in PatientBasicInfo type
+                  dob: patient.dob,
+                  gender: patient.gender,
+                  contact: patient.contact
                 };
                 
                 return (
-                  <div key={patient.id || `patient-${patient.mr_number}`}>
+                  <div key={patient.id || patient.casefile_id || `patient-${patient.mr_number}`}>
                     <PatientListItem 
                       patient={patientForList} 
                       facilityId={currentFacilityId || ''}

@@ -2,968 +2,968 @@
     "Admissions": [
       {
         "method": "GET",
-        "url": "/patients/admissions",
+        "url": "/api/patients/admissions",
         "description": "List admissions within a date range"
       }
     ],
     "Allergens": [
       {
         "method": "GET",
-        "url": "/allergens",
+        "url": "/api/allergens",
         "description": "List all allergens"
       }
     ],
     "Allergies": [
       {
         "method": "GET",
-        "url": "/allergens",
+        "url": "/api/allergens",
         "description": "List all allergens"
       },
       {
         "method": "GET",
-        "url": "/allergies",
+        "url": "/api/allergies",
         "description": "List all allergies"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/allergies",
+        "url": "/api/patients/{patient_id}/allergies",
         "description": "List allergies scoped to a patient"
       }
     ],
     "Appointment": [
       {
         "method": "GET",
-        "url": "/appointments/{appointment_id}",
+        "url": "/api/appointments/{appointment_id}",
         "description": "Fetch an Appointment Record"
       },
       {
         "method": "GET",
-        "url": "/scheduler/appointments/{appointment_id}",
+        "url": "/api/scheduler/appointments/{appointment_id}",
         "description": "Fetch an appointment"
       }
     ],
     "Appointment Statuses": [
       {
         "method": "GET",
-        "url": "/scheduler/appointment_statuses",
+        "url": "/api/scheduler/appointment_statuses",
         "description": "List all appointment statuses"
       }
     ],
     "Appointment Types": [
       {
         "method": "GET",
-        "url": "/scheduler/appointment_types",
+        "url": "/api/scheduler/appointment_types",
         "description": "List all appointment types"
       }
     ],
     "Appointments": [
       {
         "method": "GET",
-        "url": "/appointments/{appointment_id}",
+        "url": "/api/appointments/{appointment_id}",
         "description": "Fetch an Appointment Record"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/appointments",
+        "url": "/api/patients/{patient_id}/appointments",
         "description": "List all appointments scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/appointments",
+        "url": "/api/providers/{provider_id}/appointments",
         "description": "List all appointments scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/scheduler/appointments",
+        "url": "/api/scheduler/appointments",
         "description": "List all appointments"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}/appointments",
+        "url": "/api/users/{user_id}/appointments",
         "description": "List all appointments scoped to a given user"
       }
     ],
     "Care Levels": [
       {
         "method": "GET",
-        "url": "/care_levels",
+        "url": "/api/care_levels",
         "description": "List all Levels of Care"
       }
     ],
     "Care Team": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/care_team",
+        "url": "/api/patients/{patient_id}/care_team",
         "description": "List a patient's care team"
       }
     ],
     "Care Teams": [
       {
         "method": "GET",
-        "url": "/patients/care_teams",
+        "url": "/api/patients/care_teams",
         "description": "List all patients' care teams"
       }
     ],
     "Census": [
       {
         "method": "GET",
-        "url": "/patients/census",
+        "url": "/api/patients/census",
         "description": "List all patients from a census of the database"
       }
     ],
     "Ciwa Ars": [
       {
         "method": "GET",
-        "url": "/ciwa_ars",
+        "url": "/api/ciwa_ars",
         "description": "List all CiwaArs"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ciwa_ars",
+        "url": "/api/patients/{patient_id}/ciwa_ars",
         "description": "List all CiwaArs scoped to a given patient"
       }
     ],
     "Ciwa Bs": [
       {
         "method": "GET",
-        "url": "/ciwa_bs",
+        "url": "/api/ciwa_bs",
         "description": "List all CiwaBs"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ciwa_bs",
+        "url": "/api/patients/{patient_id}/ciwa_bs",
         "description": "List all CiwaBs scoped to a given patient"
       }
     ],
     "Consent Form Records": [
       {
         "method": "GET",
-        "url": "/consent_form_records",
+        "url": "/api/consent_form_records",
         "description": "List all Consent Form Records"
       },
       {
         "method": "GET",
-        "url": "/consent_form_records/{record_id}",
+        "url": "/api/consent_form_records/{record_id}",
         "description": "Fetch Details for a Consent Form Record"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/consent_form_records",
+        "url": "/api/patients/{patient_id}/consent_form_records",
         "description": "List all Consent Form Records"
       }
     ],
     "Consent Forms": [
       {
         "method": "GET",
-        "url": "/consent_form_records",
+        "url": "/api/consent_form_records",
         "description": "List all Consent Form Records"
       },
       {
         "method": "GET",
-        "url": "/consent_form_records/{record_id}",
+        "url": "/api/consent_form_records/{record_id}",
         "description": "Fetch Details for a Consent Form Record"
       },
       {
         "method": "GET",
-        "url": "/consent_forms",
+        "url": "/api/consent_forms",
         "description": "List all Consent Forms"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/consent_form_records",
+        "url": "/api/patients/{patient_id}/consent_form_records",
         "description": "List all Consent Form Records"
       }
     ],
     "Contact": [
       {
         "method": "GET",
-        "url": "/contacts/{id}",
+        "url": "/api/contacts/{id}",
         "description": "Fetches a contact"
       },
       {
         "method": "PATCH",
-        "url": "/contacts/{contact_id}",
+        "url": "/api/contacts/{contact_id}",
         "description": "Update a contact"
       },
       {
         "method": "POST",
-        "url": "/contacts",
+        "url": "/api/contacts",
         "description": "Create a new contact"
       }
     ],
     "Contact Types": [
       {
         "method": "GET",
-        "url": "/contact_types",
+        "url": "/api/contact_types",
         "description": "List all contact types"
       }
     ],
     "Contacts": [
       {
         "method": "GET",
-        "url": "/contact_types",
+        "url": "/api/contact_types",
         "description": "List all contact types"
       },
       {
         "method": "GET",
-        "url": "/contacts",
+        "url": "/api/contacts",
         "description": "List all contacts"
       },
       {
         "method": "GET",
-        "url": "/contacts/referrers",
+        "url": "/api/contacts/referrers",
         "description": "List all referrers"
       },
       {
         "method": "GET",
-        "url": "/contacts/{id}",
+        "url": "/api/contacts/{id}",
         "description": "Fetches a contact"
       },
       {
         "method": "PATCH",
-        "url": "/contacts/{contact_id}",
+        "url": "/api/contacts/{contact_id}",
         "description": "Update a contact"
       },
       {
         "method": "POST",
-        "url": "/contacts",
+        "url": "/api/contacts",
         "description": "Create a new contact"
       }
     ],
     "Cows": [
       {
         "method": "GET",
-        "url": "/cows",
+        "url": "/api/cows",
         "description": "List all Cows"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/cows",
+        "url": "/api/patients/{patient_id}/cows",
         "description": "List all Cows scoped to a given patient"
       }
     ],
     "Diagnosis History": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/diagnosis_history",
+        "url": "/api/patients/{patient_id}/diagnosis_history",
         "description": "List a patient's diagnosis history"
       }
     ],
     "Evaluations": [
       {
         "method": "GET",
-        "url": "/evaluations",
+        "url": "/api/evaluations",
         "description": "List all Evaluations"
       },
       {
         "method": "GET",
-        "url": "/evaluations/{evaluation_id}",
+        "url": "/api/evaluations/{evaluation_id}",
         "description": "Fetch Details for a Evaluation"
       },
       {
         "method": "GET",
-        "url": "/patient_evaluations",
+        "url": "/api/patient_evaluations",
         "description": "List all Patient Evaluations"
       },
       {
         "method": "GET",
-        "url": "/patient_evaluations/{patient_evaluation_id}",
+        "url": "/api/patient_evaluations/{patient_evaluation_id}",
         "description": "Fetch Details for a Patient Evaluation"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "List all Patient Evaluations scoped to a patient"
       }
     ],
     "ExtIdMapping": [
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/ext_id_mappings/{id}",
+        "url": "/api/patients/{patient_id}/ext_id_mappings/{id}",
         "description": "Update an external id mapping"
       }
     ],
     "Flag Categories": [
       {
         "method": "GET",
-        "url": "/flag_categories",
+        "url": "/api/flag_categories",
         "description": "List all flag categories"
       }
     ],
     "Flags": [
       {
         "method": "GET",
-        "url": "/flag_categories",
+        "url": "/api/flag_categories",
         "description": "List all flag categories"
       },
       {
         "method": "GET",
-        "url": "/flags",
+        "url": "/api/flags",
         "description": "List all flags"
       }
     ],
     "Glucose Logs": [
       {
         "method": "GET",
-        "url": "/glucose_logs",
+        "url": "/api/glucose_logs",
         "description": "List all GlucoseLogs"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/glucose_logs",
+        "url": "/api/patients/{patient_id}/glucose_logs",
         "description": "List all Glucose Logs scoped to a given patient"
       }
     ],
     "Group Session": [
       {
         "method": "GET",
-        "url": "/group_sessions/{id}",
+        "url": "/api/group_sessions/{id}",
         "description": "Fetches a group session"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/group_sessions/{id}",
+        "url": "/api/patients/{patient_id}/group_sessions/{id}",
         "description": "Fetches group session of the given patient"
       }
     ],
     "Group Sessions": [
       {
         "method": "GET",
-        "url": "/group_sessions",
+        "url": "/api/group_sessions",
         "description": "List all group sessions"
       },
       {
         "method": "GET",
-        "url": "/group_sessions/{id}",
+        "url": "/api/group_sessions/{id}",
         "description": "Fetches a group session"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/group_sessions",
+        "url": "/api/patients/{patient_id}/group_sessions",
         "description": "List all group sessions scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/group_sessions/{id}",
+        "url": "/api/patients/{patient_id}/group_sessions/{id}",
         "description": "Fetches group session of the given patient"
       }
     ],
     "Insurance": [
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/insurances/{id}",
+        "url": "/api/patients/{patient_id}/insurances/{id}",
         "description": "Update an insurance"
       }
     ],
     "Insurances": [
       {
         "method": "GET",
-        "url": "/insurances/latest",
+        "url": "/api/insurances/latest",
         "description": "List insurances with updated_at within a date range"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/insurances/{id}",
+        "url": "/api/patients/{patient_id}/insurances/{id}",
         "description": "Update an insurance"
       }
     ],
     "Latest": [
       {
         "method": "GET",
-        "url": "/patients/latest",
+        "url": "/api/patients/latest",
         "description": "List patients with updated_at within a date range"
       }
     ],
     "Locations": [
       {
         "method": "GET",
-        "url": "/locations",
+        "url": "/api/locations",
         "description": "List all locations"
       }
     ],
     "Occupancy": [
       {
         "method": "GET",
-        "url": "/patients/occupancy",
+        "url": "/api/patients/occupancy",
         "description": "Occupancy"
       }
     ],
     "Orthostatic Vital Signs": [
       {
         "method": "GET",
-        "url": "/orthostatic_vital_signs",
+        "url": "/api/orthostatic_vital_signs",
         "description": "List all orthostatic vital signs"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/orthostatic_vital_signs",
+        "url": "/api/patients/{patient_id}/orthostatic_vital_signs",
         "description": "List all Orthostatic vital signs scoped to a given patient"
       }
     ],
     "Patient": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/allergies",
+        "url": "/api/patients/{patient_id}/allergies",
         "description": "List allergies scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/appointments",
+        "url": "/api/patients/{patient_id}/appointments",
         "description": "List all appointments scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/care_team",
+        "url": "/api/patients/{patient_id}/care_team",
         "description": "List a patient's care team"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ciwa_ars",
+        "url": "/api/patients/{patient_id}/ciwa_ars",
         "description": "List all CiwaArs scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ciwa_bs",
+        "url": "/api/patients/{patient_id}/ciwa_bs",
         "description": "List all CiwaBs scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/cows",
+        "url": "/api/patients/{patient_id}/cows",
         "description": "List all Cows scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/diagnosis_history",
+        "url": "/api/patients/{patient_id}/diagnosis_history",
         "description": "List a patient's diagnosis history"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/glucose_logs",
+        "url": "/api/patients/{patient_id}/glucose_logs",
         "description": "List all Glucose Logs scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/group_sessions",
+        "url": "/api/patients/{patient_id}/group_sessions",
         "description": "List all group sessions scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/group_sessions/{id}",
+        "url": "/api/patients/{patient_id}/group_sessions/{id}",
         "description": "Fetches group session of the given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/orthostatic_vital_signs",
+        "url": "/api/patients/{patient_id}/orthostatic_vital_signs",
         "description": "List all Orthostatic vital signs scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_diets",
+        "url": "/api/patients/{patient_id}/patient_diets",
         "description": "List patient diets scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "List all Patient Evaluations scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_orders",
+        "url": "/api/patients/{patient_id}/patient_orders",
         "description": "List all patient orders scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/program_history",
+        "url": "/api/patients/{patient_id}/program_history",
         "description": "List a patient's program history"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ur",
+        "url": "/api/patients/{patient_id}/ur",
         "description": "List a patient's utilization reviews"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}",
+        "url": "/api/patients/{patient_id}",
         "description": "Fetch a Patient Record"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/ext_id_mappings/{id}",
+        "url": "/api/patients/{patient_id}/ext_id_mappings/{id}",
         "description": "Update an external id mapping"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/insurances/{id}",
+        "url": "/api/patients/{patient_id}/insurances/{id}",
         "description": "Update an insurance"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}",
+        "url": "/api/patients/{patient_id}",
         "description": "Update a patient"
       },
       {
         "method": "POST",
-        "url": "/patients",
+        "url": "/api/patients",
         "description": "Create a new patient"
       },
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "Create a new patient evaluation"
       },
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/vital_signs",
+        "url": "/api/patients/{patient_id}/vital_signs",
         "description": "Create a new vital sign for a patient"
       }
     ],
     "Patient Colors": [
       {
         "method": "GET",
-        "url": "/patient_colors",
+        "url": "/api/patient_colors",
         "description": "List all patient colors"
       }
     ],
     "Patient Diets": [
       {
         "method": "GET",
-        "url": "/patient_diets",
+        "url": "/api/patient_diets",
         "description": "List all patient diets"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_diets",
+        "url": "/api/patients/{patient_id}/patient_diets",
         "description": "List patient diets scoped to a patient"
       }
     ],
     "Patient Evaluation": [
       {
         "method": "GET",
-        "url": "/patient_evaluations/{patient_evaluation_id}",
+        "url": "/api/patient_evaluations/{patient_evaluation_id}",
         "description": "Fetch Details for a Patient Evaluation"
       },
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "Create a new patient evaluation"
       }
     ],
     "Patient Evaluations": [
       {
         "method": "GET",
-        "url": "/patient_evaluations",
+        "url": "/api/patient_evaluations",
         "description": "List all Patient Evaluations"
       },
       {
         "method": "GET",
-        "url": "/patient_evaluations/{patient_evaluation_id}",
+        "url": "/api/patient_evaluations/{patient_evaluation_id}",
         "description": "Fetch Details for a Patient Evaluation"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "List all Patient Evaluations scoped to a patient"
       },
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/patient_evaluations",
+        "url": "/api/patients/{patient_id}/patient_evaluations",
         "description": "Create a new patient evaluation"
       }
     ],
     "Patient Order": [
       {
         "method": "GET",
-        "url": "/patient_orders/{patient_order_id}",
+        "url": "/api/patient_orders/{patient_order_id}",
         "description": "Fetch Details of a Patient Order"
       }
     ],
     "Patient Orders": [
       {
         "method": "GET",
-        "url": "/patient_orders",
+        "url": "/api/patient_orders",
         "description": "List all patient orders"
       },
       {
         "method": "GET",
-        "url": "/patient_orders/{patient_order_id}",
+        "url": "/api/patient_orders/{patient_order_id}",
         "description": "Fetch Details of a Patient Order"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_orders",
+        "url": "/api/patients/{patient_id}/patient_orders",
         "description": "List all patient orders scoped to a patient"
       }
     ],
     "Patient Processes": [
       {
         "method": "GET",
-        "url": "/patients/processes",
+        "url": "/api/patients/processes",
         "description": "List all patient processes"
       }
     ],
     "Patient Settings": [
       {
         "method": "GET",
-        "url": "/patient_settings",
+        "url": "/api/patient_settings",
         "description": "List all patient settings"
       }
     ],
     "Patient Tags": [
       {
         "method": "GET",
-        "url": "/patient_tags",
+        "url": "/api/patient_tags",
         "description": "List all patient tags"
       }
     ],
     "Patients": [
       {
         "method": "GET",
-        "url": "/patients/admissions",
+        "url": "/api/patients/admissions",
         "description": "List admissions within a date range"
       },
       {
         "method": "GET",
-        "url": "/patients/care_teams",
+        "url": "/api/patients/care_teams",
         "description": "List all patients' care teams"
       },
       {
         "method": "GET",
-        "url": "/patients/census",
+        "url": "/api/patients/census",
         "description": "List all patients from a census of the database"
       },
       {
         "method": "GET",
-        "url": "/patients/latest",
+        "url": "/api/patients/latest",
         "description": "List patients with updated_at within a date range"
       },
       {
         "method": "GET",
-        "url": "/patients/occupancy",
+        "url": "/api/patients/occupancy",
         "description": "Occupancy"
       },
       {
         "method": "GET",
-        "url": "/patients/processes",
+        "url": "/api/patients/processes",
         "description": "List all patient processes"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/allergies",
+        "url": "/api/patients/{patient_id}/allergies",
         "description": "List allergies scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/appointments",
+        "url": "/api/patients/{patient_id}/appointments",
         "description": "List all appointments scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/care_team",
+        "url": "/api/patients/{patient_id}/care_team",
         "description": "List a patient's care team"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/diagnosis_history",
+        "url": "/api/patients/{patient_id}/diagnosis_history",
         "description": "List a patient's diagnosis history"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_diets",
+        "url": "/api/patients/{patient_id}/patient_diets",
         "description": "List patient diets scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/patient_orders",
+        "url": "/api/patients/{patient_id}/patient_orders",
         "description": "List all patient orders scoped to a patient"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/program_history",
+        "url": "/api/patients/{patient_id}/program_history",
         "description": "List a patient's program history"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ur",
+        "url": "/api/patients/{patient_id}/ur",
         "description": "List a patient's utilization reviews"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}",
+        "url": "/api/patients/{patient_id}",
         "description": "Fetch a Patient Record"
       },
       {
         "method": "GET",
-        "url": "/vaults/patients",
+        "url": "/api/vaults/patients",
         "description": "Lists all soft-deleted patients"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/ext_id_mappings/{id}",
+        "url": "/api/patients/{patient_id}/ext_id_mappings/{id}",
         "description": "Update an external id mapping"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}/insurances/{id}",
+        "url": "/api/patients/{patient_id}/insurances/{id}",
         "description": "Update an insurance"
       },
       {
         "method": "PATCH",
-        "url": "/patients/{patient_id}",
+        "url": "/api/patients/{patient_id}",
         "description": "Update a patient"
       },
       {
         "method": "POST",
-        "url": "/patients",
+        "url": "/api/patients",
         "description": "Create a new patient"
       }
     ],
     "Payors": [
       {
         "method": "GET",
-        "url": "/settings/payors",
+        "url": "/api/settings/payors",
         "description": "List all payors"
       }
     ],
     "Program History": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/program_history",
+        "url": "/api/patients/{patient_id}/program_history",
         "description": "List a patient's program history"
       }
     ],
     "Provider": [
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/appointments",
+        "url": "/api/providers/{provider_id}/appointments",
         "description": "List all appointments scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/roles",
+        "url": "/api/providers/{provider_id}/roles",
         "description": "List all roles scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}",
+        "url": "/api/providers/{provider_id}",
         "description": "Fetch a Provider Record"
       }
     ],
     "Providers": [
       {
         "method": "GET",
-        "url": "/providers",
+        "url": "/api/providers",
         "description": "List all Providers"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/appointments",
+        "url": "/api/providers/{provider_id}/appointments",
         "description": "List all appointments scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/roles",
+        "url": "/api/providers/{provider_id}/roles",
         "description": "List all roles scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/providers/{provider_id}",
+        "url": "/api/providers/{provider_id}",
         "description": "Fetch a Provider Record"
       }
     ],
     "Record": [
       {
         "method": "GET",
-        "url": "/consent_form_records/{record_id}",
+        "url": "/api/consent_form_records/{record_id}",
         "description": "Fetch Details for a Consent Form Record"
       }
     ],
     "Records": [
       {
         "method": "GET",
-        "url": "/consent_form_records",
+        "url": "/api/consent_form_records",
         "description": "List all Consent Form Records"
       },
       {
         "method": "GET",
-        "url": "/consent_form_records/{record_id}",
+        "url": "/api/consent_form_records/{record_id}",
         "description": "Fetch Details for a Consent Form Record"
       },
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/consent_form_records",
+        "url": "/api/patients/{patient_id}/consent_form_records",
         "description": "List all Consent Form Records"
       }
     ],
     "Referrers": [
       {
         "method": "GET",
-        "url": "/contacts/referrers",
+        "url": "/api/contacts/referrers",
         "description": "List all referrers"
       }
     ],
     "Resources": [
       {
         "method": "GET",
-        "url": "/scheduler/resources",
+        "url": "/api/scheduler/resources",
         "description": "List all resources"
       }
     ],
     "Role": [
       {
         "method": "GET",
-        "url": "/roles/{role_id}/users",
+        "url": "/api/roles/{role_id}/users",
         "description": "List all users scoped to a given role"
       }
     ],
     "Roles": [
       {
         "method": "GET",
-        "url": "/providers/{provider_id}/roles",
+        "url": "/api/providers/{provider_id}/roles",
         "description": "List all roles scoped to a given provider"
       },
       {
         "method": "GET",
-        "url": "/roles",
+        "url": "/api/roles",
         "description": "List all Roles"
       },
       {
         "method": "GET",
-        "url": "/roles/{role_id}/users",
+        "url": "/api/roles/{role_id}/users",
         "description": "List all users scoped to a given role"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}/roles",
+        "url": "/api/users/{user_id}/roles",
         "description": "List all roles scoped to a given user"
       }
     ],
     "Scheduler": [
       {
         "method": "GET",
-        "url": "/scheduler/appointment_statuses",
+        "url": "/api/scheduler/appointment_statuses",
         "description": "List all appointment statuses"
       },
       {
         "method": "GET",
-        "url": "/scheduler/appointment_types",
+        "url": "/api/scheduler/appointment_types",
         "description": "List all appointment types"
       },
       {
         "method": "GET",
-        "url": "/scheduler/appointments",
+        "url": "/api/scheduler/appointments",
         "description": "List all appointments"
       },
       {
         "method": "GET",
-        "url": "/scheduler/appointments/{appointment_id}",
+        "url": "/api/scheduler/appointments/{appointment_id}",
         "description": "Fetch an appointment"
       },
       {
         "method": "GET",
-        "url": "/scheduler/resources",
+        "url": "/api/scheduler/resources",
         "description": "List all resources"
       }
     ],
     "Settings": [
       {
         "method": "GET",
-        "url": "/settings/payors",
+        "url": "/api/settings/payors",
         "description": "List all payors"
       }
     ],
     "UR": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/ur",
+        "url": "/api/patients/{patient_id}/ur",
         "description": "List a patient's utilization reviews"
       }
     ],
     "User": [
       {
         "method": "GET",
-        "url": "/users/{user_id}/appointments",
+        "url": "/api/users/{user_id}/appointments",
         "description": "List all appointments scoped to a given user"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}/roles",
+        "url": "/api/users/{user_id}/roles",
         "description": "List all roles scoped to a given user"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}",
+        "url": "/api/users/{user_id}",
         "description": "Fetch a User Record"
       }
     ],
     "User Titles": [
       {
         "method": "GET",
-        "url": "/user_titles",
+        "url": "/api/user_titles",
         "description": "List user titles"
       }
     ],
     "Users": [
       {
         "method": "GET",
-        "url": "/roles/{role_id}/users",
+        "url": "/api/roles/{role_id}/users",
         "description": "List all users scoped to a given role"
       },
       {
         "method": "GET",
-        "url": "/users",
+        "url": "/api/users",
         "description": "List all Users"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}/appointments",
+        "url": "/api/users/{user_id}/appointments",
         "description": "List all appointments scoped to a given user"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}/roles",
+        "url": "/api/users/{user_id}/roles",
         "description": "List all roles scoped to a given user"
       },
       {
         "method": "GET",
-        "url": "/users/{user_id}",
+        "url": "/api/users/{user_id}",
         "description": "Fetch a User Record"
       }
     ],
     "Utilization Reviews": [
       {
         "method": "GET",
-        "url": "/utilization_reviews/latest",
+        "url": "/api/utilization_reviews/latest",
         "description": "List utilization reviews with updated_at within a date range"
       }
     ],
     "Vaults": [
       {
         "method": "GET",
-        "url": "/vaults/patients",
+        "url": "/api/vaults/patients",
         "description": "Lists all soft-deleted patients"
       }
     ],
     "Vital Sign": [
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/vital_signs",
+        "url": "/api/patients/{patient_id}/vital_signs",
         "description": "Create a new vital sign for a patient"
       }
     ],
     "Vital Signs": [
       {
         "method": "GET",
-        "url": "/patients/{patient_id}/vital_signs",
+        "url": "/api/patients/{patient_id}/vital_signs",
         "description": "List all vital signs scoped to a given patient"
       },
       {
         "method": "GET",
-        "url": "/vital_signs",
+        "url": "/api/vital_signs",
         "description": "List all vital signs"
       },
       {
         "method": "POST",
-        "url": "/patients/{patient_id}/vital_signs",
+        "url": "/api/patients/{patient_id}/vital_signs",
         "description": "Create a new vital sign for a patient"
       }
     ]

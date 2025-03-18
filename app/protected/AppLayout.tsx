@@ -45,6 +45,7 @@ import { useFacilityStore } from '@/store/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -254,8 +255,10 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         </div>
         
         <main className="flex flex-1 overflow-hidden">
+        
           {children}
-          <PDFGeneratorListener />
+   
+          <PDFGeneratorListener />  
         </main>
       </div>
     </div>
