@@ -40,33 +40,6 @@
         "required_for": ["facilityStore"]
       },
       {
-        "name": "facility_api_settings",
-        "path": "/facilities/{facility_id}/api_settings",
-        "method": "GET",
-        "description": "Get API settings for a specific facility",
-        "kipu_integration": {
-          "type": "custom",
-          "source_endpoints": ["N/A - Stored in Supabase with local JSON fallback"],
-          "implementation_notes": "Retrieves API key and endpoint configuration from Supabase"
-        },
-        "response_schema": "facility_api_settings_response",
-        "required_for": ["Settings page", "API integration"]
-      },
-      {
-        "name": "update_facility_api_settings",
-        "path": "/facilities/{facility_id}/api_settings",
-        "method": "PUT",
-        "description": "Update API settings for a specific facility",
-        "kipu_integration": {
-          "type": "custom",
-          "source_endpoints": ["N/A - Stored in Supabase with local JSON fallback"],
-          "implementation_notes": "Updates API key and endpoint configuration in Supabase"
-        },
-        "request_schema": "facility_api_settings_request",
-        "response_schema": "facility_api_settings_response",
-        "required_for": ["Settings page"]
-      },
-      {
         "name": "patient_evaluations",
         "path": "/facilities/{facility_id}/patients/{patient_id}/evaluations",
         "method": "GET",
@@ -105,20 +78,6 @@
         "request_schema": "patient_evaluation_create_request",
         "response_schema": "patient_evaluation_detail_response",
         "required_for": ["Patient evaluation creation"]
-      },
-      {
-        "name": "update_patient_evaluation",
-        "path": "/facilities/{facility_id}/evaluations/{evaluation_id}",
-        "method": "PUT",
-        "description": "Update an existing patient evaluation",
-        "kipu_integration": {
-          "type": "custom",
-          "source_endpoints": ["POST /patients/{patient_id}/patient_evaluations with X-HTTP-Method-Override: PATCH"],
-          "implementation_notes": "No direct PATCH endpoint available, requires custom implementation"
-        },
-        "request_schema": "patient_evaluation_update_request",
-        "response_schema": "patient_evaluation_detail_response",
-        "required_for": ["Patient evaluation editing"]
       },
       {
         "name": "dashboard_metrics",

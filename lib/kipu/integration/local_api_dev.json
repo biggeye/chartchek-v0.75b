@@ -1,0 +1,118 @@
+{
+  "local_api_endpoints": [
+    {
+      "name": "facilities",
+      "path": "/facilities",
+      "method": "GET",
+      "description": "List all available facilities",
+      "kipu_integration": {
+        "type": "aggregate",
+        "source_endpoints": [
+          // No direct KIPU endpoint for facilities themselves; purely custom
+          // But we do call these others for data enrichment:
+          "GET /patients/census",         // For total patient counts, occupancy info
+          "GET /evaluations"             // For total documents/evaluations
+        ]
+      },
+      "response_schema": "facilities_list_response"
+    },
+    {
+      "name": "facility",
+      "path": "/facilities/{facility_id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific facility",
+      "kipu_integration": {
+        "type": "aggregate",
+        "source_endpoints": [
+          "GET /patients/census",        // For aggregated patient counts
+          "GET /evaluations"            // For aggregated doc/eval stats
+        ]
+      },
+      "response_schema": "facility_detail_response"
+    },
+    {
+      "name": "patient_evaluations",
+      "path": "/facilities/{facility_id}/patients/{patient_id}/evaluations",
+      "method": "GET",
+      "description": "Get evaluations for a specific patient",
+      "kipu_integration": {
+        "type": "direct",
+        "source_endpoints": [
+          "GET /patients/{patient_id}/patient_evaluations" // KIPU direct
+        ]
+      },
+      "response_schema": "patient_evaluations_list_response"
+    },
+    {
+      "name": "patient_evaluation",
+      "path": "/facilities/{facility_id}/evaluations/{evaluation_id}",
+      "method": "GET",
+      "description": "Get a specific patient evaluation",
+      "kipu_integration": {
+        "type": "direct",
+        "source_endpoints": [
+          "GET /patient_evaluations/{patient_evaluation_id}" // KIPU direct
+        ]
+      },
+      "response_schema": "patient_evaluation_detail_response"
+    },
+    {
+      "name": "create_patient_evaluation",
+      "path": "/facilities/{facility_id}/patients/{patient_id}/evaluations",
+      "method": "POST",
+      "description": "Create a new patient evaluation",
+      "kipu_integration": {
+        "type": "direct",
+        "source_endpoints": [
+          "POST /patients/{patient_id}/patient_evaluations" // KIPU direct
+        ]
+      },
+      "request_schema": "patient_evaluation_create_request",
+      "response_schema": "patient_evaluation_detail_response"
+    },
+    {
+      "name": "dashboard_metrics",
+      "path": "/facilities/{facility_id}/metrics",
+      "method": "GET",
+      "description": "Get aggregated metrics for dashboard",
+      "kipu_integration": {
+        "type": "aggregate",
+        "source_endpoints": [
+          "GET /patients/census",        // For # of patients
+          "GET /patients/occupancy",     // Occupancy stats
+          "GET /evaluations",            // Count of documents
+          "GET /care_levels"             // Possibly for care-level distribution
+        ]
+      },
+      "response_schema": "dashboard_metrics_response"
+    },
+    {
+      "name": "patient_stats",
+      "path": "/facilities/{facility_id}/patient_stats",
+      "method": "GET",
+      "description": "Get detailed patient statistics",
+      "kipu_integration": {
+        "type": "aggregate",
+        "source_endpoints": [
+          "GET /patients/census",        // Basic patient census data
+          "GET /care_levels"             // So we can break counts down by level-of-care
+        ]
+      },
+      "response_schema": "patient_stats_response"
+    },
+    {
+      "name": "document_insights",
+      "path": "/facilities/{facility_id}/document_insights",
+      "method": "GET",
+      "description": "Get document insights and statistics",
+      "kipu_integration": {
+        "type": "aggregate",
+        "source_endpoints": [
+          "GET /evaluations",            // For all documents in general
+          "GET /patient_evaluations"     // More granular data about patient-specific evaluations
+        ]
+      },
+      "response_schema": "document_insights_response"
+    }
+  ]
+}
