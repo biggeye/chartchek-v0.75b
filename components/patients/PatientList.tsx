@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
-import { PatientBasicInfo } from '@/lib/kipu/types';
+import { PatientBasicInfo } from '@/types/kipu';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +22,7 @@ export function PatientList() {
       
       setLoadingState('loading');
       try {
-        console.log('PatientList - Loading patients for facility:', currentFacilityId);
-        await fetchPatients(currentFacilityId);
+          await fetchPatients(currentFacilityId);
         setLoadingState('success');
       } catch (err) {
         console.error('PatientList - Error loading patients:', err);
@@ -85,16 +84,16 @@ export function PatientList() {
             </TableHeader>
             <TableBody>
               {patients.map((patient: PatientBasicInfo) => (
-                <TableRow key={patient.id || patient.casefile_id}>
+                <TableRow key={patient.patientId || patient.mrn}>
                   <TableCell className="font-medium">
-                    {patient.first_name} {patient.last_name}
+                    {patient.firstName} {patient.lastName}
                   </TableCell>
-                  <TableCell>{patient.mr_number}</TableCell>
-                  <TableCell>{formatDate(patient.dob)}</TableCell>
-                  <TableCell>{formatDate(patient.admission_date)}</TableCell>
+                  <TableCell>{patient.mrn}</TableCell>
+                  <TableCell>{formatDate(patient.dateOfBirth)}</TableCell>
+                  <TableCell>{formatDate(patient.admissionDate)}</TableCell>
                   <TableCell>
-                    <Badge className={patient.discharge_date ? "bg-gray-100 text-gray-800" : "bg-green-100 text-green-800"}>
-                      {patient.discharge_date ? "Discharged" : "Active"}
+                    <Badge className={patient.dischargeDate ? "bg-gray-100 text-gray-800" : "bg-green-100 text-green-800"}>
+                      {patient.dischargeDate ? "Discharged" : "Active"}
                     </Badge>
                   </TableCell>
                 </TableRow>

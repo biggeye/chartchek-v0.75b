@@ -7,79 +7,11 @@ import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
 import { HeartIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
-import { PatientTabsLayout } from '@/components/patient/PatientTabsLayout';
+import { getPatientVitalSigns } from '@/lib/kipu/service/patient-service';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
-
-// Mock data for vital signs
-const mockVitalSigns: VitalSign[] = [
-  {
-    id: '1',
-    type: 'blood_pressure',
-    systolic: 120,
-    diastolic: 80,
-    pulse: 72,
-    date: '2025-03-10T09:30:00',
-    status: 'normal',
-    notes: 'Patient resting'
-  },
-  {
-    id: '2',
-    type: 'temperature',
-    value: 98.6,
-    date: '2025-03-10T09:30:00',
-    status: 'normal',
-    notes: 'Patient resting'
-  },
-  {
-    id: '3',
-    type: 'weight',
-    value: 165,
-    unit: 'lbs',
-    date: '2025-03-10T09:30:00',
-    status: 'normal',
-    notes: 'Patient clothed, shoes off'
-  },
-  {
-    id: '4',
-    type: 'blood_pressure',
-    systolic: 135,
-    diastolic: 85,
-    pulse: 78,
-    date: '2025-03-15T14:00:00',
-    status: 'elevated',
-    notes: 'After physical activity'
-  },
-  {
-    id: '5',
-    type: 'temperature',
-    value: 99.1,
-    date: '2025-03-15T14:00:00',
-    status: 'elevated',
-    notes: 'Slight fever'
-  },
-  {
-    id: '6',
-    type: 'weight',
-    value: 164,
-    unit: 'lbs',
-    date: '2025-03-15T14:00:00',
-    status: 'normal',
-    notes: 'Patient clothed, shoes off'
-  },
-  {
-    id: '7',
-    type: 'blood_pressure',
-    systolic: 118,
-    diastolic: 78,
-    pulse: 70,
-    date: '2025-03-18T10:15:00',
-    status: 'normal',
-    notes: 'Patient resting'
-  }
-];
 
 interface VitalSign {
   id: string;
@@ -112,20 +44,45 @@ export default function PatientVitalsPage() {
       
       setLoading(true);
       try {
-        // In a real implementation, this would be an API call
-        // const response = await fetch(`/api/kipu/patients/${patientId}/vitals?facilityId=${currentFacility.id}`);
-        // if (!response.ok) throw new Error(`Error fetching vital signs: ${response.status}`);
-        // const data = await response.json();
-        // setVitalSigns(data.vitalSigns || []);
+        // Fetch vital signs from KIPU API
+        const vitalSignsData = await getPatientVitalSigns(currentFacility.id, patientId as string);
         
-        // Using mock data for now
-        setTimeout(() => {
-          setVitalSigns(mockVitalSigns);
-          setLoading(false);
-        }, 500);
+        // Map the KIPU API response to our VitalSign interface
+        const formattedVitalSigns = vitalSignsData.map((vital: any) => {
+          // Determine the type based on available data
+          let type: VitalSign['type'] = 'temperature';
+          if (vital.systolic && vital.diastolic) {
+            type = 'blood_pressure';
+          } else if (vital.weight) {
+            type = 'weight';
+          } else if (vital.o2_saturation) {
+            type = 'oxygen';
+          } else if (vital.glucose) {
+            type = 'glucose';
+          }
+          
+          // Determine status based on values (simplified logic)
+          let status: VitalSign['status'] = 'normal';
+          
+          return {
+            id: vital.id || '',
+            type,
+            systolic: vital.systolic ? Number(vital.systolic) : undefined,
+            diastolic: vital.diastolic ? Number(vital.diastolic) : undefined,
+            pulse: vital.pulse ? Number(vital.pulse) : undefined,
+            value: vital.temperature || vital.weight || vital.o2_saturation || vital.glucose,
+            unit: type === 'weight' ? 'lbs' : undefined,
+            date: vital.timestamp || vital.created_at || new Date().toISOString(),
+            status,
+            notes: vital.notes || ''
+          };
+        });
+        
+        setVitalSigns(formattedVitalSigns);
       } catch (err) {
         console.error('Failed to fetch patient vital signs:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch vital signs');
+      } finally {
         setLoading(false);
       }
     }
@@ -232,7 +189,7 @@ export default function PatientVitalsPage() {
     }
   };
 
-  const content = (
+  return (
     <div className="space-y-8">
       {loading ? (
         <div className="p-4">Loading patient vital signs...</div>
@@ -240,11 +197,7 @@ export default function PatientVitalsPage() {
         <div className="p-4 text-red-500">Error: {error}</div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {currentPatient ? `${currentPatient.first_name} ${currentPatient.last_name}'s Vital Signs` : 'Patient Vital Signs'}
-            </h1>
-          </div>
+        
           
           {/* Stats Overview */}
           <div>
@@ -417,15 +370,5 @@ export default function PatientVitalsPage() {
         </>
       )}
     </div>
-  );
-
-  return (
-    <PatientTabsLayout
-      facilityId={currentFacility?.id || ''}
-      patientId={patientId as string}
-      activeTab="vitals"
-    >
-      {content}
-    </PatientTabsLayout>
   );
 }

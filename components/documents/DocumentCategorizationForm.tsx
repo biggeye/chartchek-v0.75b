@@ -102,8 +102,8 @@ export default function DocumentCategorizationForm({
           <SelectContent>
             <SelectItem value="none">None</SelectItem>
             {patients.map((patient) => (
-              patient.id ? (
-                <SelectItem key={patient.id} value={patient.id}>
+              patient.patientId ? (
+                <SelectItem key={patient.patientId} value={patient.patientId}>
                   {patient.name}
                 </SelectItem>
               ) : null

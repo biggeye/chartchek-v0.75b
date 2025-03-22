@@ -1,437 +1,501 @@
 'use client';
 
 import { create } from 'zustand';
-import { PatientBasicInfo } from '@/lib/kipu/types';
-import { 
-  listPatients, 
-  getPatient, 
-  getPatientEvaluations, 
-  getPatientVitalSigns, 
-  getPatientAppointments,
-  getFacilityData
-} from '@/lib/kipu/service/patient-service';
-import { useFacilityStore } from './facilityStore';
-import { chatStore } from './chatStore';
+import { PatientStore, PatientContextOptions, PatientWithDetails, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
+import { PatientBasicInfo, PatientEvaluation, PatientVitalSign, PatientAppointment } from '@/types/kipu';
+import { memoizeAsync, memoizeAsyncWithExpiration } from '@/utils/memoization';
+import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
+import { queryKeys } from '@/utils/react-query/config';
+import { createClient } from '@/utils/supabase/client';
+import { chatStore } from '@/store/chatStore';
 
-// Define a type for patient context options
-export type PatientContextOption = {
-  id: string;
-  label: string;
-  value: string;
-  category: 'basic' | 'evaluation' | 'vitalSigns' | 'appointments';
+// Initialize Supabase client
+const supabase = createClient();
+
+// API functions that call our internal endpoints
+const fetchPatientsFromAPI = async (page = 1, limit = 20) => {
+  const response = await fetch(`/api/kipu/patients?page=${page}&limit=${limit}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch patients: ${response.statusText}`);
+  }
+  return response.json();
 };
 
-interface PatientStoreState {
-  // State
-  patients: PatientBasicInfo[];
-  currentPatient: any | null;
-  currentPatientEvaluations: any[];
-  currentPatientVitalSigns: any[];
-  currentPatientAppointments: any[];
-  isPatientContextEnabled: boolean;
-  selectedContextOptions: PatientContextOption[];
-  isLoading: boolean;
-  error: string | null;
-  
-  // Actions
-  fetchPatients: (facilityId: string) => Promise<PatientBasicInfo[]>;
-  fetchPatient: (facilityId: string, patientId: string) => Promise<any>;
-  fetchPatientEvaluations: (facilityId: string, patientId: string) => Promise<any[]>;
-  fetchPatientVitalSigns: (facilityId: string, patientId: string) => Promise<any[]>;
-  fetchPatientAppointments: (facilityId: string, patientId: string) => Promise<any[]>;
-  fetchPatientWithDetails: (facilityId: string, patientId: string) => Promise<{
-    patient: any | null;
-    evaluations: any[];
-    vitalSigns: any[];
-    appointments: any[];
-  }>;
-  setCurrentPatient: (patient: any | null) => void;
-  setPatientContextEnabled: (enabled: boolean) => void;
-  clearPatientContext: () => void;
-  fetchPatientsForCurrentFacility: () => Promise<PatientBasicInfo[]>;
-  updatePatientContextOptions: (options: PatientContextOption[]) => void;
-  buildPatientContextString: () => string | null;
-}
+const fetchPatientByIdFromAPI = async (facilityId: string, patientId: string) => {
+  const response = await fetch(`/api/kipu/patients/${patientId}?facilityId=${facilityId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch patient: ${response.statusText}`);
+  }
+  return response.json();
+};
 
-export const usePatientStore = create<PatientStoreState>((set, get) => ({
+const fetchPatientEvaluationsFromAPI = async (facilityId: string, patientId: string) => {
+  // Ensure patientId is properly encoded for the URL
+  const decodedPatientId = decodeURIComponent(patientId);
+  const encodedPatientId = encodeURIComponent(decodedPatientId);
+
+  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/evaluations?facilityId=${facilityId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+const fetchEvaluationFromAPI = async (evaluationId: string) => {
+  const response = await fetch(`/api/kipu/evaluations/${evaluationId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch evaluation: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+const fetchPatientVitalSignsFromAPI = async (facilityId: string, patientId: string) => {
+  // Ensure patientId is properly encoded for the URL
+  const decodedPatientId = decodeURIComponent(patientId);
+  const encodedPatientId = encodeURIComponent(decodedPatientId);
+
+  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/vitals?facilityId=${facilityId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+const fetchPatientAppointmentsFromAPI = async (facilityId: string, patientId: string) => {
+  // Ensure patientId is properly encoded for the URL
+  const decodedPatientId = decodeURIComponent(patientId);
+  const encodedPatientId = encodeURIComponent(decodedPatientId);
+
+  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/appointments?facilityId=${facilityId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch appointments: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Memoized API functions with the same signatures as the original service functions
+const memoizedListPatients = memoizeAsyncWithExpiration(
+  fetchPatientsFromAPI,
+  5 * 60 * 1000, // 5 minutes TTL
+  10 // Max cache size
+);
+
+const memoizedGetPatient = memoizeAsyncWithExpiration(
+  fetchPatientByIdFromAPI,
+  5 * 60 * 1000,
+  20
+);
+
+const memoizedGetPatientEvaluations = memoizeAsyncWithExpiration(
+  fetchPatientEvaluationsFromAPI,
+  5 * 60 * 1000,
+  20
+);
+
+const memoizedGetPatientVitalSigns = memoizeAsyncWithExpiration(
+  fetchPatientVitalSignsFromAPI,
+  5 * 60 * 1000,
+  20
+);
+
+const memoizedGetPatientAppointments = memoizeAsyncWithExpiration(
+  fetchPatientAppointmentsFromAPI,
+  5 * 60 * 1000,
+  20
+);
+
+// Create patient store with Zustand
+export const usePatientStore = create<PatientStore>((set, get) => ({
   // Initial state
   patients: [],
+  currentPatientId: null,
   currentPatient: null,
+  evaluations: [],
+  vitalSigns: [],
+  appointments: [],
   currentPatientEvaluations: [],
   currentPatientVitalSigns: [],
   currentPatientAppointments: [],
   isPatientContextEnabled: false,
-  selectedContextOptions: [],
+  selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
+  contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   isLoading: false,
   error: null,
-  
-  // Fetch patients for a facility using KIPU API
-  fetchPatients: async (facilityId: string): Promise<PatientBasicInfo[]> => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      console.log('PatientStore - Fetching patients for facility:', facilityId);
-      
-      // Get patients from KIPU API
-  const response = await listPatients(facilityId);
-      
-      console.log('PatientStore - API response:', {
-        hasPatients: !!response.patients,
-        patientsCount: response.patients?.length || 0,
-        pagination: response.pagination
-      });
-      
-      if (!response.patients || response.patients.length === 0) {
-        console.log('PatientStore - No patients returned from API');
-        set({
-          patients: [],
-          isLoading: false
+
+  // Set patients
+  setPatients: (patients: PatientBasicInfo[]) => set({ patients }),
+
+  // Set current patient ID
+  setCurrentPatientId: (patientId: string | null) => {
+    // Only update if the ID has changed
+    if (patientId !== get().currentPatientId) {
+      set({ currentPatientId: patientId });
+
+      // If we have a new patient ID, fetch its details
+      if (patientId) {
+        get().fetchPatientById(patientId);
+      } else {
+        set({ currentPatient: null });
+      }
+    }
+  },
+
+  // Set current patient
+  setCurrentPatient: (patient: PatientBasicInfo | null) => set({ currentPatient: patient }),
+
+  // Set evaluations
+  setEvaluations: (evaluations: PatientEvaluation[]) => set({ evaluations }),
+
+  // Set vital signs
+  setVitalSigns: (vitalSigns: PatientVitalSign[]) => set({ vitalSigns }),
+
+  // Set appointments
+  setAppointments: (appointments: PatientAppointment[]) => set({ appointments }),
+
+  // Set context options
+  setContextOptions: (options: Partial<PatientContextOptions>) => set({
+    contextOptions: {
+      ...get().contextOptions,
+      ...options
+    }
+  }),
+
+  // Update the updatePatientContextOptions function
+  updatePatientContextOptions: (options: PatientContextOptions) => {
+    set({ contextOptions: options });
+
+    // If patient context is enabled, update the chat context
+    if (get().isPatientContextEnabled && get().currentPatient) {
+      // Get the current patient
+      const patient = get().currentPatient;
+
+      // Make sure patient is not null and use patientId instead of id
+      if (patient) {
+        chatStore.getState().updateChatContext({
+          patientId: patient.patientId,
+          patientName: `${patient.firstName} ${patient.lastName}`
         });
-        return [];
       }
-      
-      // Log a sample patient to verify structure
-      if (response.patients.length > 0) {
-        console.log('PatientStore - Sample patient:', response.patients[0]);
-      }
-      
-      set({
-        patients: response.patients,
-        isLoading: false
-      });
-      
-      return response.patients;
-    } catch (error: any) {
-      console.error('Error fetching patients:', error);
-      set({ 
-        error: error.message || 'Failed to fetch patients',
-        isLoading: false
-      });
-      return [];
     }
   },
-  
-  // Fetch patients for the currently selected facility
-  fetchPatientsForCurrentFacility: async (): Promise<PatientBasicInfo[]> => {
-    const facilityStore = useFacilityStore.getState();
-    const currentFacilityId = facilityStore.currentFacilityId;
-    
-    if (!currentFacilityId) {
-      console.log('No facility selected, cannot fetch patients');
-      set({ 
-        patients: [],
-        error: 'No facility selected',
-        isLoading: false
-      });
-      return [];
-    }
-    
-    return get().fetchPatients(currentFacilityId);
-  },
-  
-  // Fetch a single patient
-  fetchPatient: async (facilityId: string, patientId: string): Promise<any> => {
+
+  // Set loading state
+  setLoading: (isLoading: boolean) => set({ isLoading }),
+  // Set error state
+  setError: (error: string | null) => set({ error }),
+  // Fetch patients from API with multi-level caching
+  fetchPatients: async () => {
     try {
       set({ isLoading: true, error: null });
-      
-      const patient = await getPatient(facilityId, patientId);
-      
-      if (!patient) {
-        throw new Error('Patient not found');
+
+      // Get context options with fallback to defaults
+      const contextOptions = get().contextOptions || DEFAULT_PATIENT_CONTEXT_OPTIONS;
+      const { showInactive, sortBy, sortOrder, filterBy } = contextOptions;
+
+      // Fetch from API without facility filtering
+      const result = await fetchPatientsFromAPI(1, 100);
+
+      // Process the results
+      let patients = result.patients || [];
+
+      // Apply sorting if needed
+      if (sortBy) {
+        patients = [...patients].sort((a, b) => {
+          const aValue = a[sortBy as keyof PatientBasicInfo];
+          const bValue = b[sortBy as keyof PatientBasicInfo];
+
+          if (sortOrder === 'asc') {
+            return aValue > bValue ? 1 : -1;
+          } else {
+            return aValue < bValue ? 1 : -1;
+          }
+        });
       }
-      
-      set({
-        currentPatient: patient,
-        isLoading: false
-      });
-      
-      return patient;
-    } catch (error: any) {
-      console.error('Error fetching patient:', error);
-      set({ 
-        error: error.message || 'Failed to fetch patient',
-        isLoading: false
-      });
-      return null;
+
+      set({ patients, isLoading: false });
+      return patients;
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      set({ error: error instanceof Error ? error.message : 'Unknown error', isLoading: false });
+      return [];
     }
   },
-  
-  // Fetch patient evaluations
-  fetchPatientEvaluations: async (facilityId: string, patientId: string): Promise<any[]> => {
+
+  fetchPatientById: async (patientId: string): Promise<PatientBasicInfo | null> => {
     try {
-      const evaluations = await getPatientEvaluations(facilityId, patientId);
-      
+      set({ isLoading: true, error: null });
+
+      // Make the request without facilityId parameter
+      const response = await fetch(`/api/kipu/patients/${patientId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch patient: ${response.statusText}`);
+      }
+
+      const patient = await response.json();
+      set({ currentPatient: patient });
+      return patient;
+    } catch (error) {
+      console.error(`Error fetching patient ${patientId}:`, error);
+      set({ error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchAllEvaluations: async () => {
+    set({ isLoading: true, error: null });
+
+    try {
+      // Get current user ID for caching
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Use the existing caching mechanism
+      const cacheKey = cacheKeys.evaluations.list(userId);
+
+      const evaluations = await getCachedData<PatientEvaluation[]>(
+        cacheKey,
+        async () => {
+          const response = await fetch('/api/kipu/evaluations');
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch evaluations');
+          }
+
+          const data = await response.json();
+          return data.evaluations || [];
+        },
+        cacheTTL.MEDIUM // 5 minutes
+      );
       set({
+        evaluations,
+        isLoading: false
+      });
+      return evaluations;
+    } catch (error) {
+      console.error('Error fetching all evaluations:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch evaluations',
+        isLoading: false
+      });
+      return [];
+    }
+  },
+  // Fetch patient evaluations with caching
+  fetchPatientEvaluations: async (patientId: string) => {
+    if (!patientId) return [];
+    try {
+      // Get current user ID for cache key
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      // Create cache key
+      const cacheKey = cacheKeys.patients.evaluations(userId, patientId);
+      // Try to get from cache or fetch fresh data
+      const evaluations = await getCachedData<PatientEvaluation[]>(
+        cacheKey,
+        async () => {
+          const response = await fetch(`/api/kipu/patients/${patientId}/evaluations`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
+          }
+          const data = await response.json();
+          // The API returns evaluations in the 'evaluations' field
+          return data.evaluations || [];
+        },
+      );
+      // Update the store with the fetched evaluations
+      set({
+        evaluations,
         currentPatientEvaluations: evaluations
       });
-      
       return evaluations;
-    } catch (error: any) {
-      console.error('Error fetching patient evaluations:', error);
+    } catch (error) {
+      console.error(`Error fetching evaluations for patient ${patientId}:`, error);
+      set({ error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   },
-  
-  // Fetch patient vital signs
-  fetchPatientVitalSigns: async (facilityId: string, patientId: string): Promise<any[]> => {
+  // Fetch patient vital signs with caching
+  fetchPatientVitalSigns: async (patientId: string) => {
+    if (!patientId) return [];
+
     try {
-      const vitalSigns = await getPatientVitalSigns(facilityId, patientId);
-      
-      set({
-        currentPatientVitalSigns: vitalSigns
-      });
-      
-      return vitalSigns;
-    } catch (error: any) {
-      console.error('Error fetching patient vital signs:', error);
-      return [];
-    }
-  },
-  
-  // Fetch patient appointments
-  fetchPatientAppointments: async (facilityId: string, patientId: string): Promise<any[]> => {
-    try {
-      const appointments = await getPatientAppointments(facilityId, patientId);
-      
-      set({
-        currentPatientAppointments: appointments
-      });
-      
-      return appointments;
-    } catch (error: any) {
-      console.error('Error fetching patient appointments:', error);
-      return [];
-    }
-  },
-  
-  // Fetch patient with all related details in one call
-  fetchPatientWithDetails: async (facilityId: string, patientId: string): Promise<{
-    patient: any | null;
-    evaluations: any[];
-    vitalSigns: any[];
-    appointments: any[];
-  }> => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      console.log(`PatientStore - Fetching patient details for facility: ${facilityId}, patient: ${patientId}`);
-      
-      // Fetch patient details
-      const patient = await get().fetchPatient(facilityId, patientId);
-      
-      if (!patient) {
-        console.error(`PatientStore - Patient not found: ${patientId}`);
-        throw new Error('Patient not found');
+      // Get current user ID for cache key
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+
+      // Create cache key
+      const cacheKey = cacheKeys.patients.vitalSigns(userId, patientId);
+
+      // Try to get from cache or fetch fresh data
+      const vitalSigns = await getCachedData<PatientVitalSign[]>(
+        cacheKey,
+        async () => {
+          // Get the current facility ID
+          const facilityId = get().currentPatient?.facilityId;
+          if (!facilityId) {
+            throw new Error('No facility ID available for patient');
+          }
+
+          // Call the API endpoint through our memoized function
+          return memoizedGetPatientVitalSigns(facilityId.toString(), patientId);
+        },
+        cacheTTL.MEDIUM
+      );
+
+      // Update the vital signs
+      if (vitalSigns) {
+        set({ vitalSigns });
       }
-      
-      console.log(`PatientStore - Successfully fetched patient: ${patient.first_name} ${patient.last_name}`);
-      
-      // Fetch related data in parallel
-      console.log(`PatientStore - Fetching related data for patient: ${patientId}`);
-      
-      const [evaluations, vitalSigns, appointments] = await Promise.all([
-        get().fetchPatientEvaluations(facilityId, patientId),
-        get().fetchPatientVitalSigns(facilityId, patientId),
-        get().fetchPatientAppointments(facilityId, patientId)
-      ]);
-      
-      console.log(`PatientStore - Related data fetched:`, {
-        evaluationsCount: evaluations.length,
-        vitalSignsCount: vitalSigns.length,
-        appointmentsCount: appointments.length
-      });
-      
-      set({
-        currentPatient: patient,
-        currentPatientEvaluations: evaluations,
-        currentPatientVitalSigns: vitalSigns,
-        currentPatientAppointments: appointments,
-        isLoading: false
-      });
-      
-      return {
-        patient,
-        evaluations,
-        vitalSigns,
-        appointments
-      };
-    } catch (error: any) {
-      console.error('Error fetching patient with details:', error);
-      set({ 
-        error: error.message || 'Failed to fetch patient details',
-        isLoading: false,
-        currentPatient: null,
-        currentPatientEvaluations: [],
-        currentPatientVitalSigns: [],
-        currentPatientAppointments: []
-      });
-      
-      return {
-        patient: null,
-        evaluations: [],
-        vitalSigns: [],
-        appointments: []
-      };
+
+      return vitalSigns || [];
+    } catch (error) {
+      console.error(`Error fetching vital signs for patient ${patientId}:`, error);
+      return [];
     }
   },
-  
-  // Set the current patient and update context
-  setCurrentPatient: (patient: any | null) => {
-    set({ currentPatient: patient });
-    
-    // If patient context is enabled, update the chat context
-    if (get().isPatientContextEnabled && patient) {
-      // Update chat context
-      const patientContext = get().buildPatientContextString();
-      chatStore.getState().updatePatientContext(patientContext);
-    } else if (get().isPatientContextEnabled && !patient) {
-      // Clear patient context if no patient is selected
-      get().clearPatientContext();
+  // Fetch patient appointments with caching
+  fetchPatientAppointments: async (patientId: string) => {
+    if (!patientId) return [];
+    try {
+      // Get current user ID for cache key
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      // Create cache key
+      const cacheKey = cacheKeys.patients.appointments(userId, patientId);
+      // Try to get from cache or fetch fresh data
+      const appointments = await getCachedData<PatientAppointment[]>(
+        cacheKey,
+        async () => {
+          // Call the API endpoint through our memoized function
+          return memoizedGetPatientAppointments(patientId);
+        },
+        cacheTTL.MEDIUM
+      );
+      // Update the appointments
+      if (appointments) {
+        set({ appointments });
+      }
+
+      return appointments || [];
+    } catch (error) {
+      console.error(`Error fetching appointments for patient ${patientId}:`, error);
+      return [];
     }
   },
-  
-  // Enable or disable patient context
-  setPatientContextEnabled: (enabled: boolean) => {
-    set({ isPatientContextEnabled: enabled });
-    
-    // Update chat context based on the new setting
-    if (enabled && get().currentPatient) {
-      // Update chat context with patient info
-      const patientContext = get().buildPatientContextString();
-      chatStore.getState().updatePatientContext(patientContext);
-    } else if (!enabled) {
-      // Clear patient context
-      get().clearPatientContext();
-    }
-  },
-  
-  // Update the selected context options and refresh chat context
-  updatePatientContextOptions: (options: PatientContextOption[]) => {
-    set({ selectedContextOptions: options });
-    
-    // Update chat context if patient context is enabled
-    if (get().isPatientContextEnabled && get().currentPatient) {
-      const patientContext = get().buildPatientContextString();
-      chatStore.getState().updatePatientContext(patientContext);
-    }
-  },
-  
-  // Build a formatted patient context string based on selected options
-  buildPatientContextString: () => {
-    const { currentPatient, currentPatientEvaluations, currentPatientVitalSigns, 
-            currentPatientAppointments, isPatientContextEnabled, selectedContextOptions } = get();
-    
-    if (!isPatientContextEnabled || !currentPatient) {
+  // Update fetchPatientWithDetails to not require facilityId
+  fetchPatientWithDetails: async (patientId: string) => {
+    if (!patientId) {
+      console.error('Missing patient ID for fetchPatientWithDetails');
       return null;
     }
-    
-    let contextString = '### Patient Context\n';
-    
-    // Add basic patient info if selected
-    const basicInfoOptions = selectedContextOptions.filter(opt => opt.category === 'basic');
-    if (basicInfoOptions.length > 0) {
-      contextString += '#### Basic Information\n';
-      basicInfoOptions.forEach(option => {
-        const value = option.value.split('.').reduce((obj, key) => obj && obj[key], currentPatient);
-        if (value) {
-          contextString += `- ${option.label}: ${value}\n`;
-        }
+
+    try {
+      set({ isLoading: true, error: null });
+
+      // Use the updated fetchPatientById that doesn't need facilityId
+      const patient = await get().fetchPatientById(patientId);
+
+      if (!patient) {
+        set({ isLoading: false });
+        return null;
+      }
+
+      // Fetch the additional details
+      const [evaluations] = await Promise.all([
+        get().fetchPatientEvaluations(patientId),
+        //     get().fetchPatientVitalSigns(patientId),
+        get().fetchPatientAppointments(patientId)
+      ]);
+
+      set({ isLoading: false });
+
+      // Return the complete patient data structure
+      return {
+        patient,
+        evaluations
+      };
+    } catch (error) {
+      console.error(`Error in fetchPatientWithDetails for patient ${patientId}:`, error);
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch patient details'
       });
+      return null;
     }
-    
-    // Add evaluation info if selected
-    const evaluationOptions = selectedContextOptions.filter(opt => opt.category === 'evaluation');
-    if (evaluationOptions.length > 0 && currentPatientEvaluations.length > 0) {
-      contextString += '\n#### Recent Evaluations\n';
-      // Sort evaluations by date (newest first)
-      const sortedEvaluations = [...currentPatientEvaluations]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3); // Only include the 3 most recent
-      
-      sortedEvaluations.forEach(evaluation => {
-        contextString += `- ${evaluation.evaluation_type} (${new Date(evaluation.created_at).toLocaleDateString()})\n`;
-        evaluationOptions.forEach(option => {
-          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], evaluation);
-          if (value) {
-            contextString += `  - ${option.label}: ${value}\n`;
-          }
-        });
-      });
-    }
-    
-    // Add vital signs if selected
-    const vitalSignOptions = selectedContextOptions.filter(opt => opt.category === 'vitalSigns');
-    if (vitalSignOptions.length > 0 && currentPatientVitalSigns.length > 0) {
-      contextString += '\n#### Recent Vital Signs\n';
-      // Sort vital signs by date (newest first)
-      const sortedVitalSigns = [...currentPatientVitalSigns]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3); // Only include the 3 most recent
-      
-      sortedVitalSigns.forEach(vs => {
-        contextString += `- Recorded on ${new Date(vs.created_at).toLocaleDateString()}\n`;
-        vitalSignOptions.forEach(option => {
-          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], vs);
-          if (value) {
-            contextString += `  - ${option.label}: ${value}\n`;
-          }
-        });
-      });
-    }
-    
-    // Add appointments if selected
-    const appointmentOptions = selectedContextOptions.filter(opt => opt.category === 'appointments');
-    if (appointmentOptions.length > 0 && currentPatientAppointments.length > 0) {
-      contextString += '\n#### Upcoming Appointments\n';
-      // Sort appointments by date (soonest first)
-      const sortedAppointments = [...currentPatientAppointments]
-        .filter(apt => new Date(apt.date) >= new Date())
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3); // Only include the 3 soonest
-      
-      sortedAppointments.forEach(apt => {
-        contextString += `- ${apt.type} on ${new Date(apt.date).toLocaleDateString()}\n`;
-        appointmentOptions.forEach(option => {
-          const value = option.value.split('.').reduce((obj, key) => obj && obj[key], apt);
-          if (value) {
-            contextString += `  - ${option.label}: ${value}\n`;
-          }
-        });
-      });
-    }
-    
-    return contextString;
   },
-  
-  // Clear all patient context
+  // Clear patient store
+  clearPatientStore: () => {
+    set({
+      patients: [],
+      currentPatientId: null,
+      currentPatient: null,
+      evaluations: [],
+      vitalSigns: [],
+      appointments: [],
+      currentPatientEvaluations: [],
+      currentPatientVitalSigns: [],
+      currentPatientAppointments: [],
+      isPatientContextEnabled: false,
+      isLoading: false,
+      error: null
+    });
+  },
+  // Clear patient context
   clearPatientContext: () => {
-    // Update chat context to remove patient info
-    chatStore.getState().updatePatientContext(null);
-    
-    // If we're disabling patient context entirely, update the state
+    set({
+      selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
+      contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS
+    });
+
+    // Also clear the chat context if it's enabled
     if (get().isPatientContextEnabled) {
-      set({ isPatientContextEnabled: false });
+      chatStore.getState().updateChatContext({});
+    }
+  },
+  // Set patient context enabled state
+  setPatientContextEnabled: (enabled: boolean) => {
+    set({ isPatientContextEnabled: enabled });
+
+    // If disabling, also clear the context
+    if (!enabled) {
+      chatStore.getState().updateChatContext({});
     }
   }
 }));
 
-// Initialize facility subscription - moved to a function to avoid circular dependency
-export function initPatientStoreSubscriptions() {
-  // Subscribe to facility changes to automatically load patients when facility changes
-  const unsubscribe = useFacilityStore.subscribe(
-    (state) => {
-      // When facility changes, load patients for that facility
-      if (state.currentFacilityId) {
-        const patientState = usePatientStore.getState();
-        patientState.fetchPatients(state.currentFacilityId);
-        
-        // Clear current patient when facility changes
-        patientState.setCurrentPatient(null);
-      }
-    }
-  );
-  
-  return unsubscribe;
-}
+/**
+ * Initialize patient store subscriptions to facility changes
+ * This function sets up a subscription to the facility store to fetch patient data
+ * when the current facility changes
+ */
+export const initPatientStoreSubscriptions = () => {
+  if (typeof window === 'undefined') {
+    // Return a no-op function if not on client
+    return () => { };
+    // Import the facility store dynamically to avoid circular dependency
+    const { useFacilityStore } = require('./facilityStore');
 
-export const patientStore = usePatientStore;
+    const unsubscribe = useFacilityStore.subscribe((state: any) => {
+      const currentFacilityId = state.currentFacilityId;
+      if (currentFacilityId) {
+        // Clear current patient data when facility changes
+        usePatientStore.getState().clearPatientStore();
+        // Fetch patients for the new facility
+        usePatientStore.getState().fetchPatients(currentFacilityId);
+      }
+    });
+
+    // Return unsubscribe function in case we need to clean up
+    return unsubscribe;
+  }
+
+  // Return a no-op function if not on client
+  return () => { };
+};

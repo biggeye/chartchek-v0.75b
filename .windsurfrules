@@ -5,9 +5,13 @@
 5.  openai assistant api
 6.  kipu emr
 
+### CACHING IMPLEMENTATION ###
+
+redis @ /lib/cache/redis.ts
+react-query @ /lib/cache/react-query/config.ts
+
 ### KIPU INTEGRATION ###
-** DO AWAY WITH ALL LEGACY / MOCK DATABASE REFERENCES **
-** WE ARE LIVE WITH KIPU EMR API **
+
 always check /lib/kipu/integration/ref/endpoint.json for the source of truth regarding KIPU EMR API endpoints.
 always check /lib/kipu/integration/ref/schemas.json for the source of truth regarding KIPU EMR API schemas.
 
@@ -31,6 +35,11 @@ we have an api system for interacting with the OpenAI API, specifically the Assi
 We are integrating with KIPU EMR, a platform for managing the medical records of behavioral health and substance abuse treatment facilities.
 
 *** GUIDELINES ***
+-front end request for KIPU data:
+** fetch from /store/* **
+** store calls /api/kipu/* **
+** endpoints utilize service layers @ /lib/kipu/service/* **
+
 -supabase instantiations exist as utility files (/utils/supabase/ *) and are to be utilized whenever needed.
 -typescript interfaces and definitions exist (/types/ * ) and are also to be utilized whenever needed.  In the need for new interfaace or type definitions, after ensuring it does not already exist, define the interface or type **in-line with the new logic utilizing it** so that it can be integrated to the master definitions later.
 -state management is managed with Zustand over a set of different stores (/store/ *).  These files have their own type definitions (/types/store/ *).

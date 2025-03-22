@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CardTitle } from './CardComponents';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface VitalSign {
   id: string;
@@ -12,10 +13,28 @@ interface VitalSign {
 }
 
 interface VitalSignsCardProps {
-  vitalSigns: VitalSign[];
+  vitalSigns: VitalSign[] | null | undefined;
 }
 
 export function VitalSignsCard({ vitalSigns }: VitalSignsCardProps) {
+  // If vitalSigns is null or undefined, show loading state
+  if (!vitalSigns) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Vital Signs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -33,7 +52,10 @@ export function VitalSignsCard({ vitalSigns }: VitalSignsCardProps) {
                   <dd className="font-medium">{vitalSign.value}</dd>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(vitalSign.timestamp).toLocaleString()}
+                  {/* Use ISO format to avoid hydration errors */}
+                  {vitalSign.timestamp ? 
+                    `${new Date(vitalSign.timestamp).toISOString().split('T')[0]} at ${new Date(vitalSign.timestamp).toISOString().split('T')[1].substring(0, 5)}` 
+                    : 'Unknown time'}
                 </p>
               </div>
             ))}

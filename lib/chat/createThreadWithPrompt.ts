@@ -38,8 +38,7 @@ export async function createThreadWithPrompt(
   messageContent = messageContent.trim();
   
   if (patientContext && Object.keys(patientContext).length > 0) {
-    console.log('Including patient context:', JSON.stringify(patientContext, null, 2));
-  }
+   }
 
   try {
     // Get the OpenAI instance

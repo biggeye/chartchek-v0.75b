@@ -14,6 +14,23 @@
           "GET /evaluations"             // For total documents/evaluations
         ]
       },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 300,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization", "x-facility-id"]
+        },
+        "redis_cache": {
+          "ttl": 300,
+          "key_pattern": "facilities:{userId}:{status}:{sort}:{page}:{limit}"
+        },
+        "react_query": {
+          "stale_time": 300000,
+          "cache_time": 600000,
+          "query_key": ["facilities", "page", "limit", "status", "sort"]
+        }
+      },
       "response_schema": "facilities_list_response"
     },
     {
@@ -28,6 +45,23 @@
           "GET /evaluations"            // For aggregated doc/eval stats
         ]
       },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 300,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization"]
+        },
+        "redis_cache": {
+          "ttl": 300,
+          "key_pattern": "facility:{userId}:{facilityId}"
+        },
+        "react_query": {
+          "stale_time": 300000,
+          "cache_time": 600000,
+          "query_key": ["facility", "facilityId"]
+        }
+      },
       "response_schema": "facility_detail_response"
     },
     {
@@ -40,6 +74,23 @@
         "source_endpoints": [
           "GET /patients/{patient_id}/patient_evaluations" // KIPU direct
         ]
+      },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 180,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization", "x-facility-id"]
+        },
+        "redis_cache": {
+          "ttl": 180,
+          "key_pattern": "patient_evaluations:{userId}:{facilityId}:{patientId}:{page}:{limit}"
+        },
+        "react_query": {
+          "stale_time": 180000,
+          "cache_time": 300000,
+          "query_key": ["patientEvaluations", "facilityId", "patientId", "page", "limit"]
+        }
       },
       "response_schema": "patient_evaluations_list_response"
     },
@@ -54,6 +105,23 @@
           "GET /patient_evaluations/{patient_evaluation_id}" // KIPU direct
         ]
       },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 600,
+          "stale_while_revalidate": 120,
+          "vary_headers": ["Authorization"]
+        },
+        "redis_cache": {
+          "ttl": 600,
+          "key_pattern": "evaluation:{userId}:{facilityId}:{evaluationId}"
+        },
+        "react_query": {
+          "stale_time": 600000,
+          "cache_time": 900000,
+          "query_key": ["evaluation", "facilityId", "evaluationId"]
+        }
+      },
       "response_schema": "patient_evaluation_detail_response"
     },
     {
@@ -66,6 +134,19 @@
         "source_endpoints": [
           "POST /patients/{patient_id}/patient_evaluations" // KIPU direct
         ]
+      },
+      "caching": {
+        "strategy": "invalidation-only",
+        "invalidate_patterns": [
+          "patient_evaluations:{userId}:{facilityId}:{patientId}:*",
+          "dashboard_metrics:{userId}:{facilityId}"
+        ],
+        "react_query": {
+          "invalidate_queries": [
+            ["patientEvaluations", "facilityId", "patientId"],
+            ["dashboardMetrics", "facilityId"]
+          ]
+        }
       },
       "request_schema": "patient_evaluation_create_request",
       "response_schema": "patient_evaluation_detail_response"
@@ -84,6 +165,26 @@
           "GET /care_levels"             // Possibly for care-level distribution
         ]
       },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 300,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization", "x-facility-id"]
+        },
+        "redis_cache": {
+          "ttl": 300,
+          "key_pattern": "dashboard_metrics:{userId}:{facilityId}"
+        },
+        "react_query": {
+          "stale_time": 300000,
+          "cache_time": 600000,
+          "query_key": ["dashboardMetrics", "facilityId"]
+        },
+        "isr": {
+          "revalidate": 300
+        }
+      },
       "response_schema": "dashboard_metrics_response"
     },
     {
@@ -98,6 +199,26 @@
           "GET /care_levels"             // So we can break counts down by level-of-care
         ]
       },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 300,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization", "x-facility-id"]
+        },
+        "redis_cache": {
+          "ttl": 300,
+          "key_pattern": "patient_stats:{userId}:{facilityId}"
+        },
+        "react_query": {
+          "stale_time": 300000,
+          "cache_time": 600000,
+          "query_key": ["patientStats", "facilityId"]
+        },
+        "isr": {
+          "revalidate": 300
+        }
+      },
       "response_schema": "patient_stats_response"
     },
     {
@@ -111,6 +232,26 @@
           "GET /evaluations",            // For all documents in general
           "GET /patient_evaluations"     // More granular data about patient-specific evaluations
         ]
+      },
+      "caching": {
+        "strategy": "multi-level",
+        "http_cache": {
+          "max_age": 300,
+          "stale_while_revalidate": 60,
+          "vary_headers": ["Authorization", "x-facility-id"]
+        },
+        "redis_cache": {
+          "ttl": 300,
+          "key_pattern": "document_insights:{userId}:{facilityId}"
+        },
+        "react_query": {
+          "stale_time": 300000,
+          "cache_time": 600000,
+          "query_key": ["documentInsights", "facilityId"]
+        },
+        "isr": {
+          "revalidate": 300
+        }
       },
       "response_schema": "document_insights_response"
     }

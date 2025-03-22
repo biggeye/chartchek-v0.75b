@@ -6,9 +6,9 @@ import { UserCircle2, Calendar, FileText } from 'lucide-react';
 
 interface PatientListItemProps {
   patient: {
-    id: string;
-    first_name: string;
-    last_name: string;
+    patientId: string;
+    firstName: string;
+    lastName: string;
     dob?: string;
     gender?: string;
     contact?: {
@@ -18,19 +18,19 @@ interface PatientListItemProps {
   };
   facilityId: string;
 }
-
+// change patient.lastName to display just the first initial of the last name... but do that on the component level here
 export function PatientListItem({ patient, facilityId }: PatientListItemProps) {
   return (
     <div className="py-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-medium">
-            {patient.first_name} {patient.last_name}
+            {patient.firstName} {patient.lastName} 
           </div>
           <div className="flex space-x-4 text-sm text-muted-foreground mt-1">
             <div className="flex items-center">
               <UserCircle2 className="h-3.5 w-3.5 mr-1" />
-              ID: {patient.id}
+              
             </div>
             {patient.dob && (
               <div className="flex items-center">
@@ -45,7 +45,7 @@ export function PatientListItem({ patient, facilityId }: PatientListItemProps) {
         </div>
         <div className="flex space-x-2">
           <Link 
-            href={`/protected/patients/${patient.id}`} 
+            href={`/protected/patients/${patient.patientId}`} 
             passHref
           >
             <Button className="btn-primary">

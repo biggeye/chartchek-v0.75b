@@ -6,47 +6,7 @@ import { format, parseISO } from 'date-fns';
 import { CalendarIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
-import { PatientTabsLayout } from '@/components/patient/PatientTabsLayout';
-
-// Mock data for appointments
-const mockAppointments: Appointment[] = [
-  {
-    id: '1',
-    title: 'Initial Assessment',
-    date: '2025-03-15T10:00:00',
-    provider: 'Dr. Sarah Johnson',
-    location: 'Main Clinic - Room 302',
-    status: 'completed',
-    notes: 'Patient arrived on time. Completed initial assessment.'
-  },
-  {
-    id: '2',
-    title: 'Follow-up Consultation',
-    date: '2025-03-20T14:30:00',
-    provider: 'Dr. Michael Chen',
-    location: 'Main Clinic - Room 105',
-    status: 'scheduled',
-    notes: 'Follow-up to discuss treatment plan.'
-  },
-  {
-    id: '3',
-    title: 'Therapy Session',
-    date: '2025-03-25T11:00:00',
-    provider: 'Dr. Lisa Wong',
-    location: 'Behavioral Health Wing - Room B12',
-    status: 'scheduled',
-    notes: 'Weekly therapy session.'
-  },
-  {
-    id: '4',
-    title: 'Medication Review',
-    date: '2025-04-05T09:15:00',
-    provider: 'Dr. Robert Smith',
-    location: 'Main Clinic - Room 210',
-    status: 'scheduled',
-    notes: 'Review current medications and discuss any side effects.'
-  }
-];
+import { getPatientAppointments } from '@/lib/kipu/service/patient-service';
 
 interface Appointment {
   id: string;
@@ -75,17 +35,22 @@ export default function PatientAppointmentsPage() {
       
       setLoading(true);
       try {
-        // In a real implementation, this would be an API call
-        // const response = await fetch(`/api/kipu/patients/${patientId}/appointments?facilityId=${currentFacility.id}`);
-        // if (!response.ok) throw new Error(`Error fetching appointments: ${response.status}`);
-        // const data = await response.json();
-        // setAppointments(data.appointments || []);
+        // Fetch appointments from KIPU API
+        const appointmentsData = await getPatientAppointments(currentFacility.id, patientId as string);
         
-        // Using mock data for now
-        setTimeout(() => {
-          setAppointments(mockAppointments);
-          setLoading(false);
-        }, 500);
+        // Map the KIPU API response to our Appointment interface
+        const formattedAppointments = appointmentsData.map((apt: any) => ({
+          id: apt.id || '',
+          title: apt.title || apt.type || 'Appointment',
+          date: apt.appointment_date || apt.date || new Date().toISOString(),
+          provider: apt.provider_name || 'Not specified',
+          location: apt.location || 'Not specified',
+          status: apt.status || 'scheduled',
+          notes: apt.notes || ''
+        }));
+        
+        setAppointments(formattedAppointments);
+        setLoading(false);
       } catch (err) {
         console.error('Failed to fetch patient appointments:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch appointments');
@@ -137,8 +102,8 @@ export default function PatientAppointmentsPage() {
     };
   });
 
-  const content = (
-    <div className="space-y-8">
+return(
+    <div className="space-y-8 w-full">
       {loading ? (
         <div className="p-4">Loading patient appointments...</div>
       ) : error ? (
@@ -146,9 +111,7 @@ export default function PatientAppointmentsPage() {
       ) : (
         <>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {currentPatient ? `${currentPatient.first_name} ${currentPatient.last_name}'s Appointments` : 'Patient Appointments'}
-            </h1>
+      
             <div className="flex space-x-2">
               <button
                 onClick={() => setViewMode('calendar')}
@@ -221,10 +184,10 @@ export default function PatientAppointmentsPage() {
               </div>
             </div>
           ) : viewMode === 'calendar' ? (
-            <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+            <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg w-full">
               <div className="px-4 py-5 sm:px-6">
                 <h3 className="text-base/7 font-semibold text-gray-900">Appointment Calendar</h3>
-                <p className="mt-1 max-w-2xl text-sm/6 text-gray-500">Click on a day to see appointments.</p>
+                <p className="mt-1 max-w-5xl text-sm/6 text-gray-500">Click on a day to see appointments.</p>
               </div>
               <div className="grid grid-cols-7 gap-px bg-gray-200">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -262,7 +225,7 @@ export default function PatientAppointmentsPage() {
             <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
               <div className="px-4 py-5 sm:px-6">
                 <h3 className="text-base/7 font-semibold text-gray-900">Appointment List</h3>
-                <p className="mt-1 max-w-2xl text-sm/6 text-gray-500">Click on an appointment to see details.</p>
+                <p className="mt-1 max-w-5xl text-sm/6 text-gray-500">Click on an appointment to see details.</p>
               </div>
               <ul className="divide-y divide-gray-100">
                 {appointments.length > 0 ? (
@@ -307,13 +270,5 @@ export default function PatientAppointmentsPage() {
     </div>
   );
 
-  return (
-    <PatientTabsLayout
-      facilityId={currentFacility?.id || ''}
-      patientId={patientId as string}
-      activeTab="appointments"
-    >
-      {content}
-    </PatientTabsLayout>
-  );
+
 }

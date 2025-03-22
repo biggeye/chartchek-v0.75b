@@ -231,12 +231,9 @@ export default function SettingsPage() {
       if (hasApiKeyConfigured) {
         try {
           // Make a request to the test API endpoint to fetch facilities
-          console.log('Fetching facilities... from /api/kipu/facilities')
-          const response = await fetch('/api/kipu/facilities');
+           const response = await fetch('/api/kipu/facilities');
           const result = await response.json();
-          console.log('Facilities response:', result)
-          
-          if (result.success && result.apiResponse && result.apiResponse.success) {
+           if (result.success && result.apiResponse && result.apiResponse.success) {
             // Extract facilities from the response
             const facilities = result.apiResponse.data.locations.map((location: any) => ({
               id: location.location_id.toString(),
@@ -279,7 +276,7 @@ export default function SettingsPage() {
             
             // If there are facilities and no current facility is selected, select the first one
             if (facilities.length > 0 && !store.currentFacilityId) {
-              store.setCurrentFacility(facilities[0].id);
+              store.setCurrentFacilityId(facilities[0].id);
             }
             
             if (facilities.length > 0) {

@@ -1,27 +1,27 @@
   // (/store/chatStore.ts)
-  'use client';
+'use client';
 
-  import { create } from 'zustand';
-  import { createClient } from '@/utils/supabase/client';
-  import { ChatStoreState, SendMessageResult, Thread } from '@/types/store/chat';
-  import { Document } from '@/types/store/document';
-  import { ChatMessage } from '@/types/database';
-  import { Run, ThreadMessage } from '@/types/api/openai';
-  import { RunStatusResponse } from '@/types/store/chat';
-  import { OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
-  import { assistantRoster } from '@/lib/assistant/roster';
+import { create } from 'zustand';
+import { createClient } from '@/utils/supabase/client';
+import { ChatStoreState, SendMessageResult, Thread, ChatContext, PatientContext } from '@/types/store/chat';
+import { Document } from '@/types/store/document';
+import { ChatMessage } from '@/types/database';
+import { Run, ThreadMessage } from '@/types/api/openai';
+import { RunStatusResponse } from '@/types/store/chat';
+import { OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
+import { assistantRoster } from '@/lib/assistant/roster';
 
-  // Initialize Supabase client
-  const supabase = createClient();
+// Initialize Supabase client
+const supabase = createClient();
 
-  // Create a function to get the user ID that doesn't use top-level await
-  const getUserId = async () => {
+// Create a function to get the user ID that doesn't use top-level await
+const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
     return data?.user?.id || 'anonymous';
-  };
+};
 
-  // Create Zustand store for chat state
-  const useChatStore = create<ChatStoreState>((set, get) => ({
+// Create Zustand store for chat state
+const useChatStore = create<ChatStoreState>((set, get) => ({
     // --- CORE STATE ---
     currentThread: null,
     historicalThreads: [],
@@ -31,6 +31,7 @@
     activeRunStatus: null,
     currentAssistantId: OPENAI_ASSISTANT_ID || null,
     patientContext: null,
+    chatContext: null,
 
     // --- THREAD MANAGEMENT ---
     createThread: async (assistantId: string): Promise<string> => {
@@ -572,11 +573,19 @@
       });
     },
 
-    updatePatientContext: (context: string | null) => {
+    updateChatContext: (context: Partial<ChatContext>) => {
+      const currentContext = get().chatContext || { facilityId: null, patientId: null, patientName: null };
+      set({ chatContext: { ...currentContext, ...context } });
+      console.log('[chatStore:updateChatContext] Updated chat context:', context);
+    },
+
+    updatePatientContext: (context: PatientContext | null) => {
       set({ patientContext: context });
       console.log('[chatStore:updatePatientContext] Updated patient context:', context ? 'context provided' : 'context cleared');
     },
   }));
+
+  
 
   // Helper function to merge messages while preserving order
   function mergeMessages(existing: ThreadMessage[], incoming: ThreadMessage[]): ThreadMessage[] {

@@ -16,27 +16,8 @@ export async function GET(
   { params }: { params: { patientId: string } }
 ) {
   try {
-    const { patientId } = params;
-    
-    // Get facilityId from search params
-    const searchParams = req.nextUrl.searchParams;
-    const facilityId = searchParams.get('facilityId');
-    
-    console.log(`API - Getting patient details for patient ID: ${patientId}, facility ID: ${facilityId}`);
-
-    if (!facilityId) {
-      return NextResponse.json(
-        { error: 'Missing facilityId parameter' },
-        { status: 400 }
-      );
-    }
-
-    // Create Supabase client
     const supabase = await createServer();
-    
-    // Get the current user
     const { data: { user } } = await supabase.auth.getUser();
-    
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -44,20 +25,22 @@ export async function GET(
       );
     }
 
-    // Get KIPU API credentials
     const credentials = await getKipuCredentials();
-    
     if (!credentials) {
       return NextResponse.json(
         { error: 'No API credentials found for this user' },
         { status: 404 }
       );
     }
+    
+    // Get patientId from params
+    const patientId = params.patientId;
+    
+    // Get facilityId from query parameters
+    const searchParams = req.nextUrl.searchParams;
 
-    // Call KIPU API to get patient details
-    // NextJS already decodes route parameters, so we pass patientId directly
-    console.log(`API - Using patient ID from route params: ${patientId}`);
-    const response = await kipuGetPatient(patientId, facilityId, credentials);
+
+    const response = await kipuGetPatient<{patient: any}>(patientId, credentials);
     
     if (!response.success || !response.data) {
       console.error('Failed to fetch patient from KIPU:', response.error);
@@ -77,8 +60,6 @@ export async function GET(
         { status: statusCode }
       );
     }
-
-    console.log('Successfully fetched patient from KIPU API');
     
     // Map KIPU patient to our format
     const patientData = response.data.patient || response.data;

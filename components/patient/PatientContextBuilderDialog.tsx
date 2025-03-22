@@ -4,9 +4,10 @@ import { useState, Fragment, useEffect } from 'react'
 import { Transition, Tab } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
-import { PatientBasicInfo } from '@/lib/kipu/types'
+import { PatientBasicInfo } from '@/types/kipu'
 import { cn } from '@/lib/utils'
-import { usePatientStore, PatientContextOption } from '@/store/patientStore'
+import { usePatientStore } from '@/store/patientStore'
+import { PatientContextOptions } from '@/types/store/patient'
 import { 
   Dialog, 
   DialogContent, 
@@ -17,7 +18,14 @@ import {
 type PatientContextBuilderDialogProps = {
   isOpen: boolean
   onClose: () => void
-  onApply: (selectedOptions: PatientContextOption[]) => void
+  onApply: (selectedOptions: any[]) => void
+}
+interface ContextItem {
+  id: string;
+  label: string;
+  value: string;
+  category: string;
+  title?: string;
 }
 
 export function PatientContextBuilderDialog({
@@ -37,31 +45,31 @@ export function PatientContextBuilderDialog({
     fetchPatientEvaluations
   } = usePatientStore();
   
-  const [selectedOptions, setSelectedOptions] = useState<PatientContextOption[]>([])
-  const [allOptions, setAllOptions] = useState<PatientContextOption[]>([])
+  const [selectedOptions, setSelectedOptions] = useState<ContextItem[]>([]);
+  const [allOptions, setAllOptions] = useState<ContextItem[]>([])
   const [loadingEvaluations, setLoadingEvaluations] = useState(false)
   
   // Generate options based on available patient data
-  const generateOptions = (): PatientContextOption[] => {
-    const options: PatientContextOption[] = []
+  const generateOptions = (): any[] => {
+    const options: any[] = []
 
     // Basic patient info
     if (patient) {
       // Name and ID are always included by default, add other basic info
-      if (patient.mr_number) {
+      if (patient.mrn) {
         options.push({
-          id: 'mr_number',
+          id: 'mrn',
           label: 'Medical Record Number',
-          value: patient.mr_number,
+          value: patient.mrn,
           category: 'basic'
         })
       }
       
-      if (patient.dob) {
+      if (patient.dateOfBirth) {
         options.push({
           id: 'dob',
           label: 'Date of Birth',
-          value: patient.dob,
+          value: patient.dateOfBirth,
           category: 'basic'
         })
       }
@@ -75,18 +83,11 @@ export function PatientContextBuilderDialog({
         })
       }
       
-      if (patient.insurance) {
-        options.push({
-          id: 'insurance',
-          label: 'Insurance',
-          value: patient.insurance,
-          category: 'basic'
-        })
-      }
+  
     }
     
     // Evaluation data
-    patientEvaluations.forEach((evaluation, index) => {
+    patientEvaluations.forEach((evaluation: any, index) => {
       if (evaluation.diagnosis) {
         options.push({
           id: `diagnosis_${index}`,
@@ -108,8 +109,8 @@ export function PatientContextBuilderDialog({
       if (evaluation.notes) {
         options.push({
           id: `notes_${index}`,
-          label: `${evaluation.evaluation_type}: ${evaluation.notes.substring(0, 30)}...`,
-          value: `${evaluation.evaluation_type}: ${evaluation.notes}`,
+          label: `${evaluation.evaluationType}: ${evaluation.notes.substring(0, 30)}...`,
+          value: `${evaluation.evaluationType}: ${evaluation.notes}`,
           category: 'evaluation'
         })
       }
@@ -120,7 +121,7 @@ export function PatientContextBuilderDialog({
       options.push({
         id: `vital_${index}`,
         label: `${vital.type}: ${vital.value} ${vital.unit}`,
-        value: `${vital.type}: ${vital.value} ${vital.unit} (${vital.date})`,
+        value: `${vital.type}: ${vital.value} ${vital.unit} (${vital.recordedAt})`,
         category: 'vitalSigns'
       })
     })
@@ -129,14 +130,26 @@ export function PatientContextBuilderDialog({
     patientAppointments.forEach((appt, index) => {
       options.push({
         id: `appt_${index}`,
-        label: `${appt.type} on ${appt.date}`,
-        value: `${appt.type} appointment on ${appt.date} with ${appt.provider}`,
+        value: `${appt.type}: ${appt.startTime}`,
+        title: appt.startTime,
         category: 'appointments'
       })
     })
     
     return options
   }
+
+  useEffect(() => {
+    // Load all available options
+    const options = [
+      // your options here
+    ];
+    setAllOptions(options);
+    
+    // Initialize with default options (basic patient info)
+    const basicOptions = options.filter(opt => opt.category === 'basic');
+    setSelectedOptions(basicOptions);
+  }, []);
   
   // Load evaluations when dialog opens
   useEffect(() => {
@@ -145,8 +158,8 @@ export function PatientContextBuilderDialog({
         setLoadingEvaluations(true)
         try {
           // If we have a facility ID and patient ID, fetch evaluations
-          if (patient.facility_id && patient.id) {
-            await fetchPatientEvaluations(patient.facility_id, patient.id)
+          if (patient.patientId) {
+            await fetchPatientEvaluations(patient.patientId)
           }
         } catch (error) {
           console.error('Error loading evaluations:', error)
@@ -166,9 +179,11 @@ export function PatientContextBuilderDialog({
       setAllOptions(options)
       
       // Initialize with previously selected options if available
-      if (selectedContextOptions.length > 0) {
-        setSelectedOptions(selectedContextOptions)
-      } else {
+      if (selectedContextOptions?.items && selectedContextOptions.items.length > 0) {
+        // Use the items array instead of the whole object
+        setSelectedOptions(selectedContextOptions.items);
+      
+          } else {
         // Default to basic patient info
         const basicOptions = options.filter(opt => opt.category === 'basic')
         setSelectedOptions(basicOptions)
@@ -181,7 +196,7 @@ export function PatientContextBuilderDialog({
     return selectedOptions.some(opt => opt.id === optionId)
   }
   
-  const handleOptionToggle = (option: PatientContextOption) => {
+  const handleOptionToggle = (option: any) => {
     console.log('Toggle option:', option.id, 'Current selected:', selectedOptions.map(o => o.id));
     
     setSelectedOptions(prev => {
@@ -199,8 +214,14 @@ export function PatientContextBuilderDialog({
   
   const handleApply = () => {
     // Update the store with selected options
-    updatePatientContextOptions(selectedOptions)
-    onApply(selectedOptions)
+    // Convert our array of ContextItem to the expected PatientContextOptions format
+    updatePatientContextOptions({
+      // Map any relevant properties from selectedOptions to PatientContextOptions
+      // For example, if you're using filterBy:
+      filterBy: selectedOptions.map(opt => opt.id).join(',')
+    });
+    
+    onApply(selectedOptions);
   }
   
   return (

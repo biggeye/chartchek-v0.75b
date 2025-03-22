@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import { complianceService } from '@/lib/services/compliance/complianceService';
+import { complianceService } from '@/lib/compliance/complianceService';
 
 // Get user's compliance framework preferences
 export async function GET(request: NextRequest) {

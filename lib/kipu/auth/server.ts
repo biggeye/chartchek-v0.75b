@@ -83,9 +83,7 @@ export async function kipuServerGet<T>(
     // Generate authentication headers
     const headers = generateKipuAuthHeaders('GET', endpointWithAppId, credentials);
     
-    // Log request details for debugging (with masked credentials)
-    console.log(`KIPU API Request: ${credentials.baseUrl}${endpointWithAppId}`);
-    
+      
     // Make the request
     const response = await fetch(`${credentials.baseUrl}${endpointWithAppId}`, {
       method: 'GET',

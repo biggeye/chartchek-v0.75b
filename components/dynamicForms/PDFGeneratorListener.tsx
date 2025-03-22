@@ -3,7 +3,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useStreamStore } from '@/store/streamStore';
 import { useDocumentStore } from '@/store/documentStore';
-import { generateAndUploadPDF, FormType } from '@/lib/services/functions/pdfGenerator';
+import { generateAndUploadPDF, FormType } from '@/lib/forms/pdfGenerator';
 import PDFGenerationIndicator from '@/components/ui/PDFGenerationIndicator';
 
 export const PDFGeneratorListener = () => {

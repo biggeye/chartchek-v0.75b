@@ -97,7 +97,7 @@ export function generateKipuAuthHeaders(
   const date = getCurrentRFC1123Date();
   const headers: Record<string, string> = {
     'Accept': 'application/vnd.kipusystems+json; version=3',
-    'Date': date,
+    'Date': date,  // This is the correct header name according to KIPU API docs
   };
 
   let contentMD5 = '';

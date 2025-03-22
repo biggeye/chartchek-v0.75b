@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import { complianceService } from '@/lib/services/compliance/complianceService';
+import { complianceService } from '@/lib/compliance/complianceService';
 
 export async function POST(request: NextRequest) {
   try {

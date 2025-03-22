@@ -108,24 +108,24 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         // First initialize facility data
         const { initializeFacilityData } = require('@/store/storeInitializers');
         await initializeFacilityData();
-        
+
         // Then initialize all store subscriptions
         const cleanup = initializeStoreSubscriptions();
-        
+
         // Return cleanup function to unsubscribe when component unmounts
         return cleanup;
       } catch (error) {
         console.error('Error initializing app:', error);
-        return () => {};
+        return () => { };
       }
     };
-    
+
     // Initialize and store the cleanup function
     let cleanup: (() => void) | undefined;
     initializeApp().then(cleanupFn => {
       cleanup = cleanupFn;
     });
-    
+
     // Return cleanup function
     return () => {
       if (cleanup) cleanup();
@@ -134,7 +134,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-screen flex-col">
+      <div className="flex h-screen flex-col overflow-hidden">
         {/* Top navigation */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
@@ -145,17 +145,17 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
                 <span className="text-lg font-semibold text-foreground">ChartChek</span>
               </Link>
             </div>
-            
+
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               {/* Facility Selector */}
               <FacilitySelector />
-              
+
               {/* User dropdown */}
               <div className="flex items-center gap-x-4 lg:gap-x-6">
                 <Menu as="div" className="relative inline-block text-left">
                   <MenuButton className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted">
                     <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
-                  
+
                     <ChevronDownIcon className="h-5 w-5 text-foreground-muted" aria-hidden="true" />
                   </MenuButton>
                   <Transition
@@ -188,7 +188,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
                           </MenuItem>
                         ))}
                       </div>
-                      
+
                       {/* User settings section */}
                       <div className="py-1">
                         <MenuItem>
@@ -253,12 +253,12 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
             </div>
           </div>
         </div>
-        
-        <main className="flex flex-1 overflow-hidden">
-        
-          {children}
-   
-          <PDFGeneratorListener />  
+
+        <main>
+ 
+            {children}
+            <PDFGeneratorListener />
+
         </main>
       </div>
     </div>

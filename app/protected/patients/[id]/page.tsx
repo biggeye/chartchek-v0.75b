@@ -1,114 +1,35 @@
-'use client';
+// app/protected/patients/[id]/page.tsx
+"use client";
 
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { usePatientStore } from '@/store/patientStore';
-import { useFacilityStore } from '@/store/facilityStore';
-import { PatientInfoCard } from '@/components/patient/PatientInfoCard';
-import { EvaluationsCard } from '@/components/patient/EvaluationsCard';
-import { VitalSignsCard } from '@/components/patient/VitalSignsCard';
-import { AppointmentsCard } from '@/components/patient/AppointmentsCard';
-import { PatientTabsLayout } from '@/components/patient/PatientTabsLayout';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog';
-import { PatientContextOption } from '@/store/patientStore';
-import Breadcrumb from '@/components/ui/breadcrumb';
-import { ChartChekModal } from '@/components/patient/ChartChekModal';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog';
 
-// Define Page interface for breadcrumb
-interface Page {
-  name: string;
-  href: string;
-  current: boolean;
-}
-
-export default function PatientDetailsPage() {
-  const params = useParams();
-  // Ensure we properly decode the patient ID from the URL
-  const encodedPatientId = params.id as string;
-  const patientId = decodeURIComponent(encodedPatientId);
+export default function PatientPage() {
+  const { id: patientId } = useParams();
+  const { currentPatient, isLoading, error } = usePatientStore();
   
+  const [isPatientContextEnabled, setIsPatientContextEnabled] = useState(false);
   const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false);
   const [isChartChekModalOpen, setIsChartChekModalOpen] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  
-  const { 
-    currentPatient, 
-    currentPatientEvaluations, 
-    currentPatientVitalSigns, 
-    currentPatientAppointments,
-    isLoading, 
-    error, 
-    fetchPatientWithDetails,
-    isPatientContextEnabled,
-    setPatientContextEnabled,
-    updatePatientContextOptions,
-    selectedContextOptions
-  } = usePatientStore();
-  
-  const { currentFacilityId } = useFacilityStore();
-
-  useEffect(() => {
-    console.log(`PatientDetailsPage - Rendering with patientId: ${patientId} (from URL: ${encodedPatientId}), facilityId: ${currentFacilityId}`);
-    
-    if (currentFacilityId && patientId) {
-      console.log(`PatientDetailsPage - Fetching patient details for patient ${patientId} in facility ${currentFacilityId}`);
-      
-      // Collect debug info
-      setDebugInfo({
-        timestamp: new Date().toISOString(),
-        patientId,
-        encodedPatientId,
-        facilityId: currentFacilityId
-      });
-      
-      fetchPatientWithDetails(currentFacilityId, patientId)
-        .then(result => {
-          console.log('PatientDetailsPage - Patient details fetch result:', {
-            hasPatient: !!result.patient,
-            evaluationsCount: result.evaluations.length,
-            vitalSignsCount: result.vitalSigns.length,
-            appointmentsCount: result.appointments.length
-          });
-          
-          // Update debug info
-          setDebugInfo((prev: any) => ({
-            ...prev,
-            fetchResult: {
-              hasPatient: !!result.patient,
-              patientData: result.patient ? {
-                id: result.patient.id,
-                first_name: result.patient.first_name,
-                last_name: result.patient.last_name
-              } : null
-            }
-          }));
-        })
-        .catch(err => {
-          console.error('PatientDetailsPage - Error fetching patient details:', err);
-          setDebugInfo((prev: any) => ({
-            ...prev,
-            error: err.message
-          }));
-        });
-    }
-  }, [currentFacilityId, patientId, fetchPatientWithDetails]);
 
   const handleTogglePatientContext = () => {
+    setIsPatientContextEnabled(!isPatientContextEnabled);
     if (!isPatientContextEnabled) {
-      // If enabling, open the context builder dialog
       setIsPatientContextBuilderOpen(true);
-    } else {
-      // If disabling, just turn it off
-      setPatientContextEnabled(false);
     }
   };
 
-  const handleApplyContextOptions = (options: PatientContextOption[]) => {
-    updatePatientContextOptions(options);
-    setPatientContextEnabled(true);
+  const handleClosePatientContextBuilder = () => {
+    setIsPatientContextBuilderOpen(false);
+  };
+
+  const handleSavePatientContextOptions = () => {
+    // Handle saving patient context options
     setIsPatientContextBuilderOpen(false);
   };
 
@@ -116,136 +37,101 @@ export default function PatientDetailsPage() {
     setIsChartChekModalOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="container py-6">
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-1/3" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Skeleton className="h-64" />
-            <Skeleton className="h-64" />
-          </div>
-          {debugInfo && (
-            <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <h3 className="text-sm font-semibold mb-2">Debug Information (Loading)</h3>
-              <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !currentPatient) {
-    return (
-      <div className="container py-6">
-        <div className="text-center text-red-500">
-          <p>{error || 'Patient not found'}</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Please select a valid patient.
-          </p>
-          {debugInfo && (
-            <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50 text-left">
-              <h3 className="text-sm font-semibold mb-2">Debug Information (Error)</h3>
-              <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
-              <div className="mt-4">
-                <h4 className="text-sm font-semibold">Current Store State:</h4>
-                <pre className="text-xs overflow-auto">
-                  {JSON.stringify({
-                    currentFacilityId,
-                    patientId,
-                    isLoading,
-                    error
-                  }, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Prepare patient data for the PatientInfoCard component
-  const patientForInfoCard = {
-    id: currentPatient.id || currentPatient.mr_number || '',
-    first_name: currentPatient.first_name,
-    last_name: currentPatient.last_name,
-    dob: currentPatient.dob,
-    gender: currentPatient.gender || 'Not specified',
-    address: currentPatient.address || 'Not specified',
-    contact: {
-      email: currentPatient.email || 'Not specified',
-      phone: currentPatient.phone || 'Not specified'
-    }
+  const handleCloseChartChek = () => {
+    setIsChartChekModalOpen(false);
   };
 
-  // Prepare breadcrumb pages
-  const breadcrumbPages: Page[] = [
-    { name: 'Patients', href: '/protected/patients', current: false },
-    { name: `${currentPatient.first_name} ${currentPatient.last_name}`, href: '#', current: true },
-  ];
+  if (isLoading) {
+    return <div className="p-4">Loading patient data...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">Error loading patient data: {error}</div>;
+  }
+
+  if (!currentPatient) {
+    return <div className="p-4">No patient data available.</div>;
+  }
 
   return (
-    <div className="container py-6">
-      <Breadcrumb pages={breadcrumbPages} />
-      
-      <div className="flex justify-between items-center my-6">
-        <h1 className="text-2xl font-bold">
-          {currentPatient.first_name} {currentPatient.last_name}
-        </h1>
-        <div className="flex space-x-3">
-          <Button
-            onClick={handleOpenChartChek}
-            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-          >
-            <ChatBubbleLeftRightIcon className="h-5 w-5" />
-            ChartChek
-          </Button>
-          <Button
-            onClick={handleTogglePatientContext}
-            color={isPatientContextEnabled ? "red" : "dark/zinc"}
-          >
-            {isPatientContextEnabled ? "Disable Patient Context" : "Enable Patient Context"}
-          </Button>
-        </div>
+    <div className="space-y-6 p-4">
+      <div className="flex justify-end gap-3 mb-4">
+        <Button
+          onClick={handleTogglePatientContext}
+          color={isPatientContextEnabled ? "red" : "dark/zinc"}
+          className="flex items-center gap-2 text-sm py-1.5 px-3"
+        >
+          {isPatientContextEnabled ? "Disable Patient Context" : "Enable Patient Context"}
+        </Button>
+        
+        <Button
+          outline
+          className="flex items-center gap-2 text-sm py-1.5 px-3"
+          onClick={handleOpenChartChek}
+        >
+          <ChatBubbleLeftRightIcon className="h-5 w-5" />
+          <span>Open ChartChek</span>
+        </Button>
       </div>
 
-      <PatientTabsLayout
-        facilityId={currentFacilityId || ''}
-        patientId={patientId}
-        activeTab="overview"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <PatientInfoCard patient={patientForInfoCard} />
-            <VitalSignsCard vitalSigns={currentPatientVitalSigns} />
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-4">Patient Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Demographics</h3>
+            <div className="space-y-2">
+              <p><span className="font-medium">Name:</span> {currentPatient.firstName} {currentPatient.lastName}</p>
+              <p><span className="font-medium">DOB:</span> {currentPatient.dateOfBirth ? new Date(currentPatient.dateOfBirth).toLocaleDateString() : 'Not available'}</p>
+              <p><span className="font-medium">Gender:</span> {currentPatient.gender}</p>
+            </div>
           </div>
-          <div className="space-y-6">
-            <EvaluationsCard evaluations={currentPatientEvaluations} />
-            <AppointmentsCard appointments={currentPatientAppointments} />
+          
+          <div>
+            <h3 className="text-lg font-medium mb-2">Patient Information</h3>
+            <div className="space-y-2">
+              <p><span className="font-medium">Patient ID:</span> {patientId}</p>
+              <p><span className="font-medium">Status:</span> {currentPatient.status || 'Active'}</p>
+              {currentPatient.admissionDate && (
+                <p><span className="font-medium">Admission Date:</span> {new Date(currentPatient.admissionDate).toLocaleDateString()}</p>
+              )}
+            </div>
           </div>
         </div>
-      </PatientTabsLayout>
+      </div>
 
       <PatientContextBuilderDialog
         isOpen={isPatientContextBuilderOpen}
-        onClose={() => setIsPatientContextBuilderOpen(false)}
-        onApply={handleApplyContextOptions}
+        onClose={handleClosePatientContextBuilder}
+        onApply={handleSavePatientContextOptions}
       />
 
-      <ChartChekModal
-        isOpen={isChartChekModalOpen}
-        onClose={() => setIsChartChekModalOpen(false)}
-        patientId={patientId}
-      />
-      
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50">
-          <h3 className="text-sm font-semibold mb-2">Debug Information (Success)</h3>
-          <pre className="text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
-      )}
+      {/* ChartChek Modal */}
+      <Dialog open={isChartChekModalOpen} onOpenChange={(open) => !open && handleCloseChartChek()}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+              <span>ChartChek</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">
+                Patient: {currentPatient.firstName} {currentPatient.lastName}
+              </h3>
+              
+              {/* ChartChek content */}
+              <div className="p-4 bg-gray-50 rounded-md">
+                <p className="text-sm text-gray-500">
+                  ChartChek functionality is being implemented. This modal will contain
+                  AI-assisted chart review and analysis tools.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,6 +18,37 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
  * Gets the KIPU API credentials from Supabase or environment variables
  * @returns KIPU API credentials object
  */
+
+/**
+ * Parses a composite patient ID into its components
+ * @param patientId - The composite patient ID in format "locationPatientId:patientMasterId"
+ * @returns An object containing the locationPatientId and patientMasterId
+ */
+export function parsePatientId(patientId: string): { locationPatientId: string; patientMasterId: string } {
+  if (!patientId) return { locationPatientId: '', patientMasterId: '' };
+  
+  // Decode the patient ID first in case it's already URL-encoded
+  const decodedPatientId = decodeURIComponent(patientId);
+  
+  // Split the patient ID into its components
+  const patientIdParts = decodedPatientId.split(':');
+  
+  if (patientIdParts.length === 2) {
+    console.log(`Patient ID components: Numeric part=${patientIdParts[0]}, UUID part=${patientIdParts[1]}`);
+    return {
+      locationPatientId: patientIdParts[0],
+      patientMasterId: patientIdParts[1]
+    };
+  } else {
+    // If the format is not as expected, use the whole ID for both
+    console.log(`Patient ID format is not as expected. Using the whole ID for both components.`);
+    return {
+      locationPatientId: decodedPatientId,
+      patientMasterId: decodedPatientId
+    };
+  }
+}
+
 export async function getKipuCredentialsAsync(): Promise<KipuCredentials> {
   const now = Date.now();
   
@@ -49,6 +80,7 @@ export function getKipuCredentials(): KipuCredentials {
   
   // Otherwise fall back to environment variables
   const credentials = {
+    username: process.env.KIPU_USERNAME || '',
     accessId: process.env.KIPU_ACCESS_ID || '',
     secretKey: process.env.KIPU_SECRET_KEY || '',
     appId: process.env.KIPU_APP_ID || '',

@@ -3,7 +3,7 @@ import { createServer } from "@/utils/supabase/server";
 import { getOpenAIClient, OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
 import { NextRequest } from 'next/server';
 import { Run } from "@/types/api/openai";
-import { handleToolCalls } from "@/lib/services/openai/toolHandlers";
+import { handleToolCalls } from "@/utils/openai/toolHandlers";
 
 const openai = getOpenAIClient()
 

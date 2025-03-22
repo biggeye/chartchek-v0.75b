@@ -3,21 +3,33 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CardTitle } from './CardComponents';
-
-interface Evaluation {
-  id: string;
-  patient_id: string;
-  evaluation_type: string;
-  notes: string;
-  created_at: string;
-}
+import { Skeleton } from '@/components/ui/skeleton';
+import { PatientEvaluation } from '@/types/kipu';
 
 interface EvaluationsCardProps {
-  evaluations: Evaluation[];
+  evaluations: PatientEvaluation[] | null | undefined;
   onNewEvaluation?: () => void;
 }
 
 export function EvaluationsCard({ evaluations, onNewEvaluation }: EvaluationsCardProps) {
+  // If evaluations is null or undefined, show loading state
+  if (!evaluations) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Evaluations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -41,11 +53,12 @@ export function EvaluationsCard({ evaluations, onNewEvaluation }: EvaluationsCar
           <div className="space-y-4">
             {evaluations.map((evaluation) => (
               <div key={evaluation.id} className="border-b pb-4 last:border-0 last:pb-0">
-                <div className="font-medium">{evaluation.evaluation_type}</div>
+                <div className="font-medium">{evaluation.name}</div>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(evaluation.created_at).toLocaleDateString()}
+                  {/* Use ISO format to avoid hydration errors */}
+                  {evaluation.createdAt ? new Date(evaluation.createdAt).toISOString().split('T')[0] : 'Unknown date'}
                 </p>
-                <p className="text-sm mt-1 line-clamp-2">{evaluation.notes}</p>
+                <p className="text-sm mt-1 line-clamp-2">{evaluation.evaluationContent}</p>
               </div>
             ))}
           </div>

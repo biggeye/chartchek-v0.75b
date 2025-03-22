@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import { KipuCredentials } from '@/types/kipu';
 
 // Table name for API settings in Supabase
-const API_SETTINGS_TABLE = 'api_settings';
+const API_SETTINGS_TABLE = 'user_api_settings';
 
 /**
  * Creates a Supabase client for server-side operations

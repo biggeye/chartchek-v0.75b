@@ -9,7 +9,7 @@
     "environment": {
       "kipu_test": {
         "logic": "/lib/kipu/index.ts",
-        "types": "/lib/kipu/types.ts",
+        "types": "/types/kipu.ts",
         "facilities": "/lib/kipu/facilities/*",
         "reference": "/lib/kipu/ref/*"
       }

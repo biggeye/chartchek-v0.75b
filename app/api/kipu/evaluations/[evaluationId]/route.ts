@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { 
-  kipuGetPatientEvaluation,
-  mapKipuEvaluationToPatientEvaluation 
-} from '@/lib/kipu/service/patient-service';
 import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { kipuGetEvaluation } from '@/lib/kipu/service/patient-service';
 
 /**
  * GET handler for retrieving a specific patient evaluation by ID
@@ -20,15 +17,20 @@ export async function GET(
   try {
     const { evaluationId } = params;
     
-    // Get facilityId from search params
+    // Get appId from search params
     const searchParams = req.nextUrl.searchParams;
-    const facilityId = searchParams.get('facilityId');
+    const appId = searchParams.get('app_id');
     
-    console.log(`API - Getting evaluation ID: ${evaluationId}, facility ID: ${facilityId}`);
-
-    if (!facilityId) {
+    if (!appId) {
       return NextResponse.json(
-        { error: 'Missing facilityId parameter' },
+        { error: 'Missing required parameter: app_id' },
+        { status: 400 }
+      );
+    }
+
+    if (!evaluationId || isNaN(Number(evaluationId))) {
+      return NextResponse.json(
+        { error: 'Invalid evaluation ID' },
         { status: 400 }
       );
     }
@@ -36,50 +38,48 @@ export async function GET(
     // Create Supabase client
     const supabase = await createServer();
     
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    // Get the user session to ensure they're authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Get KIPU API credentials
-    const credentials = await getKipuCredentials();
-    
-    if (!credentials) {
+    // Get KIPU API credentials for the current user
+    const kipuCredentials = await getKipuCredentials();
+    if (!kipuCredentials) {
       return NextResponse.json(
-        { error: 'No API credentials found for this user' },
+        { error: 'KIPU API credentials not found' },
         { status: 404 }
       );
     }
 
-    console.log(`API - Calling service function with evaluation ID: ${evaluationId}`);
+    const response = await kipuGetEvaluation(evaluationId, kipuCredentials);
 
-    // Call KIPU API to get patient evaluation
-    const response = await kipuGetPatientEvaluation(evaluationId, facilityId, credentials);
-    
-    if (!response.success || !response.data) {
-      console.error('Failed to fetch patient evaluation from KIPU:', response.error);
+    if (!response.success) {
       return NextResponse.json(
-        { error: response.error?.message || 'Failed to fetch evaluation from KIPU' },
-        { status: response.error?.code ? parseInt(response.error.code) : 500 }
+        { 
+          error: 'Failed to fetch evaluation from KIPU API',
+          details: response.error
+        },
+        { status: response.error?.code === 'not_found' ? 404 : 500 }
       );
     }
 
-    console.log('Successfully fetched patient evaluation from KIPU API');
-    
-    // Map KIPU evaluation to our format
-    const evaluation = mapKipuEvaluationToPatientEvaluation(response.data.evaluation);
-    
-    // Return evaluation
-    return NextResponse.json({ evaluation });
+    // Return the evaluation data
+    return NextResponse.json({
+      success: true,
+      data: response.data
+    });
   } catch (error) {
-    console.error('Error in GET /api/kipu/evaluations/[evaluationId]:', error);
+    console.error('Error fetching evaluation:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

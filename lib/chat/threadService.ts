@@ -86,23 +86,19 @@ export class ThreadService {
       
       // Process the threads from the API response - handle both data.data and data formats
       const threads: ChatThread[] = threadsResponse.data || [];
-      console.log('[ThreadService] Fetched threads:', threads);
-      
+        
       // Fetch runs for each thread
       const runsPromises = threads.map(async (thread) => {
         try {
           // Get all runs for this thread instead of just checking for last_run
-          console.log(`[ThreadService] Fetching runs for thread: ${thread.thread_id}`);
-          const runsResponse = await fetch(`/api/threads/${thread.thread_id}/run`);
+            const runsResponse = await fetch(`/api/threads/${thread.thread_id}/run`);
           
           if (!runsResponse.ok) {
-            console.log(`[ThreadService] No runs found for thread: ${thread.thread_id}`);
-            return [];
+             return [];
           }
           
           const runsData = await runsResponse.json();
-          console.log(`[ThreadService] Runs data for thread ${thread.thread_id}:`, runsData);
-          
+            
           // If the response has data property (list of runs)
           if (runsData.data && Array.isArray(runsData.data)) {
             return runsData.data.map((run: any) => ({
@@ -187,9 +183,7 @@ export class ThreadService {
       });
       
       const runsArrays = await Promise.all(runsPromises);
-      console.log('[ThreadService] Runs arrays:', runsArrays);
-      const runs = runsArrays.flat().filter(run => run); // Filter out any undefined/null runs
-      console.log('[ThreadService] Fetched runs:', runs);
+       const runs = runsArrays.flat().filter(run => run); // Filter out any undefined/null runs
       
       return {
         threads,

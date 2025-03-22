@@ -9,6 +9,7 @@ import DocumentsTable from '@/components/documents/DocumentTable'
 import { PlusIcon } from '@heroicons/react/20/solid'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertCircle } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function DocumentsPage() {
   const { documents, isLoading, error, fetchDocuments, uploadAndProcessDocument } = useDocumentStore()
@@ -54,7 +55,8 @@ export default function DocumentsPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <h1 className="text-2xl font-bold mb-6">Document Library</h1>
-      
+        
+      <ScrollArea className="h-full w-full overflow-y-auto overflow-x-auto pb-20 mb-20">
       {error && (
         <div className="rounded-md bg-red-50 p-4 border border-red-200">
           <div className="flex">
@@ -81,7 +83,7 @@ export default function DocumentsPage() {
           <PlusIcon className="h-5 w-5" />
         </Button>
       </div>
-      
+    
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
           <TabsTrigger value="all">All Documents</TabsTrigger>
@@ -94,7 +96,7 @@ export default function DocumentsPage() {
           />
         </TabsContent>
       </Tabs>
-      
+      </ScrollArea>      
       <DocumentUploadDialog 
         isOpen={isUploadDialogOpen} 
         onClose={() => setIsUploadDialogOpen(false)} 

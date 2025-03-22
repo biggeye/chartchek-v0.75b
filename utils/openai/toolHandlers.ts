@@ -2,7 +2,7 @@
 import { formDefinitions } from '@/lib/forms/formDefinitions';
 import { createServer } from '@/utils/supabase/server';
 import { getOpenAIClient } from '@/utils/openai/server';
-import { generatePDF } from '@/lib/services/functions/pdfGenerator';
+import { generatePDF } from '@/lib/forms/pdfGenerator';
 
 export type ToolCall = {
   id: string;

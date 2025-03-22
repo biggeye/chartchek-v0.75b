@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
-import { getOpenAIClient } from "@/utils/openai/server"
+import { getOpenAIClient } from '@/utils/openai/server'
 import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
 
 const openai = getOpenAIClient();
@@ -20,10 +20,8 @@ export async function POST(request: NextRequest): Promise<Response> {
 
 
   try {
-    console.log('[/API/THREADS] Creating new thread for user:', user.id);
     const response = await openai.beta.threads.create();  
     const threadId = response.id;
-    console.log('[/API/THREADS] Thread created in OpenAI:', threadId);
     const { data: threadData, error: threadError } = await supabase.from('chat_threads').insert({
       user_id: user.id,
       thread_id: threadId}).select().single();
@@ -39,9 +37,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
     }
     
-    console.log('[/API/THREADS] Thread inserted in Supabase:', threadData);
-    
-    // Return just the OpenAI thread data and ID
+   // Return just the OpenAI thread data and ID
     return new Response(JSON.stringify({ 
       threadId: threadId,
       thread: response 
@@ -76,8 +72,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
 
   try {
-    console.log('[/api/threads] Fetching threads for user:', user.id);
-    
+     
    const threads = await supabase
       .from('chat_threads')
       .select('*')
@@ -85,14 +80,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       .order('created_at', { ascending: false });
       
 
-    console.log('[/api/threads] Response status:', 200);
     return new Response(JSON.stringify(threads), { 
       status: 200, 
       headers: { 'Content-Type': 'application/json' } 
     });
 
   } catch (error) {
-    console.log('[/api/threads] Response status:', 500);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Failed to retrieve threads',
       code: 'INTERNAL_ERROR'

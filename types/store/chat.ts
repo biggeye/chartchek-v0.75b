@@ -49,6 +49,18 @@ export interface SendMessageResult {
   threadId?: string;
 }
 
+export interface PatientContext {
+  patientId: string | null;
+  patientName: string | null;
+  facilityId?: string | null;
+}
+
+export interface ChatContext {
+  facilityId: string | null;
+  patientId: string | null;
+  patientName: string | null;
+}
+
 export interface ChatStoreState {
   // --- CORE STATE ---
   currentThread: Thread | null;
@@ -58,7 +70,8 @@ export interface ChatStoreState {
   error: string | null;
   activeRunStatus: RunStatusResponse | null;
   currentAssistantId: string | null;
-  patientContext: string | null;
+  patientContext: PatientContext | null;
+  chatContext: ChatContext | null;
 
   // --- THREAD MANAGEMENT ---
   createThread: (assistantId: string) => Promise<string>;
@@ -75,7 +88,8 @@ export interface ChatStoreState {
   setCurrentMessages: (messages: ThreadMessage[]) => void;
 
   // --- CONTEXT MANAGEMENT ---
-  updatePatientContext: (context: string | null) => void;
+  updatePatientContext: (context: PatientContext | null) => void;
+  updateChatContext: (context: Partial<ChatContext>) => void;
   
   // --- RUN MANAGEMENT ---
   checkActiveRun: (threadId: string) => Promise<RunStatusResponse>;

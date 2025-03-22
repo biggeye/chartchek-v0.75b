@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { Facility } from '@/lib/kipu/types';
+import { Facility } from '@/types/kipu';
 import { Dialog, Transition } from '@headlessui/react';
 import { BuildingOffice2Icon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
@@ -19,66 +18,131 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Use the facility store directly
+  // Use the facility store
   const { 
     facilities, 
     currentFacilityId, 
     isLoading, 
-    error,
     fetchFacilities,
     changeFacilityWithContext,
     getCurrentFacility
   } = useFacilityStore();
+  
+  // Get the patient store
+  const { clearPatientContext } = usePatientStore();
   
   // Get the current facility object
   const currentFacility = getCurrentFacility();
   
   // Fetch facilities on component mount
   useEffect(() => {
-    console.log('FacilitySelector: Fetching facilities');
-    fetchFacilities().then(result => {
-      console.log('FacilitySelector: Facilities fetched', result);
-    });
+    fetchFacilities();
   }, [fetchFacilities]);
   
-  // For debugging
-  useEffect(() => {
-    console.log('FacilitySelector: Current facilities state:', facilities);
-    console.log('FacilitySelector: Current facility:', currentFacility);
-    
-    // Check each facility's properties
-    facilities.forEach((facility, index) => {
-      console.log(`Facility ${index}:`, {
-        id: facility.id,
-        name: facility.name,
-        hasName: Boolean(facility.name),
-        nameType: typeof facility.name
-      });
-    });
-  }, [facilities, currentFacility]);
-  
   // Handle facility selection
-  const handleSelectFacility = async (facilityId: string) => {
-    if (facilityId === currentFacilityId) return;
+  const handleSelectFacility = (facilityId: string) => {
+    // Change the facility in the store
+    changeFacilityWithContext(facilityId);
     
-    // Use the enhanced store method that handles cross-store coordination
-    await changeFacilityWithContext(facilityId);
+    // Clear the patient context
+    clearPatientContext();
+    
+    // Close the modal
     setIsModalOpen(false);
-    
-    // Reset patient and document contexts when facility changes
-    // Access stores using getState() instead of hooks
-    const patientStore = usePatientStore.getState();
-    patientStore.clearPatientContext();
-    
-    // Optionally pre-fetch data for the selected facility
-    try {
-      await patientStore.fetchPatients(facilityId);
-      const documentStore = useDocumentStore.getState();
-      await documentStore.fetchDocuments();
-    } catch (error) {
-      console.error('Error pre-fetching facility data:', error);
-    }
   };
+
+  // Shared modal rendering
+  const renderModal = () => (
+    <Transition show={isModalOpen} as="div">
+      <Dialog 
+        as="div" 
+        className="relative z-50" 
+        onClose={() => setIsModalOpen(false)}
+      >
+        {/* Backdrop */}
+        <Transition.Child
+          enter="transition-opacity ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+        </Transition.Child>
+
+        {/* Modal panel */}
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              enter="transition ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="transition ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-xl bg-background p-6 shadow-xl transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <Dialog.Title as="h3" className="text-lg font-semibold text-foreground">
+                    Select Facility
+                  </Dialog.Title>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="rounded-full p-1 text-foreground-muted hover:bg-muted transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {isLoading ? (
+                    <div className="text-center py-8 text-foreground-muted">
+                      Loading facilities...
+                    </div>
+                  ) : facilities.length === 0 ? (
+                    <div className="text-center py-8 text-foreground-muted">
+                      No facilities available
+                    </div>
+                  ) : (
+                    facilities.map((facility) => (
+                      <button
+                        key={facility.id || `facility-${Math.random()}`}
+                        onClick={() => facility.id && handleSelectFacility(facility.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3 rounded-lg text-left",
+                          facility.id === currentFacilityId
+                            ? "bg-primary/10 border border-primary/20"
+                            : "hover:bg-muted border border-border"
+                        )}
+                      >
+                        <div>
+                          <h4 className="font-medium">{facility.name}</h4>
+                          <p className="text-sm text-foreground-muted">{facility.address}</p>
+                        </div>
+                        {facility.id === currentFacilityId && (
+                          <CheckIcon className="h-5 w-5 text-primary" />
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
 
   // Render different variants
   if (variant === 'sidebar') {
@@ -137,99 +201,4 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
       {renderModal()}
     </div>
   );
-
-  // Shared modal rendering
-  function renderModal() {
-    return (
-      <Transition show={isModalOpen} as="div">
-        <Dialog 
-          as="div" 
-          className="relative z-50" 
-          onClose={() => setIsModalOpen(false)}
-        >
-          {/* Backdrop */}
-          <Transition.Child
-            enter="transition-opacity ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-          </Transition.Child>
-
-          {/* Modal panel */}
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                enter="transition ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="transition ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-xl bg-background p-6 shadow-xl transition-all">
-                  <div className="flex items-center justify-between mb-4">
-                    <Dialog.Title as="h3" className="text-lg font-semibold text-foreground">
-                      Select Facility
-                    </Dialog.Title>
-                    <button
-                      onClick={() => setIsModalOpen(false)}
-                      className="rounded-full p-1 text-foreground-muted hover:bg-muted transition-colors"
-                    >
-                      <XMarkIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {isLoading ? (
-                      <div className="text-center py-8 text-foreground-muted">
-                        Loading facilities...
-                      </div>
-                    ) : facilities.length === 0 ? (
-                      <div className="text-center py-8 text-foreground-muted">
-                        No facilities available
-                      </div>
-                    ) : (
-                      facilities.map((facility) => (
-                        <button
-                          key={facility.id || `facility-${Math.random()}`}
-                          onClick={() => facility.id && handleSelectFacility(facility.id)}
-                          className={cn(
-                            "w-full flex items-center justify-between px-4 py-3 rounded-lg text-left",
-                            facility.id === currentFacilityId
-                              ? "bg-primary/10 border border-primary/20"
-                              : "hover:bg-muted border border-border"
-                          )}
-                        >
-                          <div>
-                            <h4 className="font-medium">{facility.name}</h4>
-                            <p className="text-sm text-foreground-muted">{facility.address}</p>
-                          </div>
-                          {facility.id === currentFacilityId && (
-                            <CheckIcon className="h-5 w-5 text-primary" />
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="mt-6 flex justify-end">
-                    <button
-                      onClick={() => setIsModalOpen(false)}
-                      className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-    );
-  }
 }

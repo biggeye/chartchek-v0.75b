@@ -1,165 +1,177 @@
-// (store/facilityStore.ts)
-
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Facility } from '@/types/kipu';
-import { UserApiSettings } from '@/types/store/user';
 import { createClient } from '@/utils/supabase/client';
-import { 
-  listFacilities as listFacilitiesService, 
-  getFacility as getFacilityService,
-  updateFacility,
-  PaginatedFacilitiesResponse
-} from '@/lib/kipu/service/facility-service';
+import { Facility, FacilityStore, Pagination } from '@/types/store/facility';
+import { listFacilities } from '@/lib/kipu/service/facility-service';
+import { memoizeAsync, memoizeAsyncWithExpiration } from '@/utils/memoization';
+import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
+import { queryKeys } from '@/utils/react-query/config';
+import { chatStore } from '@/store/chatStore';
 
-interface FacilityStore {
-  // State
-  facilities: Facility[];
-  currentFacilityId: string | null;
-  isLoading: boolean;
-  error: string | null;
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
-  
-  // Actions
-  fetchFacilities: (page?: number, limit?: number) => Promise<Facility[]>;
-  setCurrentFacility: (facilityId: string) => void;
-  getCurrentFacility: () => Facility | null;
-  changeFacilityWithContext: (facilityId: string) => Promise<void>;
-  testKipuConnection: (facilityId: string) => Promise<{success: boolean; message: string}>;
-}
+// Initialize Supabase client
+const supabase = createClient();
 
-// Create the facility store with Zustand
-export const useFacilityStore = create<FacilityStore>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      facilities: [],
-      currentFacilityId: typeof window !== 'undefined' ? localStorage.getItem('currentFacilityId') : null,
-      isLoading: false,
-      error: null,
-      pagination: {
-        total: 0,
-        page: 1,
-        limit: 10,
-        pages: 0
-      },
-      
-      // Fetch all available facilities
-      fetchFacilities: async (page = 1, limit = 10): Promise<Facility[]> => {
-        try {
-          set({ isLoading: true, error: null });
-          
-          const response = await listFacilitiesService(page, limit);
-          console.log("facilityStore - Raw response from service:", response);
-          
-          // Extract facilities from the paginated response
-          const facilities = response.facilities || [];
-          console.log("facilityStore - Final facilities to be set in store:", facilities);
-          
-          // Update state with facilities and pagination
-          set({ 
-            facilities,
-            pagination: response.pagination || {
-              total: facilities.length,
-              page,
-              limit,
-              pages: Math.ceil(facilities.length / limit)
-            }
-          });
-         /* 
-          if (facilities.length > 0) {
-            // If no current facility is set, set the first one as current
-            const { currentFacilityId } = get();
-            if (!currentFacilityId || !facilities.find(f => f.id === currentFacilityId)) {
-              get().setCurrentFacility(facilities[0].id);
-            }
-          }
-          */
-          return facilities;
-        } catch (error) {
-          console.error('Error fetching facilities:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to fetch facilities' });
-          return [];
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-      
-      // Set the current facility
-      setCurrentFacility: (facilityId: string) => {
-        set({ currentFacilityId: facilityId });
-        
-        // Also store in localStorage for persistence across page refreshes
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('currentFacilityId', facilityId);
-        }
-      },
-      
-      // Get the current facility object
-      getCurrentFacility: () => {
-        const { facilities, currentFacilityId } = get();
-        
-        if (!currentFacilityId) return null;
-        
-        return facilities.find(facility => facility.id === currentFacilityId) || null;
-      },
-      
-      // Change facility and update related context
-      changeFacilityWithContext: async (facilityId: string) => {
-        const { setCurrentFacility } = get();
-        
-        // Set the new facility as current
-        setCurrentFacility(facilityId);
-        
-        // Additional context updates can be added here
-      },
-      
-      // Test KIPU connection
-      testKipuConnection: async (facilityId: string): Promise<{success: boolean; message: string}> => {
-        try {
-          set({ isLoading: true });
-          
-          // Call the test connection API endpoint
-          const response = await fetch(`/api/kipu/test-connection?facilityId=${facilityId}`);
-          const result = await response.json();
-          
-          set({ isLoading: false });
-          
-          if (response.ok) {
-            return { 
-              success: true, 
-              message: result.message || 'Successfully connected to KIPU API' 
-            };
-          } else {
-            return { 
-              success: false, 
-              message: result.error || 'Failed to connect to KIPU API. Please check your credentials.' 
-            };
-          }
-        } catch (error) {
-          set({ isLoading: false });
-          console.error('Error testing KIPU connection:', error);
-          return { 
-            success: false, 
-            message: error instanceof Error ? error.message : 'Failed to test KIPU connection' 
-          };
-        }
-      }
-    }),
-    {
-      name: 'facility-storage',
-      partialize: (state) => ({
-        currentFacilityId: state.currentFacilityId,
-      }),
-    }
-  )
+// Memoized facility service functions
+const memoizedListFacilities = memoizeAsyncWithExpiration(
+  listFacilities,
+  5 * 60 * 1000, // 5 minutes TTL
+  10 // Max cache size
 );
 
+// Create facility store with Zustand
+export const useFacilityStore = create<FacilityStore>((set, get) => ({
+  // Initial state
+  facilities: [], 
+  currentFacilityId: typeof window !== 'undefined' 
+    ? localStorage.getItem('currentFacilityId') || null
+    : null,
+  pagination: null,
+  isLoading: false,
+  error: null,
+  
+  // Set facilities
+  setDocuments: (facilities: Facility[]) => set({ facilities }),
+  
+  // Set current facility ID
+  setCurrentFacilityId: (facilityId: string | null) => {
+    // Only update if the ID has changed
+    if (facilityId !== get().currentFacilityId) {
+      set({ currentFacilityId: facilityId });
+
+    }
+  },
+  
+  // Change facility with context update
+  changeFacilityWithContext: (facilityId: string | null) => {
+    // First update the current facility ID
+    get().setCurrentFacilityId(facilityId);
+    localStorage.setItem('currentFacilityId', facilityId || '');
+    set({ currentFacilityId: facilityId });
+    // Update chat context with new facility ID
+    const chatState = chatStore.getState();
+    if (chatState.updateChatContext) {
+      chatState.updateChatContext({
+        facilityId: facilityId
+      });
+    }
+  },
+  
+  // Set pagination
+  setPagination: (pagination: Pagination | null) => set({ pagination }),
+  
+  // Set loading state
+  setLoading: (isLoading: boolean) => set({ isLoading }),
+  
+  // Set error state
+  setError: (error: string | null) => set({ error }),
+  
+  // Get current facility
+  getCurrentFacility: () => {
+    const { facilities, currentFacilityId } = get();
+    return facilities.find(facility => facility.id === currentFacilityId) || null;
+  },
+  
+  // Fetch facilities from KIPU API with multi-level caching
+  fetchFacilities: async (page = 1, limit = 20) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Get current user ID for cache key
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      
+      // Create cache key
+      const cacheKey = cacheKeys.facilities.list(userId);
+      
+      // Save the current facility ID before fetching
+      const currentId = get().currentFacilityId;
+      
+      // Try to get from cache or fetch fresh data
+      const response = await getCachedData(
+        cacheKey,
+        async () => {
+          // Use memoized function to reduce API calls
+          return memoizedListFacilities(page, limit);
+        },
+        cacheTTL.MEDIUM
+      );
+      
+      // Update store state with facilities and pagination
+      if (response) {
+        const facilities = response.facilities || [];
+        
+        // Determine which facility ID to use:
+        // 1. Keep current ID if it exists and is valid
+        // 2. Otherwise use the first facility as default
+        let facilityId = currentId;
+        
+        // If current ID is null or not in the list of facilities, use first facility
+        if (!facilityId || !facilities.some(f => String(f.id) === String(facilityId))) {
+          facilityId = facilities.length > 0 ? String(facilities[0].id) : null;
+          // Update localStorage with new ID if we're changing it
+          if (facilityId && typeof window !== 'undefined') {
+            localStorage.setItem('currentFacilityId', facilityId);
+          }
+        }
+  
+        set({
+          facilities,
+          pagination: response.pagination || null,
+          currentFacilityId: facilityId,
+          isLoading: false
+        });
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching facilities:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch facilities', 
+        isLoading: false 
+      });
+      return null;
+    }
+  },
+  
+  // Clear facility store
+  clearFacilityStore: () => {
+    set({ 
+      facilities: [], 
+      currentFacilityId: null, 
+      pagination: null, 
+      isLoading: false, 
+      error: null 
+    });
+  },
+  
+  // Invalidate facility cache
+  invalidateFacilityCache: async () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const { QueryClient } = await import('@tanstack/react-query');
+        const queryClient = new QueryClient();
+        
+        // Invalidate React Query cache for facilities
+        queryClient.invalidateQueries({ queryKey: queryKeys.facilities.all() });
+        
+        // For server-side Redis cache, we would need to call an API endpoint
+        // that would invalidate the Redis cache on the server
+        await fetch('/api/cache/invalidate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pattern: 'facilities:*'
+          }),
+        });
+      }
+    } catch (error) {
+      console.error('Error invalidating facility cache:', error);
+    }
+  }
+}));
+
+// Export the store
 export const facilityStore = useFacilityStore;

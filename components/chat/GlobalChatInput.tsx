@@ -26,9 +26,9 @@ import DropdownMenu from '@/components/ui/dropdown-menu2'
 import Image from 'next/image'
 import { Transition } from '@headlessui/react'
 import { DynamicPaginatedDocumentList } from '@/components/documents/DynamicPaginatedDocumentList'
-import { usePatientStore } from '@/store/patientStore'
+import { usePatient } from '@/lib/contexts/PatientProvider'
 import { useFacilityStore } from '@/store/facilityStore'
-import { PatientBasicInfo } from '@/lib/kipu/types'
+import { PatientBasicInfo } from '@/types/kipu'
 import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog'
 import { useSidebarStore } from '@/store/sidebarStore'
 import { XMarkIcon, UserIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
@@ -41,7 +41,6 @@ type PatientContextOption = {
   category: 'basic' | 'evaluation' | 'vitalSigns' | 'appointments'
 }
 
-
 export function GlobalChatInputArea() {
   // State management
   const [message, setMessage] = useState('')
@@ -49,14 +48,14 @@ export function GlobalChatInputArea() {
   const [showAttachFilesPanel, setShowAttachFilesPanel] = useState(false)
   const [showPatientPanel, setShowPatientPanel] = useState(false)
   const [showDocumentListPanel, setShowDocumentListPanel] = useState(false)
-  const [patients, setPatients] = useState<PatientBasicInfo[]>([])
   const [documentPage, setDocumentPage] = useState(0)
-  const [facilityId, setFacilityId] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
   const [selectedAssistantKey, setSelectedAssistantKey] = useState<string>(assistantRoster[0].key)
   const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false)
   const [selectedContextOptions, setSelectedContextOptions] = useState<PatientContextOption[]>([])
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [showEvaluationsPanel, setShowEvaluationsPanel] = useState(false)
+  const [isLoadingEvaluations, setIsLoadingEvaluations] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -103,6 +102,42 @@ export function GlobalChatInputArea() {
     cancelStream
   } = useStreamStore()
 
+  // Patient context from PatientProvider
+  const { 
+    currentPatient, 
+    patientEvaluations, 
+    patientVitalSigns, 
+    patientAppointments,
+    allEvaluations,
+    isPatientContextEnabled,
+    fetchEvaluations,
+    fetchVitalSigns,
+    fetchAppointments,
+    fetchAllEvaluations,
+    getEvaluationById,
+    patients,
+    selectedFacilityId,
+    togglePatientContext,
+    clearSelection,
+    selectPatient
+  } = usePatient()
+
+  // Document store
+  const {
+    documents,
+    isLoading: isDocumentsLoading,
+    fetchDocumentsForCurrentFacility
+  } = useDocumentStore()
+
+  // Facility store
+  const {
+    getCurrentFacility,
+    currentFacilityId
+  } = useFacilityStore()
+
+  // Current facility object
+  const currentFacility = getCurrentFacility();
+
   // Sync isSubmitting state with isStreamingActive
   useEffect(() => {
     if (!isStreamingActive && isSubmitting) {
@@ -119,79 +154,7 @@ export function GlobalChatInputArea() {
     }
   }, [activeRunStatus, isStreamingActive, isSubmitting]);
 
-  // Document store
-  const {
-    documents,
-    isLoading: isDocumentsLoading,
-    fetchDocumentsForCurrentFacility
-  } = useDocumentStore()
-
-  // Patient store
-  const {
-    isPatientContextEnabled,
-    currentPatient,
-    currentPatientEvaluations,
-    currentPatientVitalSigns,
-    currentPatientAppointments,
-    setPatientContextEnabled,
-    setCurrentPatient,
-    clearPatientContext,
-    fetchPatients,
-    fetchPatientWithDetails
-  } = usePatientStore()
-
-  // Facility store
-  const {
-    getCurrentFacility
-  } = useFacilityStore()
-
-  // Current facility object
-  const currentFacility = getCurrentFacility();
-
-  // Extract facilityId from pathname if available
-  useEffect(() => {
-    const match = pathname.match(/\/facilities\/([^\/]+)/)
-    if (match && match[1]) {
-      setFacilityId(match[1])
-    } else {
-      // If no facility ID in the URL, use the current facility from the store
-      const currentFacilityId = useFacilityStore.getState().currentFacilityId;
-      if (currentFacilityId) {
-        setFacilityId(currentFacilityId);
-      }
-    }
-  }, [pathname])
-
-  // Load patients if facilityId is available
-  useEffect(() => {
-    if (facilityId) {
-      try {
-        // Use patientStore to fetch patients for the current facility
-        fetchPatients(facilityId).then(fetchedPatients => {
-          setPatients(fetchedPatients)
-        })
-      } catch (error) {
-        console.error('Error fetching patients:', error)
-      }
-    }
-  }, [facilityId, fetchPatients])
-
-  // Subscribe to facility changes
-  useEffect(() => {
-    // Set up subscription to facility store changes
-    const unsubscribe = useFacilityStore.subscribe((state: any) => {
-      const newFacilityId = state.currentFacilityId;
-      if (newFacilityId && newFacilityId !== facilityId) {
-        setFacilityId(newFacilityId);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [facilityId]);
-
-  // Fetch documents on mount
+  // Fetch documents on mount and when facility changes
   useEffect(() => {
     (async () => {
       try {
@@ -200,7 +163,7 @@ export function GlobalChatInputArea() {
         console.error('Failed to load documents:', error)
       }
     })()
-  }, [fetchDocumentsForCurrentFacility, facilityId])
+  }, [fetchDocumentsForCurrentFacility, currentFacilityId])
 
   // Reset document page when documents change
   useEffect(() => {
@@ -226,23 +189,17 @@ export function GlobalChatInputArea() {
     setShowPatientPanel(false)
   }
 
-  const togglePatientContext = () => {
-    setPatientContextEnabled(!isPatientContextEnabled)
+  const handlePatientToggle = () => {
+    togglePatientContext()
     if (isPatientContextEnabled) {
-      clearPatientContext()
       setSelectedContextOptions([])
     }
   }
 
-  const selectPatient = async (patient: PatientBasicInfo) => {
-    setCurrentPatient(patient)
-    setPatientContextEnabled(true)
-    setShowPatientPanel(false)
-
-    // Load patient details for context builder
-    if (facilityId) {
-      // Use id property first, then fall back to casefile_id property for fetching details from Kipu
-      await fetchPatientWithDetails(facilityId, patient.id || patient.casefile_id)
+  const selectPatientHandler = async (patient: PatientBasicInfo) => {
+    if (currentFacilityId && patient.patientId) {
+      await selectPatient(currentFacilityId, patient.patientId)
+      setShowPatientPanel(false)
     }
   }
 
@@ -375,7 +332,7 @@ export function GlobalChatInputArea() {
       if (isPatientContextEnabled && currentPatient) {
         if (selectedContextOptions.length > 0) {
           // Create a properly formatted patient context with all selected data
-          const patientHeader = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
+          const patientHeader = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
 
           // Group options by category for better organization
           const categorizedOptions: Record<string, string[]> = {};
@@ -419,7 +376,7 @@ export function GlobalChatInputArea() {
           console.log('Patient context being sent to the API:', additionalInstructions);
         } else {
           // Use basic patient info if no specific options were selected
-          additionalInstructions = `Patient Context: ${currentPatient.first_name} ${currentPatient.last_name} (ID: ${currentPatient.casefile_id})`;
+          additionalInstructions = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
         }
       }
 
@@ -454,6 +411,27 @@ export function GlobalChatInputArea() {
       console.error('Error submitting message:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const fetchEvaluationsDemo = async () => {
+    setIsLoadingEvaluations(true);
+    try {
+      if (selectedFacilityId && currentPatient?.patientId) {
+        // Fetch evaluations for the current patient
+        await fetchEvaluations(selectedFacilityId, currentPatient.patientId);
+        console.log('Patient evaluations fetched:', patientEvaluations);
+        
+        // Optionally fetch all evaluations
+        await fetchAllEvaluations();
+        console.log('All evaluations fetched:', allEvaluations);
+      } else {
+        console.warn('Cannot fetch evaluations: No facility or patient selected');
+      }
+    } catch (error) {
+      console.error('Error fetching evaluations:', error);
+    } finally {
+      setIsLoadingEvaluations(false);
     }
   };
 
@@ -583,10 +561,10 @@ export function GlobalChatInputArea() {
                         onClick={openPatientContextBuilder}
                         className="font-medium mr-1 hover:underline focus:outline-none"
                       >
-                        {currentPatient.first_name} {currentPatient.last_name}
+                        {currentPatient.firstName} {currentPatient.lastName}
                       </button>
                       <button
-                        onClick={togglePatientContext}
+                        onClick={handlePatientToggle}
                         className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
                         aria-label="Remove patient context"
                       >
@@ -683,6 +661,16 @@ export function GlobalChatInputArea() {
                               <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
                               Browse documents
                             </button>
+                            <button
+                              onClick={() => {
+                                fetchEvaluationsDemo();
+                                setShowMobileMenu(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                            >
+                              <DocumentIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              Fetch Evaluations
+                            </button>
                           </div>
                         </div>
                       )}
@@ -718,6 +706,16 @@ export function GlobalChatInputArea() {
                           onClick={toggleDocumentListPanel}
                           className="inline-flex items-center justify-center px-1 hover:text-blue-600"
                           aria-label="Browse documents"
+                        >
+                          <DocumentIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={fetchEvaluationsDemo}
+                          className="inline-flex items-center justify-center px-1 hover:text-blue-600"
+                          aria-label="Fetch Evaluations"
                         >
                           <DocumentIcon className="h-5 w-5" />
                         </button>
@@ -980,9 +978,9 @@ export function GlobalChatInputArea() {
                       <div className="space-y-2">
                         {patients.map((patient: PatientBasicInfo) => (
                           <button
-                            key={patient.id || patient.casefile_id || patient.mr_number}
+                            key={patient.patientId || patient.mrn}
                             onClick={() => {
-                              selectPatient(patient);
+                              selectPatientHandler(patient);
                               togglePatientPanel();
                             }}
                             className="flex items-center w-full p-3 text-left rounded-md hover:bg-gray-100 transition-colors"
@@ -991,9 +989,9 @@ export function GlobalChatInputArea() {
                               <UserIcon className="h-5 w-5 text-gray-600" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{patient.first_name} {patient.last_name}</p>
-                              {patient.mr_number && (
-                                <p className="text-sm text-gray-500">MR# {patient.mr_number}</p>
+                              <p className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</p>
+                              {patient.mrn && (
+                                <p className="text-sm text-gray-500">MR# {patient.mrn}</p>
                               )}
                             </div>
                           </button>

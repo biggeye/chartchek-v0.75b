@@ -7,12 +7,13 @@ import { PatientListItem } from '@/components/patient/PatientListItem';
 import { PatientSearch } from '@/components/patient/PatientSearch';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { kipuGetPatients } from '@/lib/kipu/service/patient-service';
 
 // Define a type that matches the PatientListItem component requirements
 interface PatientListItemType {
-  id: string;
-  first_name: string;
-  last_name: string;
+  patientId: string;
+  firstName: string;
+  lastName: string;
   dob?: string;
   gender?: string;
   contact?: {
@@ -23,27 +24,32 @@ interface PatientListItemType {
 
 export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { patients, isLoading, error, fetchPatientsForCurrentFacility } = usePatientStore();
-  const { currentFacilityId } = useFacilityStore();
+  const { patients, isLoading, error } = usePatientStore();
+  const { currentFacilityId, fetchFacilities } = useFacilityStore();
 
   useEffect(() => {
+    // Fetch facilities first
+    fetchFacilities();
     // Fetch patients when the component mounts or when the facility changes
-    fetchPatientsForCurrentFacility();
-  }, [currentFacilityId, fetchPatientsForCurrentFacility]);
+    console.log('currentFacilityId', currentFacilityId);
+  }, []);
 
-  // Filter patients based on search query
-  const filteredPatients = patients.filter(patient => {
-    const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
-    const query = searchQuery.toLowerCase();
-    
-    // Enhanced search to include more fields
-    return fullName.includes(query) || 
-           (patient.id && patient.id.toString().toLowerCase().includes(query)) ||
-           (patient.mr_number && patient.mr_number.toString().toLowerCase().includes(query)) ||
-           (patient.gender && patient.gender.toLowerCase().includes(query)) ||
-           (patient.contact?.email && patient.contact.email.toLowerCase().includes(query)) ||
-           (patient.contact?.phone && patient.contact.phone.toLowerCase().includes(query));
-  });
+ // Remove this filtering since we're getting all patients now
+// const patientsByFacility = patients.filter(patient => 
+//   String(patient.facilityId) === String(currentFacilityId)
+// );
+
+// Just use all patients directly
+const filteredPatients = patients.filter(patient => {
+  const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+  const query = searchQuery.toLowerCase();
+  
+  // Enhanced search to include more fields
+  return fullName.includes(query) || 
+         (patient.patientId && patient.patientId.toString().toLowerCase().includes(query)) ||
+         (patient.mrn && patient.mrn.toString().toLowerCase().includes(query)) ||
+         (patient.gender && patient.gender.toLowerCase().includes(query));
+});
 
   return (
     <div className="container py-6">
@@ -90,16 +96,15 @@ export default function PatientsPage() {
               {filteredPatients.map((patient) => {
                 // Create a patient object that matches the PatientListItem component requirements
                 const patientForList: PatientListItemType = {
-                  id: patient.id || patient.casefile_id || patient.mr_number || '',
-                  first_name: patient.first_name,
-                  last_name: patient.last_name,
-                  dob: patient.dob,
+                  patientId: patient.patientId || patient.mrn || '',
+                  firstName: patient.firstName,
+                  lastName: patient.lastName,
+                  dob: patient.dateOfBirth,
                   gender: patient.gender,
-                  contact: patient.contact
                 };
                 
                 return (
-                  <div key={patient.id || patient.casefile_id || `patient-${patient.mr_number}`}>
+                  <div key={patient.patientId || patient.mrn || `patient-${patient.mrn}`}>
                     <PatientListItem 
                       patient={patientForList} 
                       facilityId={currentFacilityId || ''}
