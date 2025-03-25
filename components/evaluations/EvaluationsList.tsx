@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuEvaluation } from '@/types/kipu';
+import { KipuEvaluation, KipuPatientEvaluationItem, KipuPatientEvaluationItemBase, KipuEvaluationItemObject } from '@/types/kipu';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -27,7 +27,7 @@ interface EvaluationItem {
 
 interface EvaluationsListProps {
   evaluations: KipuEvaluation[];
-  facilityId: string;
+  facilityId: number;
   patientId: string;
   onEdit: (evaluationId: string) => void;
   onNew: () => void;
@@ -47,7 +47,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
       const matchesSearch =
         !searchTerm ||
         evaluation.evaluation_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (evaluation.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        (evaluation.evaluation_content?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       // Apply status filter
       const matchesStatus = !statusFilter || evaluation.status === statusFilter;
@@ -294,7 +294,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                   <div className="mt-6 space-y-4">
                     <h3 className="text-lg font-semibold">Assessment Items</h3>
                     <div className="border rounded-md divide-y">
-                      {selectedEvaluation.items.map((item: EvaluationItem) => (
+                      {selectedEvaluation.items.map((item: KipuEvaluationItemObject) => (
                         <div key={item.id} className="p-4">
                           <div className="font-medium">{item.question}</div>
                           <div className="text-gray-700 mt-1">

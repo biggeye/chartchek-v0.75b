@@ -7,6 +7,7 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { KipuCredentials } from '@/types/kipu';
+import { createServer } from '@/utils/supabase/server';
 
 // Table name for API settings in Supabase
 const API_SETTINGS_TABLE = 'user_api_settings';
@@ -26,13 +27,18 @@ function createSupabaseClient() {
  */
 export async function loadKipuCredentialsFromSupabase(): Promise<KipuCredentials | null> {
   try {
-    const supabase = createSupabaseClient();
-    
+    const supabase = await createClient();
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    const userId = user?.user?.id;
+    if (!userId) {
+      console.warn('Failed to load KIPU credentials from Supabase: User not authenticated');
+      return null;
+    }
     // Query the api_settings table for KIPU credentials
     const { data, error } = await supabase
       .from(API_SETTINGS_TABLE)
       .select('*')
-      .eq('api_name', 'kipu')
+      .eq('owner_id', userId)
       .single();
     
     if (error || !data) {

@@ -24,8 +24,8 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
   // Initial state
   facilities: [], 
   currentFacilityId: typeof window !== 'undefined' 
-    ? localStorage.getItem('currentFacilityId') || null
-    : null,
+    ? Number(localStorage.getItem('currentFacilityId')) || 0
+    : 0,
   pagination: null,
   isLoading: false,
   error: null,
@@ -34,20 +34,22 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
   setDocuments: (facilities: Facility[]) => set({ facilities }),
   
   // Set current facility ID
-  setCurrentFacilityId: (facilityId: string | null) => {
+  setCurrentFacilityId: (facilityId: number) => {
     // Only update if the ID has changed
     if (facilityId !== get().currentFacilityId) {
       set({ currentFacilityId: facilityId });
-
+      // Update localStorage when ID changes
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentFacilityId', String(facilityId));
+      }
     }
   },
   
   // Change facility with context update
-  changeFacilityWithContext: (facilityId: string | null) => {
+  changeFacilityWithContext: (facilityId: number) => {
     // First update the current facility ID
     get().setCurrentFacilityId(facilityId);
-    localStorage.setItem('currentFacilityId', facilityId || '');
-    set({ currentFacilityId: facilityId });
+    
     // Update chat context with new facility ID
     const chatState = chatStore.getState();
     if (chatState.updateChatContext) {
@@ -67,9 +69,11 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
   setError: (error: string | null) => set({ error }),
   
   // Get current facility
-  getCurrentFacility: () => {
+  getCurrentFacility: (): Facility | undefined => {
     const { facilities, currentFacilityId } = get();
-    return facilities.find(facility => facility.id === currentFacilityId) || null;
+    return facilities.find(facility => 
+      Number(facility.id) === currentFacilityId
+    );
   },
   
   // Fetch facilities from KIPU API with multi-level caching
@@ -106,12 +110,13 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
         // 2. Otherwise use the first facility as default
         let facilityId = currentId;
         
-        // If current ID is null or not in the list of facilities, use first facility
-        if (!facilityId || !facilities.some(f => String(f.id) === String(facilityId))) {
-          facilityId = facilities.length > 0 ? String(facilities[0].id) : null;
-          // Update localStorage with new ID if we're changing it
-          if (facilityId && typeof window !== 'undefined') {
-            localStorage.setItem('currentFacilityId', facilityId);
+        // If current ID is not in the list of facilities, use first facility or 0
+        if (!facilities.some(f => Number(f.id) === facilityId)) {
+          facilityId = facilities.length > 0 ? Number(facilities[0].id) : 0;
+          
+          // Update localStorage with new ID
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('currentFacilityId', String(facilityId));
           }
         }
   
@@ -132,17 +137,6 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
       });
       return null;
     }
-  },
-  
-  // Clear facility store
-  clearFacilityStore: () => {
-    set({ 
-      facilities: [], 
-      currentFacilityId: null, 
-      pagination: null, 
-      isLoading: false, 
-      error: null 
-    });
   },
   
   // Invalidate facility cache

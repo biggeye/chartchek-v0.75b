@@ -57,8 +57,9 @@ export default function PatientPage() {
     <div className="space-y-6 p-4">
       <div className="flex justify-end gap-3 mb-4">
         <Button
+        outline
           onClick={handleTogglePatientContext}
-          color={isPatientContextEnabled ? "red" : "dark/zinc"}
+
           className="flex items-center gap-2 text-sm py-1.5 px-3"
         >
           {isPatientContextEnabled ? "Disable Patient Context" : "Enable Patient Context"}
@@ -81,7 +82,7 @@ export default function PatientPage() {
             <h3 className="text-lg font-medium mb-2">Demographics</h3>
             <div className="space-y-2">
               <p><span className="font-medium">Name:</span> {currentPatient.firstName} {currentPatient.lastName}</p>
-              <p><span className="font-medium">DOB:</span> {currentPatient.dateOfBirth ? new Date(currentPatient.dateOfBirth).toLocaleDateString() : 'Not available'}</p>
+              <p><span className="font-medium">DOB:</span> {currentPatient.dateOfBirth || 'Not available'}</p>
               <p><span className="font-medium">Gender:</span> {currentPatient.gender}</p>
             </div>
           </div>

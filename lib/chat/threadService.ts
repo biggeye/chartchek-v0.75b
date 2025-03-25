@@ -75,7 +75,7 @@ export class ThreadService {
    */
   async getUserThreadData(userId: string): Promise<UserThreadData> {
     try {
-      const response = await fetch('/api/threads');
+      const response = await fetch('/api/openai/threads');
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -91,7 +91,7 @@ export class ThreadService {
       const runsPromises = threads.map(async (thread) => {
         try {
           // Get all runs for this thread instead of just checking for last_run
-            const runsResponse = await fetch(`/api/threads/${thread.thread_id}/run`);
+            const runsResponse = await fetch(`/api/openai/threads/${thread.thread_id}/run`);
           
           if (!runsResponse.ok) {
              return [];
@@ -202,7 +202,7 @@ export class ThreadService {
    */
   async getThreadRunsByThreadId(threadId: string): Promise<ThreadRun[]> {
     try {
-      const response = await fetch(`/api/threads/${threadId}/run`);
+      const response = await fetch(`/api/openai/threads/${threadId}/run`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -312,7 +312,7 @@ export class ThreadService {
       }
       
       // For non-streaming cases, continue with the existing implementation
-      const response = await fetch(`/api/threads/${threadId}/run`, {
+      const response = await fetch(`/api/openai/threads/${threadId}/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -377,7 +377,7 @@ export class ThreadService {
    */
   async createThread(): Promise<ChatThread> {
     try {
-      const response = await fetch('/api/threads', {
+      const response = await fetch('/api/openai/threads', {
         method: 'POST',
       });
       

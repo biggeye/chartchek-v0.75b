@@ -20,14 +20,14 @@ export default async function ProtectedLayout({
       redirect("/login");
   }
   return (
-      <div>
-        <OpenAIProvider>
-          <PatientProvider>
-            <AppLayout user_id={user.id}>
-              {children}
-            </AppLayout>
-          </PatientProvider>
-        </OpenAIProvider>
-      </div>
+    <div suppressHydrationWarning={true}>
+      <OpenAIProvider>
+        <PatientProvider>
+          <AppLayout user_id={user.id}>
+            {children}
+          </AppLayout>
+        </PatientProvider>
+      </OpenAIProvider>
+    </div>
   );
 }

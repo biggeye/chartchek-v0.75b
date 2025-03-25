@@ -12,7 +12,9 @@ import {
   Dialog, 
   DialogContent, 
   DialogTitle,
-  DialogHeader
+  DialogHeader,
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog'
 
 type PatientContextBuilderDialogProps = {
@@ -20,6 +22,7 @@ type PatientContextBuilderDialogProps = {
   onClose: () => void
   onApply: (selectedOptions: any[]) => void
 }
+
 interface ContextItem {
   id: string;
   label: string;
@@ -36,9 +39,8 @@ export function PatientContextBuilderDialog({
   // Get patient data from patientStore
   const {
     currentPatient: patient,
-    currentPatientEvaluations: patientEvaluations,
+    currentPatientEvaluations: KipuPatientEvaluations,
     currentPatientVitalSigns: patientVitalSigns,
-    currentPatientAppointments: patientAppointments,
     isLoading,
     selectedContextOptions,
     updatePatientContextOptions,
@@ -50,8 +52,8 @@ export function PatientContextBuilderDialog({
   const [loadingEvaluations, setLoadingEvaluations] = useState(false)
   
   // Generate options based on available patient data
-  const generateOptions = (): any[] => {
-    const options: any[] = []
+  const generateOptions = (): ContextItem[] => {
+    const options: ContextItem[] = [];
 
     // Basic patient info
     if (patient) {
@@ -73,7 +75,95 @@ export function PatientContextBuilderDialog({
           category: 'basic'
         })
       }
+      if (patient.status) {
+        options.push({
+          id: 'status',
+          label: 'Status',
+          value: patient.status,
+          category: 'basic'
+        });
+      }
       
+      if (patient.admissionDate) {
+        options.push({
+          id: 'admissionDate',
+          label: 'Admission Date',
+          value: patient.admissionDate,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.dischargeDate) {
+        options.push({
+          id: 'dischargeDate',
+          label: 'Discharge Date',
+          value: patient.dischargeDate,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.primaryDiagnosis) {
+        options.push({
+          id: 'primaryDiagnosis',
+          label: 'Primary Diagnosis',
+          value: patient.primaryDiagnosis,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.insuranceProvider) {
+        options.push({
+          id: 'insuranceProvider',
+          label: 'Insurance Provider',
+          value: patient.insuranceProvider,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.dischargeType) {
+        options.push({
+          id: 'dischargeType',
+          label: 'Discharge Type',
+          value: patient.dischargeType,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.sobrietyDate) {
+        options.push({
+          id: 'sobrietyDate',
+          label: 'Sobriety Date',
+          value: patient.sobrietyDate,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.levelOfCare) {
+        options.push({
+          id: 'levelOfCare',
+          label: 'Level of Care',
+          value: patient.levelOfCare,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.nextLevelOfCare) {
+        options.push({
+          id: 'nextLevelOfCare',
+          label: 'Next Level of Care',
+          value: patient.nextLevelOfCare,
+          category: 'basic'
+        });
+      }
+      
+      if (patient.nextLevelOfCareDate) {
+        options.push({
+          id: 'nextLevelOfCareDate',
+          label: 'Next Level of Care Date',
+          value: patient.nextLevelOfCareDate,
+          category: 'basic'
+        });
+      }
       if (patient.gender) {
         options.push({
           id: 'gender',
@@ -82,12 +172,10 @@ export function PatientContextBuilderDialog({
           category: 'basic'
         })
       }
-      
-  
     }
     
     // Evaluation data
-    patientEvaluations.forEach((evaluation: any, index) => {
+    KipuPatientEvaluations.forEach((evaluation: any, index) => {
       if (evaluation.diagnosis) {
         options.push({
           id: `diagnosis_${index}`,
@@ -126,30 +214,18 @@ export function PatientContextBuilderDialog({
       })
     })
     
-    // Appointments
-    patientAppointments.forEach((appt, index) => {
-      options.push({
-        id: `appt_${index}`,
-        value: `${appt.type}: ${appt.startTime}`,
-        title: appt.startTime,
-        category: 'appointments'
-      })
-    })
-    
-    return options
-  }
-
+    return options;
+  };
+  
+  // Load all available options
   useEffect(() => {
-    // Load all available options
-    const options = [
-      // your options here
-    ];
-    setAllOptions(options);
+    const generatedOptions = generateOptions();
+    setAllOptions(generatedOptions);
     
     // Initialize with default options (basic patient info)
-    const basicOptions = options.filter(opt => opt.category === 'basic');
+    const basicOptions = generatedOptions.filter(opt => opt.category === 'basic');
     setSelectedOptions(basicOptions);
-  }, []);
+  }, [patient, KipuPatientEvaluations, patientVitalSigns]);
   
   // Load evaluations when dialog opens
   useEffect(() => {
@@ -179,24 +255,32 @@ export function PatientContextBuilderDialog({
       setAllOptions(options)
       
       // Initialize with previously selected options if available
-      if (selectedContextOptions?.items && selectedContextOptions.items.length > 0) {
-        // Use the items array instead of the whole object
-        setSelectedOptions(selectedContextOptions.items);
-      
-          } else {
+      if (selectedContextOptions?.filterBy) {
+        // Convert filterBy string back to selected options
+        const selectedIds = selectedContextOptions.filterBy.split(',');
+        const matchedOptions = options.filter(opt => selectedIds.includes(opt.id));
+        
+        if (matchedOptions.length > 0) {
+          setSelectedOptions(matchedOptions);
+        } else {
+          // Default to basic patient info if no matches
+          const basicOptions = options.filter(opt => opt.category === 'basic');
+          setSelectedOptions(basicOptions);
+        }
+      } else {
         // Default to basic patient info
-        const basicOptions = options.filter(opt => opt.category === 'basic')
-        setSelectedOptions(basicOptions)
+        const basicOptions = options.filter(opt => opt.category === 'basic');
+        setSelectedOptions(basicOptions);
       }
     }
-  }, [patient, patientEvaluations, patientVitalSigns, patientAppointments, selectedContextOptions])
+  }, [patient, KipuPatientEvaluations, patientVitalSigns, selectedContextOptions])
   
   // Check if an option is selected
   const isOptionSelected = (optionId: string) => {
     return selectedOptions.some(opt => opt.id === optionId)
   }
   
-  const handleOptionToggle = (option: any) => {
+  const handleOptionToggle = (option: ContextItem) => {
     console.log('Toggle option:', option.id, 'Current selected:', selectedOptions.map(o => o.id));
     
     setSelectedOptions(prev => {
@@ -216,9 +300,11 @@ export function PatientContextBuilderDialog({
     // Update the store with selected options
     // Convert our array of ContextItem to the expected PatientContextOptions format
     updatePatientContextOptions({
-      // Map any relevant properties from selectedOptions to PatientContextOptions
-      // For example, if you're using filterBy:
-      filterBy: selectedOptions.map(opt => opt.id).join(',')
+      // Add all required properties from the PatientContextOptions type
+      filterBy: selectedOptions.map(opt => opt.id).join(','),
+      showInactive: false, // Add default value
+      sortBy: 'name',      // Add default value
+      sortOrder: 'asc'     // Add default value
     });
     
     onApply(selectedOptions);
@@ -229,13 +315,9 @@ export function PatientContextBuilderDialog({
       <DialogContent className="w-full max-w-md">
         <DialogHeader>
           <DialogTitle>Patient Context Builder</DialogTitle>
-          <button
-            type="button"
-            className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
-            onClick={onClose}
-          >
-            <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-          </button>
+          <DialogDescription>
+            Select which patient information to include in the AI context.
+          </DialogDescription>
         </DialogHeader>
         
         {isLoading || loadingEvaluations ? (
@@ -369,38 +451,6 @@ export function PatientContextBuilderDialog({
                           )}
                         </div>
                       </div>
-                      
-                      {/* Appointments */}
-                      <div>
-                        <h4 className="font-medium mb-2">Appointments</h4>
-                        <div className="space-y-2">
-                          {allOptions
-                            .filter(opt => opt.category === 'appointments')
-                            .length > 0 ? (
-                            allOptions
-                              .filter(opt => opt.category === 'appointments')
-                              .map(option => (
-                                <div key={option.id} className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    id={option.id}
-                                    checked={isOptionSelected(option.id)}
-                                    onChange={() => handleOptionToggle(option)}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                  <label
-                                    htmlFor={option.id}
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                  >
-                                    {option.label}
-                                  </label>
-                                </div>
-                              ))
-                          ) : (
-                            <div className="text-sm text-gray-500">No appointments available</div>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   </Tab.Panel>
                 </Tab.Panels>
@@ -408,10 +458,10 @@ export function PatientContextBuilderDialog({
             </div>
             
             <div className="mt-6 flex justify-end gap-2 border-t border-gray-200 pt-4">
-              <Button onClick={onClose} color="zinc">
+              <Button onClick={onClose} outline>
                 Cancel
               </Button>
-              <Button onClick={handleApply} color="blue">
+              <Button onClick={handleApply}>
                 Apply
               </Button>
             </div>

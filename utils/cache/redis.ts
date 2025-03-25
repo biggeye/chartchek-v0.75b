@@ -67,45 +67,68 @@ if (process.env.REDIS_URL && process.env.REDIS_TOKEN) {
 export const redis = redisClient;
 
 /**
- * Cache key patterns for consistent key structure
+ * Cache key patterns for different types of data
+ * These are used to generate consistent cache keys and to invalidate related caches
  */
 export const cacheKeys = {
   facilities: {
     list: (userId: string, status?: string, sort?: string, page?: number, limit?: number) => 
-      `facilities:${userId}:${status || 'active'}:${sort || 'name_asc'}:${page || 1}:${limit || 20}`,
-    detail: (userId: string, facilityId: string) => 
-      `facility:${userId}:${facilityId}`
+      `facilities:${userId}:list:${status || 'all'}:${sort || 'default'}:${page || 1}:${limit || 20}`,
+    detail: (userId: string, facilityId: number) => 
+      `facilities:${userId}:detail:${facilityId}`
   },
   patients: {
-    list: (userId: string, facilityId: string) => 
-      `patients:${userId}:${facilityId}`,
+    list: (userId: string, facilityId: number) => 
+      `patients:${userId}:${facilityId}:list`,
     detail: (userId: string, patientId: string) => 
-      `patient:${userId}:${patientId}`,
+      `patients:${userId}:detail:${patientId}`,
     evaluations: (userId: string, patientId: string) => 
-      `patient_evaluations:${userId}:${patientId}`,
+      `patients:${userId}:${patientId}:evaluations`,
     vitalSigns: (userId: string, patientId: string) => 
-      `patient_vitals:${userId}:${patientId}`,
-    appointments: (userId: string, patientId: string) => 
-      `patient_appointments:${userId}:${patientId}`
+      `patients:${userId}:${patientId}:vitalsigns`,
+    appointments: (userId: string, patientId: string, optionsHash?: string) => 
+      `patients:${userId}:${patientId}:appointments${optionsHash ? `:${optionsHash}` : ''}`
   },
   evaluations: {
     list: (userId: string) => 
-      `evaluations:${userId}:all`
+      `evaluations:${userId}:list`,
+    detail: (userId: string, evaluationId: string) => 
+      `evaluations:${userId}:detail:${evaluationId}`
   },
   documents: {
     list: (userId: string, facilityId?: string) => 
-      `documents:${userId}:${facilityId || 'all'}`,
+      `documents:${userId}:${facilityId || 'all'}:list`,
     detail: (userId: string, documentId: string) => 
-      `document:${userId}:${documentId}`
+      `documents:${userId}:detail:${documentId}`
   },
   dashboard: {
-    metrics: (userId: string, facilityId: string) => 
-      `dashboard_metrics:${userId}:${facilityId}`,
-    patientStats: (userId: string, facilityId: string) => 
-      `patient_stats:${userId}:${facilityId}`,
-    documentInsights: (userId: string, facilityId: string) => 
-      `document_insights:${userId}:${facilityId}`
-  }
+    metrics: (userId: string, facilityId: number) => 
+      `dashboard:${userId}:${facilityId}:metrics`,
+    patientStats: (userId: string, facilityId: number) => 
+      `dashboard:${userId}:${facilityId}:patientstats`,
+    documentInsights: (userId: string, facilityId: number) => 
+      `dashboard:${userId}:${facilityId}:documentinsights`
+  },
+  // New simplified cache key functions
+  KipuPatientEvaluations: (patientId: string) => 
+    `patient:${patientId}:evaluations`,
+  patientVitalSigns: (patientId: string) => 
+    `patient:${patientId}:vitalsigns`,
+  patientAppointments: (userId: string, patientId: string, optionsHash?: string) => 
+    `patient:${userId}:${patientId}:appointments${optionsHash ? `:${optionsHash}` : ''}`,
+  evaluation: (evaluationId: string) => 
+    `evaluation:${evaluationId}`,
+  allEvaluations: () => 
+    `evaluations:all`,
+  allPatientEvaluations: (page: number = 1, limit: number = 20, optionsKey: string = '') => 
+    `patient_evaluations:all:${page}:${limit}${optionsKey ? `:${optionsKey}` : ''}`,
+  // New cache keys for appointment-related features
+  schedulerAppointments: (userId: string, optionsHash: string) => 
+    `scheduler:${userId}:appointments:${optionsHash}`,
+  appointmentTypes: (userId: string, page: number = 1, limit: number = 100) => 
+    `scheduler:${userId}:appointment_types:${page}:${limit}`,
+  appointmentStatuses: (userId: string) => 
+    `scheduler:${userId}:appointment_statuses`
 };
 
 /**
@@ -130,32 +153,18 @@ export async function getCachedData<T>(
   ttl = cacheTTL.MEDIUM
 ): Promise<T> {
   try {
-    // Try to get from cache first
-    const cached = await redis.get(key);
-    if (cached) {
-      console.log(`Cache hit for key: ${key}`);
-      return cached as T;
-    }
-    
-    // If not in cache, fetch fresh data
-    console.log(`Cache miss for key: ${key}, fetching fresh data`);
+    // Temporarily bypass cache and always fetch fresh data
+    // console.log(`Cache hit for key: ${key}`);
+    console.log(`Cache disabled, fetching fresh data for key: ${key}`);
     const data = await fetchFn();
     
-    // Store in cache if we have data
-    if (data) {
-      try {
-        await redis.set(key, data, { ex: ttl });
-      } catch (cacheError) {
-        // Just log the cache error but continue with the data
-        console.warn(`Failed to store data in cache for key ${key}:`, cacheError);
-      }
-    }
+    // Don't store in cache for now
+    // await redis.set(key, data, ttl);
     
     return data;
   } catch (error) {
     console.error(`Error in getCachedData for key ${key}:`, error);
-    // If cache fails, fall back to direct fetch
-    return fetchFn();
+    throw error;
   }
 }
 
@@ -165,19 +174,26 @@ export async function getCachedData<T>(
  */
 export async function invalidateCache(pattern: string): Promise<void> {
   try {
-    // For the mock implementation, we can't use keys() as it's not implemented
-    // Check if keys method exists (real Redis client)
-    if (typeof redis.keys === 'function') {
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) {
-        console.log(`Invalidating ${keys.length} cache entries matching pattern: ${pattern}`);
-        await Promise.all(keys.map(key => redis.del(key)));
+    // Temporarily disable cache invalidation
+    console.log(`Cache invalidation disabled for pattern: ${pattern}`);
+    return;
+    
+    /* Original implementation:
+    console.log(`Invalidating cache for pattern: ${pattern}`);
+    const keys = await redis.keys(pattern);
+    
+    if (keys.length > 0) {
+      console.log(`Found ${keys.length} keys to invalidate:`, keys);
+      
+      // Delete each key
+      for (const key of keys) {
+        await redis.del(key);
       }
     } else {
-      console.warn(`Cache invalidation for pattern ${pattern} not supported in mock implementation`);
+      console.log(`No keys found for pattern: ${pattern}`);
     }
+    */
   } catch (error) {
     console.error(`Error invalidating cache for pattern ${pattern}:`, error);
-    // Don't throw, just log the error
   }
 }

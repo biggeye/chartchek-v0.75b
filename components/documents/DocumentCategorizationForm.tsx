@@ -70,8 +70,8 @@ export default function DocumentCategorizationForm({
         <Label htmlFor="facility">Facility</Label>
         <Select
           disabled={isDisabled}
-          value={value.facility_id || 'none'}
-          onValueChange={(facilityId: string) => onChange({ ...value, facility_id: facilityId === 'none' ? '' : facilityId })}
+          value={value.facility_id}
+          onValueChange={(facilityId: string) => onChange({ ...value, facility_id: facilityId })}
         >
           <SelectTrigger id="facility">
             <SelectValue placeholder="Select a facility" />
@@ -102,8 +102,8 @@ export default function DocumentCategorizationForm({
           <SelectContent>
             <SelectItem value="none">None</SelectItem>
             {patients.map((patient) => (
-              patient.patientId ? (
-                <SelectItem key={patient.patientId} value={patient.patientId}>
+              patient.id ? (
+                <SelectItem key={patient.id} value={patient.id}>
                   {patient.name}
                 </SelectItem>
               ) : null

@@ -65,7 +65,7 @@ export async function kipuServerGet<T>(
   customCredentials?: KipuCredentials
 ): Promise<KipuApiResponse<T>> {
   try {
-    const credentials = customCredentials || getKipuCredentials();
+    const credentials = customCredentials!;
     
     if (!validateKipuCredentials()) {
       throw new Error('KIPU API credentials are missing or invalid');
@@ -187,7 +187,7 @@ export async function kipuServerPost<T>(
   customCredentials?: KipuCredentials
 ): Promise<KipuApiResponse<T>> {
   try {
-    const credentials = customCredentials || getKipuCredentials();
+    const credentials = customCredentials!;
     
     if (!validateKipuCredentials()) {
       throw new Error('KIPU API credentials are missing or invalid');

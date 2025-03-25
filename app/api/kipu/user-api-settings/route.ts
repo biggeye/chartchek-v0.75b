@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { UserApiSettings } from '@/lib/kipu/service/user-api-settings';
+import { UserApiSettings } from '@/lib/kipu/service/user-settings';
 
 /**
  * POST handler for updating user API settings
@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
 
     // Prepare the data for the user_api_settings table
     const userApiSettings: UserApiSettings = {
-      id: body.facility_id,
       owner_id: user.id,
       kipu_access_id: body.kipu_access_id || '',
       kipu_secret_key: body.kipu_secret_key || '',

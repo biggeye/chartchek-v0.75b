@@ -6,7 +6,7 @@ import { usePatientStore } from '@/store/patientStore';
 
 interface PatientBreadcrumbProps {
   children: React.ReactNode;
-  facilityId: string;
+  facilityId: number;
   patientId: string;
   activeTab?: 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'orders';
 }
@@ -17,7 +17,7 @@ export function PatientBreadcrumb({
   patientId, 
   activeTab = 'overview' 
 }: PatientBreadcrumbProps) {
-  const { currentPatient } = usePatientStore();
+  const { currentPatient } = usePatientStore.getState();
   
   // Get patient name from store or use a placeholder
   const patientName = currentPatient 

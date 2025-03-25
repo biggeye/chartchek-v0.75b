@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { Facility } from '@/types/kipu';
 import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
 
@@ -29,21 +29,10 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    // Create masked credentials for logging (we'll mask the secret key)
-    const maskedCredentials = {
-      ...credentials,
-      secretKey: credentials.secretKey ? '********' : 'not set',
-    };
 
-    console.log('Fetching facilities from KIPU API with credentials:', maskedCredentials);
+
     const response = await kipuServerGet<{ locations?: any[] }>('/api/locations', credentials);
     
-    // Log the raw data structure to understand the format
-    console.log('Facility API Route - Data Structure:', {
-      hasLocations: !!response.data?.locations,
-      locationsIsArray: Array.isArray(response.data?.locations),
-      locationCount: Array.isArray(response.data?.locations) ? response.data.locations.length : 'N/A'
-    });
     
     // Map KIPU locations to our facility format
     const facilities: Facility[] = [];

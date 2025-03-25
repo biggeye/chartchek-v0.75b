@@ -1,45 +1,51 @@
-1.  nextjs15 with app router configuration
-2.  supabase authentication
-3.  supabase postgresql database
-4.  zustand for state management
-5.  openai assistant api
-6.  kipu emr
+This system is built upon:
 
-### CACHING IMPLEMENTATION ###
+Next.js 15 (App Router Configuration) for routing and SSR.
 
-redis @ /lib/cache/redis.ts
-react-query @ /lib/cache/react-query/config.ts
+Supabase for authentication and PostgreSQL database integration.
 
-### KIPU INTEGRATION ###
+Zustand for application state management.
 
-always check /lib/kipu/integration/ref/endpoint.json for the source of truth regarding KIPU EMR API endpoints.
-always check /lib/kipu/integration/ref/schemas.json for the source of truth regarding KIPU EMR API schemas.
+OpenAI Assistant API (v2 Beta) for natural language processing tasks.
+
+KIPU EMR integration for managing behavioral health and substance abuse treatment records.
 
 
-### UI / UX DEVELOPMENT ###
-always check the /components/* and /components/ui/* directory for the current component being developed, in case one already exists, please utilize.
+🔗 KIPU EMR Integration
+The KIPU auth logic is not to be modified (/lib/kipu/auth/*)
 
-Ask questions if you're not 100% certain about the scope of what you're doing.  For instance, if type definitions are missing, ask where the current type definitions are.  Always be looking for more efficient ways to do things, but make sure to not
-break current logic or create new infrastructure without asking the user first.
+when factoring new logic, adhere to the patterns established which include utilizing the server and auth functions for API headers, signatures, etc
 
-when refactoring code, start with the simplest solution, and always ask the user before expanding beyond the scope of the document referenced.
+Data Flow Protocol for KIPU:
+UI components fetch data exclusively from Zustand stores (/store/*).
 
-when dealing with typescript problems, assume there are interfaces and types to be found elseewhere, but if you are to create a new type or interface,
-always make sure its in-line at the top of the current document so that it can be integrated into the type definitions.
+Stores call API endpoints (/api/kipu/*), which in turn call service layers at (/lib/kipu/service/*).
 
-this project consists of a nextjs15 app, using app-router configuration, with supabase for authentication and postgresql for the database.
-we are using zustand for state management.
+Avoid direct KIPU API interactions from the frontend—always go through stores.
 
-we have an api system for interacting with the OpenAI API, specifically the Assistant API (v2 beta).
+🎨 UI/UX Component Development
+Reuse existing UI components found in:
 
-We are integrating with KIPU EMR, a platform for managing the medical records of behavioral health and substance abuse treatment facilities.
+/components/*
 
-*** GUIDELINES ***
--front end request for KIPU data:
-** fetch from /store/* **
-** store calls /api/kipu/* **
-** endpoints utilize service layers @ /lib/kipu/service/* **
+/components/ui/*
 
--supabase instantiations exist as utility files (/utils/supabase/ *) and are to be utilized whenever needed.
--typescript interfaces and definitions exist (/types/ * ) and are also to be utilized whenever needed.  In the need for new interfaace or type definitions, after ensuring it does not already exist, define the interface or type **in-line with the new logic utilizing it** so that it can be integrated to the master definitions later.
--state management is managed with Zustand over a set of different stores (/store/ *).  These files have their own type definitions (/types/store/ *).
+Always search these directories thoroughly before creating new components.
+
+🚩 General Development Guidelines
+Ask first:
+If unsure about a scope, functionality, existing logic, or infrastructure changes, ask the user for clarification. Do not assume or guess.
+
+Code Refactoring:
+
+Start with the simplest solution.
+
+Confirm expansions or significant changes with the user first.
+
+Typescript Types and Interfaces:
+
+Primary type definitions reside in /types/* and specific store types in /types/store/*.
+
+Always check existing definitions thoroughly before creating new ones.
+
+If a new type or interface is required, define it inline at the top of the document using it, clearly commenting it for later migration.

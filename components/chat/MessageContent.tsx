@@ -159,7 +159,7 @@ export default function MessageContent({
     const fileId = imageFileContent.image_file?.file_id;
     return fileId ? (
       <div className={cn("message-content", className)}>
-        <img src={`/api/files/${fileId}`} alt="Image content" />
+        <img src={`/api/openai/files/${fileId}`} alt="Image content" />
       </div>
     ) : null;
   } else if (normalizedContent.type === 'image_url') {

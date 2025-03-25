@@ -16,7 +16,7 @@ interface PatientListItemProps {
       phone?: string;
     };
   };
-  facilityId: string;
+  facilityId: number;
 }
 // change patient.lastName to display just the first initial of the last name... but do that on the component level here
 export function PatientListItem({ patient, facilityId }: PatientListItemProps) {

@@ -27,36 +27,31 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   setError: (error: string | null) => set({ error }),
   
   // Fetch documents from Supabase
-  fetchDocuments: async (facilityId?: string): Promise<Document[]> => {
-    set({ isLoading: true, error: null });
-    try {
-      // Build query
-      let query = supabase.from('documents').select('*');
-      
-      // Add facility filter if provided
-      if (facilityId) {
-        // Check if the facilityId is a valid UUID before using it in the query
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(facilityId)) {
-          query = query.eq('facility_id', facilityId);
-        } else {
-          console.warn(`Invalid UUID format for facility_id: ${facilityId}. Fetching all documents instead.`);
-        }
-      }
-      
-      // Execute query
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      set({ documents: data as Document[], isLoading: false });
-      return data as Document[];
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      set({ error: error instanceof Error ? error.message : 'Failed to fetch documents', isLoading: false });
-      return [];
+ // Fetch documents from Supabase
+fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
+  set({ isLoading: true, error: null });
+  try {
+    // Build query
+    let query = supabase.from('documents').select('*');
+    
+    // Add facility filter if provided
+    if (facilityId) {
+      query = query.eq('facility_id', facilityId);
     }
-  },
+    
+    // Execute query
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    set({ documents: data as Document[], isLoading: false });
+    return data as Document[];
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    set({ error: (error as Error).message, isLoading: false });
+    return [];
+  }
+},
   
   // Fetch documents for the currently selected facility
   fetchDocumentsForCurrentFacility: async (): Promise<Document[]> => {
@@ -142,7 +137,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       if (documentError) throw documentError;
       
       // Refresh documents list
-      await get().fetchDocuments(facilityId || undefined);
+      await get().fetchDocuments(facilityId);
       
       set({ isLoading: false });
       return documentData as Document;
@@ -168,7 +163,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       formData.append('file', file);
       
       // Send the file to the OpenAI files API using FormData
-      const openAIfileResponse = await fetch('/api/files', {
+      const openAIfileResponse = await fetch('/api/openai/files', {
         method: 'POST',
         body: formData
       });

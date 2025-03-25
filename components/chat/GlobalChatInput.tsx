@@ -105,20 +105,16 @@ export function GlobalChatInputArea() {
   // Patient context from PatientProvider
   const { 
     currentPatient, 
-    patientEvaluations, 
+    KipuPatientEvaluations, 
     patientVitalSigns, 
-    patientAppointments,
     allEvaluations,
     isPatientContextEnabled,
     fetchEvaluations,
-    fetchVitalSigns,
-    fetchAppointments,
     fetchAllEvaluations,
-    getEvaluationById,
     patients,
-    selectedFacilityId,
     togglePatientContext,
-    clearSelection,
+    fetchVitalSigns,
+
     selectPatient
   } = usePatient()
 
@@ -198,7 +194,7 @@ export function GlobalChatInputArea() {
 
   const selectPatientHandler = async (patient: PatientBasicInfo) => {
     if (currentFacilityId && patient.patientId) {
-      await selectPatient(currentFacilityId, patient.patientId)
+      await selectPatient(patient.patientId)
       setShowPatientPanel(false)
     }
   }
@@ -417,10 +413,10 @@ export function GlobalChatInputArea() {
   const fetchEvaluationsDemo = async () => {
     setIsLoadingEvaluations(true);
     try {
-      if (selectedFacilityId && currentPatient?.patientId) {
+      if (currentPatient?.patientId) {
         // Fetch evaluations for the current patient
-        await fetchEvaluations(selectedFacilityId, currentPatient.patientId);
-        console.log('Patient evaluations fetched:', patientEvaluations);
+        await fetchEvaluations(currentPatient.patientId);
+        console.log('Patient evaluations fetched:', KipuPatientEvaluations);
         
         // Optionally fetch all evaluations
         await fetchAllEvaluations();

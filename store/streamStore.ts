@@ -135,7 +135,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
     try {
       
       // Call your SSE endpoint
-      const response = await fetch(`/api/threads/${threadId}/run/stream`, {
+      const response = await fetch(`/api/openai/threads/${threadId}/run/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -219,7 +219,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
       // If threadId and runId are provided, also ask the server to cancel
       if (threadId && runId) {
         try {
-          const response = await fetch(`/api/threads/${threadId}/runs/${runId}/cancel`, {
+          const response = await fetch(`/api/openai/threads/${threadId}/runs/${runId}/cancel`, {
             method: 'POST',
           });
           if (response.ok) {
@@ -631,7 +631,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
           // here we should submit_tool_outputs back to the Assistant
           const submitToolOutputs = async () => {
             try {
-              const response = await fetch(`/api/threads/${threadId}/run/${runId}/submit-tool-outputs`, {
+              const response = await fetch(`/api/openai/threads/${threadId}/run/${runId}/submit-tool-outputs`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

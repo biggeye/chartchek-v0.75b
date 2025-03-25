@@ -2,7 +2,7 @@ flowchart TD
   %% Node Definitions
   Client["Client Browser"]
   StreamStore["store/streamStore.ts"]
-  APIRoute["API Route: /api/threads/{threadId}/run/stream"]
+  APIRoute["API Route: /api/openai/threads/{threadId}/run/stream"]
   OpenAI["OpenAI API"]
   ToolHandlers["toolHandlers.ts"]
   Database["Supabase Database"]

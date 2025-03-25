@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { PatientBasicInfo } from '@/types/kipu';
 import { mapKipuPatientToPatientBasicInfo } from '@/lib/kipu/mapping';
 
@@ -16,8 +16,6 @@ export async function GET(
 ) {
   try {
     const url = new URL(req.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '20');
 
 
 
@@ -33,9 +31,10 @@ export async function GET(
         { status: 401 }
       );
     }
+    const ownerId = user?.id;
 
     // Get KIPU API credentials
-    const credentials = await getKipuCredentials();
+    const credentials = await getKipuCredentials(ownerId);
 
     if (!credentials) {
       return NextResponse.json(
@@ -45,9 +44,12 @@ export async function GET(
     }
 
     // Call KIPU API to list patients
-    const response = await kipuServerGet<{ patients?: any[] }>(`/api/patients/census`, credentials);
+    const response = await kipuServerGet<{ patients?: any[] }>(
+      `/api/patients/admissions?start_date=2000-01-01&end_date=2025-04-01`, 
+      credentials
+    );
 
-    if (!response.success || !response.data) {
+   if (!response.success || !response.data) {
       return NextResponse.json(
         { error: response.error?.message || 'Failed to fetch patients from KIPU' },
         { status: response.error?.code ? parseInt(response.error.code) : 500 }
@@ -59,20 +61,16 @@ export async function GET(
       return mappedPatient;
     }) || [];
 
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedPatients = patients.slice(startIndex, endIndex);
-    // Return paginated response
-    return NextResponse.json({
-      patients: paginatedPatients,
-      pagination: {
-        total: patients.length, // Use the full array length for total count
-        page,
-        limit,
-        pages: Math.ceil(patients.length / limit) // Calculate pages based on total items
+    // Return all patients without pagination
+    const result = JSON.stringify({
+      success: true,
+      data: {
+        patients: patients,
+        total: patients.length
       }
     });
+
+    return new NextResponse(result, { headers: { 'Content-Type': 'text/plain' } });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

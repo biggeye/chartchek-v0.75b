@@ -30,7 +30,7 @@ export default function PDFPreview({ className = '' }: PDFPreviewProps) {
     if (pdfPreviewUrl) {
       const link = document.createElement('a');
       link.href = pdfPreviewUrl;
-      link.download = 'BioPsychSocialAssessment.pdf';
+      link.download = 'PatientEvaluation.pdf';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -52,7 +52,7 @@ export default function PDFPreview({ className = '' }: PDFPreviewProps) {
   return (
     <div className={`pdf-preview mt-4 border border-gray-200 rounded-lg overflow-hidden ${fullscreenClass} ${className}`}>
       <div className="bg-gray-100 p-2 flex justify-between items-center">
-        <h3 className="text-sm font-medium">BioPsychSocial Assessment PDF</h3>
+        <h3 className="text-sm font-medium">Patient Evaluation PDF</h3>
         <div className="flex space-x-2">
           <button 
             onClick={handleDownload}
@@ -79,7 +79,7 @@ export default function PDFPreview({ className = '' }: PDFPreviewProps) {
         src={pdfPreviewUrl}
         width="100%"
         height={isFullscreen ? "calc(100vh - 100px)" : "600px"}
-        title="BioPsychSocial PDF Preview"
+        title="Patient Evaluation PDF Preview"
         className="border-0"
       />
     </div>

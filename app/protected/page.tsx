@@ -27,39 +27,7 @@ interface PatientListItemType {
 export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { patients, isLoading, error } = usePatientStore();
-  const { currentFacilityId, fetchFacilities } = useFacilityStore();
-
-  useEffect(() => {
-    // Fetch facilities only once on mount
-    fetchFacilities();
-  }, []); // Empty dependency array
-
-  const patientsByFacility = patients.filter(patient => 
-    String(patient.facilityId) === String(currentFacilityId)
-  );
-
-  // Filter patients based on search query
-  const filteredPatients = patientsByFacility.filter(patient => {
-    const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
-    const query = searchQuery.toLowerCase();
-    
-    // Enhanced search to include more fields
-    return fullName.includes(query) || 
-           (patient.patientId && patient.patientId.toString().toLowerCase().includes(query)) ||
-           (patient.mrn && patient.mrn.toString().toLowerCase().includes(query)) ||
-           (patient.gender && patient.gender.toLowerCase().includes(query));
-  });
-
-  // Get recent admissions (last 5 patients sorted by admission date)
-  const recentAdmissions = [...patientsByFacility]
-    .filter(patient => patient.admissionDate)
-    .sort((a, b) => {
-      // Fix: Add null checks before creating Date objects
-      const dateA = a.admissionDate ? new Date(a.admissionDate).getTime() : 0;
-      const dateB = b.admissionDate ? new Date(b.admissionDate).getTime() : 0;
-      return dateB - dateA;
-    })
-    .slice(0, 5);
+  const { currentFacilityId } = useFacilityStore();
 
   return (
     <div className="container py-6">
@@ -178,38 +146,6 @@ export default function PatientsPage() {
       
       {/* Recent Admissions & Upcoming Items */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-bold">Recent Admissions</h2>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : recentAdmissions.length > 0 ? (
-              <div className="divide-y">
-                {recentAdmissions.map((patient) => (
-                  <div key={patient.patientId} className="py-2 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{`${patient.firstName.charAt(0)}. ${patient.lastName}`}</p>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {/* Fix: Add null check before creating Date object */}
-                      {patient.admissionDate 
-                        ? new Date(patient.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        : 'No date'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No recent admissions</p>
-            )}
-          </CardContent>
-        </Card>
         
         <Card>
           <CardHeader>
@@ -262,41 +198,7 @@ export default function PatientsPage() {
   />
         
         <div className="mt-6">
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-bold">Patients</h2>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {patientsByFacility.map((patient) => {
-                    const patientForList: PatientListItemType = {
-                      patientId: patient.patientId || patient.mrn || '',
-                      firstName: patient.firstName,
-                      lastName: patient.lastName,
-                      dob: patient.dateOfBirth,
-                      gender: patient.gender,
-                    };
-                    
-                    return (
-                      <div key={patient.patientId || patient.mrn || `patient-${patient.mrn}`}>
-                        <PatientListItem 
-                          patient={patientForList} 
-                          facilityId={currentFacilityId || ''}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        
         </div>
       </div>
     </div>

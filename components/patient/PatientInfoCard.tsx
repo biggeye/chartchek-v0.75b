@@ -3,23 +3,10 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CardTitle } from './CardComponents';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PatientBasicInfo } from '@/types/kipu';
 
-interface PatientInfoCardProps {
-  patient: {
-    id?: string;
-    first_name?: string;
-    last_name?: string;
-    dob?: string;
-    gender?: string;
-    address?: string;
-    contact?: {
-      email?: string;
-      phone?: string;
-    };
-  } | null | undefined;
-}
 
-export function PatientInfoCard({ patient }: PatientInfoCardProps) {
+export function PatientInfoCard({ patient }: { patient: PatientBasicInfo }) {
   // If patient is null or undefined, show loading state
   if (!patient) {
     return (
@@ -43,29 +30,27 @@ export function PatientInfoCard({ patient }: PatientInfoCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Patient Information</CardTitle>
+        <CardTitle>{patient.fullName}{patient.status}</CardTitle>
+      
       </CardHeader>
       <CardContent>
         <dl className="space-y-4">
+          
           <div>
             <dt className="text-sm font-medium text-muted-foreground">Date of Birth</dt>
-            <dd>{patient.dob || 'Not specified'}</dd>
+            <dd>{patient.dateOfBirth || 'Not specified'}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-muted-foreground">Gender</dt>
-            <dd>{patient.gender || 'Not specified'}</dd>
+            <dt className="text-sm font-medium text-muted-foreground">Primary Diagnosis</dt>
+            <dd>{patient.primaryDiagnosis || 'Not specified'}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-muted-foreground">Address</dt>
-            <dd>{patient.address || 'Not specified'}</dd>
+            <dt className="text-sm font-medium text-muted-foreground">Level of care</dt>
+            <dd>{patient.levelOfCare || 'Not specified'}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-muted-foreground">Email</dt>
-            <dd>{patient.contact?.email || 'Not specified'}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-muted-foreground">Phone</dt>
-            <dd>{patient.contact?.phone || 'Not specified'}</dd>
+            <dt className="text-sm font-medium text-muted-foreground">Next Level of Care</dt>
+            <dd>{patient.nextLevelOfCare || 'Not specified'}: <span className="gray-800">  {patient.nextLevelOfCareDate || 'Not specified'}</span></dd>
           </div>
         </dl>
       </CardContent>

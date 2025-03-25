@@ -1,5 +1,5 @@
 'use client'
-import { chatStore } from '@/store/chatStore';
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -40,12 +40,12 @@ import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
-import { FacilitySelector } from '@/components/ui/facility-selector';
 import { useFacilityStore } from '@/store/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { LoadingBar } from '@/components/ui/loading-bar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -59,7 +59,10 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   const [showInsights, setShowInsights] = useState(true);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const pathname = usePathname();
-
+  const FacilitySelector = dynamic(
+    () => import('@/components/ui/facility-selector').then(mod => ({ default: mod.FacilitySelector })),
+    { ssr: false }
+  );
   // Navigation items
   const navigation = [
     { name: 'Home', href: '/protected', icon: BuildingOffice2Icon },
@@ -253,12 +256,10 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
             </div>
           </div>
         </div>
-
-        <main>
- 
-            {children}
-            <PDFGeneratorListener />
-
+        <main className="flex-1 overflow-auto">
+          <LoadingBar />
+          {children}
+          <PDFGeneratorListener />
         </main>
       </div>
     </div>

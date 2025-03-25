@@ -17,36 +17,36 @@ interface FacilitySelectorProps {
 export function FacilitySelector({ variant = 'header', className }: FacilitySelectorProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Use the facility store
-  const { 
-    facilities, 
-    currentFacilityId, 
-    isLoading, 
+  const {
+    facilities,
+    currentFacilityId,
+    isLoading,
     fetchFacilities,
     changeFacilityWithContext,
     getCurrentFacility
   } = useFacilityStore();
-  
+
   // Get the patient store
   const { clearPatientContext } = usePatientStore();
-  
+
   // Get the current facility object
   const currentFacility = getCurrentFacility();
-  
+
   // Fetch facilities on component mount
   useEffect(() => {
     fetchFacilities();
   }, [fetchFacilities]);
-  
+
   // Handle facility selection
-  const handleSelectFacility = (facilityId: string) => {
+  const handleSelectFacility = (facilityId: number) => {
     // Change the facility in the store
     changeFacilityWithContext(facilityId);
-    
+
     // Clear the patient context
     clearPatientContext();
-    
+
     // Close the modal
     setIsModalOpen(false);
   };
@@ -54,9 +54,9 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
   // Shared modal rendering
   const renderModal = () => (
     <Transition show={isModalOpen} as="div">
-      <Dialog 
-        as="div" 
-        className="relative z-50" 
+      <Dialog
+        as="div"
+        className="relative z-50"
         onClose={() => setIsModalOpen(false)}
       >
         {/* Backdrop */}
@@ -108,10 +108,10 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
                     facilities.map((facility) => (
                       <button
                         key={facility.id || `facility-${Math.random()}`}
-                        onClick={() => facility.id && handleSelectFacility(facility.id)}
+                        onClick={() => facility.id && handleSelectFacility(Number(facility.id))}
                         className={cn(
                           "w-full flex items-center justify-between px-4 py-3 rounded-lg text-left",
-                          facility.id === currentFacilityId
+                          Number(currentFacilityId)
                             ? "bg-primary/10 border border-primary/20"
                             : "hover:bg-muted border border-border"
                         )}
@@ -120,7 +120,7 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
                           <h4 className="font-medium">{facility.name}</h4>
                           <p className="text-sm text-foreground-muted">{facility.address}</p>
                         </div>
-                        {facility.id === currentFacilityId && (
+                        {Number(facility.id) === Number(currentFacilityId) && (
                           <CheckIcon className="h-5 w-5 text-primary" />
                         )}
                       </button>
@@ -161,7 +161,7 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
             </span>
           </div>
         </button>
-        
+
         {renderModal()}
       </div>
     );
@@ -180,7 +180,7 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
             {isLoading ? 'Loading...' : (currentFacility?.name || 'Select Facility')}
           </span>
         </button>
-        
+
         {renderModal()}
       </div>
     );
@@ -197,7 +197,7 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
         <BuildingOffice2Icon className="h-5 w-5 mr-2" />
         {isLoading ? 'Loading...' : 'Select Facility'}
       </button>
-      
+
       {renderModal()}
     </div>
   );

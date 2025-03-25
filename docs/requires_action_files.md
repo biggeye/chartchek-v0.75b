@@ -15,7 +15,7 @@ graph TD
 
     %% Server-Side Files
     subgraph "Server-Side"
-        streamRoute["app/api/threads/[threadId]/run/stream/route.ts"]
+        streamRoute["app/api/openai/threads/[threadId]/run/stream/route.ts"]
         toolHandlers["lib/services/openai/toolHandlers.ts"]
         toolDefinitions["lib/services/openai/toolDefinitions.ts"]
         pdfGenerator["lib/services/functions/forms/pdfGenerator.tsx"]
@@ -86,7 +86,7 @@ graph TD
 
 ### Server-Side Files
 
-- **app/api/threads/[threadId]/run/stream/route.ts**: API route that handles streaming from OpenAI
+- **app/api/openai/threads/[threadId]/run/stream/route.ts**: API route that handles streaming from OpenAI
 - **lib/services/openai/toolHandlers.ts**: Processes tool calls from OpenAI on the server side
 - **lib/services/openai/toolDefinitions.ts**: Defines available tools and their schemas
 - **lib/services/functions/forms/pdfGenerator.tsx**: Generates PDFs from form data

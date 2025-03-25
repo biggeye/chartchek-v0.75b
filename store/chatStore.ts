@@ -48,7 +48,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         
         // Create thread in OpenAI
         console.log('[chatStore:createThread] Creating new thread in OpenAI');
-        const response = await fetch('/api/threads', { method: 'POST' });
+        const response = await fetch('/api/openai/threads', { method: 'POST' });
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -62,7 +62,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         }
 
         // update OpenAI Thread Metadata
-        const metadataResponse = await fetch(`/api/threads/${threadId}/metadata`, {
+        const metadataResponse = await fetch(`/api/openai/threads/${threadId}/metadata`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -135,7 +135,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         
         console.log('[chatStore:sendMessage] Sending message payload:', JSON.stringify(payload, null, 2));
         
-        const response = await fetch(`/api/threads/${threadId}/messages`, {
+        const response = await fetch(`/api/openai/threads/${threadId}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -177,7 +177,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       console.log('[chatStore:checkActiveRun] Checking active run for thread:', threadId);
       
       try {
-        const response = await fetch(`/api/threads/${threadId}/run/check`);
+        const response = await fetch(`/api/openai/threads/${threadId}/run/check`);
         
         if (!response.ok) {
           if (response.status === 404) {
@@ -220,7 +220,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       }
 
       try {
-        const response = await fetch(`/api/threads/${threadId}/messages`, {
+        const response = await fetch(`/api/openai/threads/${threadId}/messages`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json'
@@ -319,7 +319,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
     deleteThread: async (threadId: string) => {
       try {
         set({ isLoading: true, error: null });
-        const response = await fetch(`/api/threads/${threadId}`, { method: 'DELETE' });
+        const response = await fetch(`/api/openai/threads/${threadId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error(`Failed to delete thread: ${response.status}`);
         
         const { error } = await supabase
@@ -348,7 +348,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
     updateThreadTitle: async (threadId: string, newTitle: string) => {
       try {
         set({ isLoading: true, error: null });
-        const response = await fetch(`/api/threads/${threadId}/metadata`, {
+        const response = await fetch(`/api/openai/threads/${threadId}/metadata`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -432,7 +432,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
     updateActiveRunStatus: (status: RunStatusResponse | null) => set({ activeRunStatus: status }),
     getLatestRun: async (threadId: string) => {
       try {
-        const response = await fetch(`/api/threads/${threadId}/runs`);
+        const response = await fetch(`/api/openai/threads/${threadId}/runs`);
         if (!response.ok) throw new Error(`Failed to fetch runs: ${response.status}`);
         
         const { data } = await response.json();

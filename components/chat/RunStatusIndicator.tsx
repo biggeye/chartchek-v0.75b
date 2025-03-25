@@ -96,7 +96,7 @@ export default function RunStatusIndicator({ onCancel }: RunStatusIndicatorProps
    
       
       // Submit the tool outputs to the API
-      const response = await fetch(`/api/threads/${currentThread.thread_id}/run/${activeRunStatus.runId}/submit-tool-outputs`, {
+      const response = await fetch(`/api/openai/threads/${currentThread.thread_id}/run/${activeRunStatus.runId}/submit-tool-outputs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tool_outputs: toolOutput, stream: true })

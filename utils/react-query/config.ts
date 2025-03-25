@@ -29,17 +29,17 @@ export const queryKeys = {
     all: () => ['facilities'],
     list: (page?: number, limit?: number, status?: string, sort?: string) => 
       ['facilities', 'list', { page, limit, status, sort }],
-    detail: (facilityId: string) => ['facilities', 'detail', facilityId]
+    detail: (facilityId: number) => ['facilities', 'detail', facilityId]
   },
   patients: {
     all: () => ['patients'],
-    list: (facilityId: string) => ['patients', 'list', facilityId],
-    detail: (facilityId: string, patientId: string) => ['patients', 'detail', facilityId, patientId],
-    evaluations: (facilityId: string, patientId: string) => 
+    list: (facilityId: number) => ['patients', 'list', facilityId],
+    detail: (facilityId: number, patientId: string) => ['patients', 'detail', facilityId, patientId],
+    evaluations: (facilityId: number, patientId: string) => 
       ['patients', 'evaluations', facilityId, patientId],
-    vitalSigns: (facilityId: string, patientId: string) => 
+    vitalSigns: (facilityId: number, patientId: string) => 
       ['patients', 'vitalSigns', facilityId, patientId],
-    appointments: (facilityId: string, patientId: string) => 
+    appointments: (facilityId: number, patientId: string) => 
       ['patients', 'appointments', facilityId, patientId]
   },
   documents: {
@@ -48,8 +48,8 @@ export const queryKeys = {
     detail: (documentId: string) => ['documents', 'detail', documentId]
   },
   dashboard: {
-    metrics: (facilityId: string) => ['dashboard', 'metrics', facilityId],
-    patientStats: (facilityId: string) => ['dashboard', 'patientStats', facilityId],
-    documentInsights: (facilityId: string) => ['dashboard', 'documentInsights', facilityId]
+    metrics: (facilityId: number) => ['dashboard', 'metrics', facilityId],
+    patientStats: (facilityId: number) => ['dashboard', 'patientStats', facilityId],
+    documentInsights: (facilityId: number) => ['dashboard', 'documentInsights', facilityId]
   }
 };

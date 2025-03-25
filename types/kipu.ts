@@ -2,18 +2,38 @@
  * KIPU API Type Definitions
  * 
  * This file contains TypeScript interfaces for the KIPU API integration.
+ * 
+ * Naming Convention:
+ * - Interfaces prefixed with "Kipu" represent raw data structures as returned by the KIPU API
+ * - Interfaces without the "Kipu" prefix represent application-specific data structures
+ * 
+ * For each KIPU API type, there should be a corresponding application type that transforms
+ * the snake_case properties to camelCase and adds any application-specific properties.
+ * For types that only have one version currently, a placeholder for the other version is created.
  */
 
 /**
  * KIPU API Credentials
  */
 export interface KipuCredentials {
-  username: string;
+  username?: string;
   accessId: string;
   secretKey: string;
   appId: string; // Also referred to as recipient_id
   baseUrl: string;
   apiEndpoint?: string; // For direct API calls
+}
+
+/**
+ * Application Credentials (placeholder)
+ */
+export interface Credentials {
+  username: string;
+  accessId: string;
+  secretKey: string;
+  appId: string;
+  baseUrl: string;
+  apiEndpoint?: string;
 }
 
 /**
@@ -30,12 +50,25 @@ export interface KipuApiResponse<T = any> {
 }
 
 /**
+ * Application API Response (placeholder)
+ */
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+}
+
+/**
  * Casefile type from KIPU EMR
  */
 export type Casefile = string; // Format: ^[0-9]+\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 
 /**
- * KIPU Patient
+ * Raw KIPU Patient data as returned by the API
  */
 export interface KipuPatient {
   id: string;
@@ -52,7 +85,23 @@ export interface KipuPatient {
 }
 
 /**
- * Patient Basic Information from KIPU API
+ * Application Patient (transformed from KipuPatient)
+ */
+export interface Patient {
+  id: string;
+  mrn?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  gender?: string;
+  status?: string;
+  admissionDate?: string;
+  dischargeDate?: string;
+  facilityId?: string;
+}
+
+/**
+ * Raw Patient Basic Information from KIPU API
  */
 export interface KipuPatientBasicInfo {
   id?: string;
@@ -69,10 +118,12 @@ export interface KipuPatientBasicInfo {
     email?: string;
     phone?: string;
   };
+  email?: string;
+  phone?: string;
 }
 
 /**
- * Patient Basic Information
+ * Application-specific Patient Basic Information
  */
 export interface PatientBasicInfo {
   patientId: string;
@@ -84,8 +135,7 @@ export interface PatientBasicInfo {
   status?: string;
   admissionDate?: string;
   dischargeDate?: string;
-  facilityId: string;
-  // Additional fields for UI display
+  facilityId: number;
   fullName?: string;
   age?: number;
   roomNumber?: string;
@@ -107,56 +157,105 @@ export interface PatientBasicInfo {
 }
 
 /**
- * Patient Evaluation
+ * Raw KIPU Patient Appointment data as returned by the API
  */
-export interface PatientEvaluation {
+export interface KipuPatientAppointment {
   id: number;
-  name: string;  // This is the title/name of the evaluation
+  start_time: string;
+  end_time: string;
+  subject: string;
+  appointment_type: string;
   status: string;
-  patientCasefileId: string;
-  evaluationId: number;
-  patientProcessId: number;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
-  updatedBy: string | null;
-  evaluationContent: string;
-}
-
-/**
- * Patient Vital Sign
- */
-export interface PatientVitalSign {
-  id: string;
-  patientId: string;
-  facilityId: string;
-  recordedAt: string;
-  recordedBy?: string;
-  type: string;
-  value: string | number;
-  unit?: string;
+  billable: boolean;
+  all_day: boolean;
+  recurring: boolean;
+  upcoming_dates?: string[];
+  patient_id: string;
+  provider_name?: string;
+  location?: string;
   notes?: string;
 }
 
 /**
- * Patient Appointment
+ * Application-specific Patient Appointment
  */
 export interface PatientAppointment {
   id: string;
   patientId: string;
-  facilityId: string;
+  facilityId: number;
   title: string;
   startTime: string;
   endTime: string;
   status: string;
   type: string;
   provider?: string;
+  providerName?: string;
   location?: string;
   notes?: string;
+  appointmentType?: string;
+  patient_id?: string | number;
+}
+
+
+/**
+ * Raw KIPU Vital Sign data as returned by the API
+ */
+export interface KipuVitalSign {
+  id: string | number;
+  patient_id: number;
+  type: string;
+  value: string | number;
+  interval_timestamp: string;
+  unit?: string;
+  notes?: string;
+  blood_pressure_systolic?: number;
+  blood_pressure_diastolic?: number;
+  temperature?: number;
+  pulse?: number;
+  respirations?: number;
+  o2_saturation?: number;
+  user_name?: string;
 }
 
 /**
- * Paginated Patients Response
+ * Application-specific Patient Vital Sign
+ */
+export interface PatientVitalSign {
+  id: string | number;
+  patientId: string;
+  patient_id?: number;
+  facilityId?: string;
+  recordedAt: string;
+  recordedBy?: string;
+  interval_timestamp?: string;
+  type: string;
+  value: string | number;
+  unit?: string;
+  notes?: string;
+  blood_pressure_systolic?: number;
+  blood_pressure_diastolic?: number;
+  temperature?: number;
+  pulse?: number;
+  respirations?: number;
+  o2_saturation?: number;
+  user_name?: string;
+}
+
+/**
+ * Raw KIPU Paginated Patients Response
+ */
+export interface KipuPaginatedPatientsResponse {
+  patients: KipuPatientBasicInfo[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    records_per_page: number;
+    total_records: number;
+  };
+}
+
+/**
+ * Application-specific Paginated Patients Response
  */
 export interface PaginatedPatientsResponse {
   patients: PatientBasicInfo[];
@@ -169,7 +268,7 @@ export interface PaginatedPatientsResponse {
 }
 
 /**
- * KIPU Facility
+ * Raw KIPU Facility data as returned by the API
  */
 export interface KipuFacility {
   id: string;
@@ -184,22 +283,29 @@ export interface KipuFacility {
 }
 
 /**
- * KIPU Patient Evaluation
+ * Application-specific Facility (corresponds to KIPU Location)
  */
-export interface KipuPatientEvaluation {
+export interface Facility {
   id: string;
-  patient_id: string;
-  facility_id?: string;
-  evaluation_type: string;
-  evaluation_date: string;
-  status: string;
-  completed_by?: string;
-  content?: Record<string, any>;
-  // Add more fields as needed based on the API documentation
+  name: string;
+  code?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  phone?: string;
+  status?: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
+  buildings?: Building[];
+  data?: FacilityData;
+  api_settings?: FacilityApiSettingsDisplay;
 }
 
+
+
 /**
- * KIPU Document
+ * Raw KIPU Document data as returned by the API
  */
 export interface KipuDocument {
   id: string;
@@ -211,7 +317,21 @@ export interface KipuDocument {
   file_size?: number;
   mime_type?: string;
   url?: string;
-  // Add more fields as needed based on the API documentation
+}
+
+/**
+ * Application-specific Document
+ */
+export interface Document {
+  id: string;
+  patientId: string;
+  facilityId?: string;
+  documentType: string;
+  createdDate: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  url?: string;
 }
 
 /**
@@ -243,26 +363,6 @@ export interface FacilityApiSettingsDisplay {
 }
 
 /**
- * Facility (corresponds to KIPU Location)
- */
-export interface Facility {
-  id: string;
-  name: string;
-  code?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  phone?: string;
-  status?: 'active' | 'inactive';
-  created_at?: string;
-  updated_at?: string;
-  buildings?: Building[];
-  data?: FacilityData;
-  api_settings?: FacilityApiSettingsDisplay;
-}
-
-/**
  * Building within a Facility
  */
 export interface Building {
@@ -271,11 +371,11 @@ export interface Building {
   code?: string;
   address?: string;
   status?: 'active' | 'inactive';
-  facility_id: string;
+  facility_id: number;
 }
 
 /**
- * KIPU Patient Order
+ * Raw KIPU Patient Order data as returned by the API
  */
 export interface KipuPatientOrder {
   id: number;
@@ -323,7 +423,55 @@ export interface KipuPatientOrder {
 }
 
 /**
- * KIPU FDB Data for medication
+ * Application-specific Patient Order
+ */
+export interface PatientOrder {
+  id: number | string;
+  name: string;
+  medication: string;
+  route: string;
+  dosageForm: string;
+  dispenseAmount: string;
+  refills: number;
+  justification: string;
+  noSubstitutions: boolean;
+  warnings: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+  marStartTime: string;
+  marEndTime: string;
+  userName: string;
+  userId: number;
+  discontinued: boolean;
+  discontinueReason: string;
+  discontinuedTimestamp: string;
+  discontinuedUserName: string;
+  discontinuedUserId: number;
+  discontinuePhysicianId: number;
+  originalPatientOrderId: number;
+  instructedBy: string;
+  orderedBy: string;
+  instructedVia: string;
+  medicalNecessityNote: string;
+  prn: boolean;
+  erx: boolean;
+  patientId: number | string;
+  canceled: boolean;
+  canceledTimestamp: string;
+  diagnosisCode: string;
+  status: string;
+  interactionCheckError: string;
+  isErx: boolean;
+  isPrn: boolean;
+  nurseReviewedBy: string;
+  nurseReviewedAt: string;
+  schedulePrn: boolean;
+  fdbData?: KipuFdbData[];
+}
+
+/**
+ * Raw KIPU FDB Data for medication as returned by the API
  */
 export interface KipuFdbData {
   id: number;
@@ -333,7 +481,17 @@ export interface KipuFdbData {
 }
 
 /**
- * KIPU Patient Orders Paginated Response
+ * Application-specific FDB Data
+ */
+export interface FdbData {
+  id: number;
+  medicationId: number;
+  rxcui: string;
+  ndc: string;
+}
+
+/**
+ * Raw KIPU Patient Orders Paginated Response as returned by the API
  */
 export interface KipuPatientOrdersResponse {
   pagination: {
@@ -346,7 +504,80 @@ export interface KipuPatientOrdersResponse {
 }
 
 /**
- * Patient Order Query Parameters
+ * Application-specific Patient Orders Response
+ */
+export interface PatientOrdersResponse {
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    recordsPerPage: number;
+    totalRecords: number;
+  };
+  patientOrders: PatientOrder[];
+}
+
+/**
+ * Raw KIPU Patient Order Detail Response as returned by the API
+ * 
+ * Response from the GET /patient_orders/{patient_order_id} endpoint
+ * Contains detailed information about a specific patient order including schedules
+ */
+export interface KipuPatientOrderDetailResponse {
+  patient_order: KipuPatientOrder;
+  schedules?: Array<{
+    id: number;
+    patient_order_id: number;
+    day_of_week?: string;
+    time_of_day?: string;
+    frequency?: string;
+    frequency_unit?: string;
+    start_date?: string;
+    end_date?: string;
+    created_at: string;
+    updated_at: string;
+    status: string;
+  }>;
+}
+
+/**
+ * Application-specific Patient Order Detail Response
+ */
+export interface PatientOrderDetailResponse {
+  patientOrder: PatientOrder;
+  schedules?: Array<{
+    id: number;
+    patientOrderId: number;
+    dayOfWeek?: string;
+    timeOfDay?: string;
+    frequency?: string;
+    frequencyUnit?: string;
+    startDate?: string;
+    endDate?: string;
+    createdAt: string;
+    updatedAt: string;
+    status: string;
+  }>;
+}
+
+/**
+ * Raw KIPU Patient Order Query Parameters
+ */
+export interface KipuPatientOrderQueryParams {
+  page?: number;
+  per?: number;
+  status?: 'canceled' | 'pending_order_review' | 'pending_discontinue_review' | 'reviewed';
+  medication_name?: string;
+  created_at_start_date?: string;
+  created_at_end_date?: string;
+  updated_at_start_date?: string;
+  updated_at_end_date?: string;
+  rxcui?: string;
+  ndc?: string;
+  patient_master_id?: string;
+}
+
+/**
+ * Application-specific Patient Order Query Parameters
  */
 export interface PatientOrderQueryParams {
   page?: number;
@@ -398,59 +629,237 @@ export interface BloodPressure {
 }
 
 /**
- * Patient Evaluation Field Type
+ * Raw KIPU Consent Form Record Extended as returned by the API
  */
-export type PatientEvaluationFieldType = 
-  | 'auto_complete' | 'patient.admission_datetime' | 'patient.allergies' 
-  | 'patient.attendances' | 'patient.bed' | 'patient.bmi' 
-  | 'patient.brought_in_medication' | 'patient.diagnosis_code' 
-  | 'patient.diagnosis_code_current' | 'patient.diets' 
-  | 'patient.discharge_datetime' | 'patient.electronic_devices' 
-  | 'patient.employer' | 'patient.ethnicity' | 'patient.height_weight' 
-  | 'patient.height_weight_current' | 'patient.level_of_care_clinical' 
-  | 'patient.level_of_care_ur' | 'patient.locker' | 'patient.marital_status' 
-  | 'patient.medication_current' | 'patient.occupation' | 'patient.recurring_forms' 
-  | 'patient.vital_signs' | 'patient.orthostatic_vitals' | 'patient.ciwa_ar' 
-  | 'patient.ciwa_b' | 'patient.cows' | 'patient.ciwa_ar_current' 
-  | 'patient.ciwa_b_current' | 'patient.cows_current' | 'patient.vital_signs_current' 
-  | 'patient.orthostatic_vital_signs_current' | 'patient.glucose_log' 
-  | 'patient.drug_of_choice' | 'patient.toggle_mars_generation' 
-  | 'treatment_plan_column_titles' | 'treatment_plan_item' | 'create_evaluation' 
-  | 'image' | 'image_with_canvas' | 'matrix' | 'timestamp' 
-  | 'treatment_plan_master_plan' | 'patient.discharge_type' 
-  | 'treatment_plan_problem' | 'problem_list' | 'progress_note' 
-  | 'golden_thread_tag' | 'treatment_plan_goal' | 'treatment_plan_objective' 
-  | 'patient.anticipated_discharge_date' | 'patient.discharge_medications' 
-  | 'points_item' | 'title' | 'drop_down_list' | 'string' 
-  | 'check_box_first_value_none' | 'text' | 'radio_buttons' | 'check_box' 
-  | 'patient.medication_inventory' | 'points_total' | 'evaluation_start_and_end_time' 
-  | 'evaluation_datetime' | 'datestamp' | 'evaluation_name' | 'attachments' 
-  | 'evaluation_date' | 'evaluation_name_drop_down' | 'formatted_text' 
-  | 'conditional_question' | 'care_team.Primary_Therapist' | 'care_team.Case_Manager' 
-  | 'care_team.Peer_Support_Specialist' | 'care_team.Intake_Technician' 
-  | 'care_team.Peer_Support_Specialist_Swing' | 'care_team.Peer_Support_Specialist_Off_Day' 
-  | 'care_team.Other_Case_Manager' | 'care_team.Peer_Support' | 'care_team.intake_specialist' 
-  | 'care_team.' | 'care_team.Other_therapist';
+export interface KipuConsentFormRecordExtended {
+  id: number;
+  patient_casefile_id: Casefile;
+  consent_form_id: number;
+  name: string;
+  complete: boolean;
+  expires: boolean;
+  expired: boolean;
+  expiration_date: string | null;
+  error?: string;
+  fields?: Record<string, any>;
+  content?: Record<string, any>;
+}
 
 /**
- * Patient Evaluation Item Base
+ * Application-specific Consent Form Record
  */
-export interface PatientEvaluationItemBase {
+export interface ConsentFormRecordExtended {
+  id: number;
+  patient_casefile_id: Casefile;
+  consent_form_id: number;
+  name: string;
+  complete: boolean;
+  expires: boolean;
+  expired: boolean;
+  expiration_date: string | null;
+  error?: string;
+  fields?: Record<string, any>;
+  content?: Record<string, any>;
+}
+
+/**
+ * Settings Object
+ */
+export interface SettingsObject {
+  Id: number;
+  Code: string;
+  Name?: string;
+}
+
+/**
+ * Raw KIPU Patient Appointments Response as returned by the API
+ */
+export interface KipuPatientAppointmentsResponse {
+  appointments?: Array<KipuPatientAppointment>;
+  pagination?: {
+    current_page: string;
+    total_pages: string;
+    records_per_page: string;
+    total_records: string;
+  };
+}
+
+/**
+ * Application-specific Patient Appointments Response
+ */
+export interface PatientAppointmentsResponse {
+  appointments?: Array<PatientAppointment>;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    recordsPerPage: number;
+    totalRecords: number;
+  };
+}
+
+
+
+/*
+_____________________________________
+EVALUATIONS
+_____________________________________
+*/
+export interface KipuEvaluation {
+  id: number;
+  name: string;
+  status: string;
+  patient_casefile_id: string;
+  evaluation_id: number;
+  patient_process_id: number;
+  require_signature: boolean;
+  require_patient_signature: boolean;
+  billable: boolean;
+  evaluation_type: string;
+  evaluation_content: string;
+  ancillary: boolean;
+  rendering_provider: null;
+  billable_claim_format: string;
+  require_guarantor_signature: boolean;
+  require_guardian_signature: boolean;
+  is_crm: boolean;
+  available_on_portal: boolean;
+  place_of_service: string;
+  billing_codes: Record<string, any>;
+  signature_user_titles: Record<string, any>;
+  review_signature_user_titles: Record<string, any>;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  master_treatment_plan_category: string;
+  force_all_staff_users_titles: boolean;
+  force_all_review_users_titles: boolean;
+  evaluation_version_id: number;
+  locked: boolean;
+  is_required: boolean;
+  patient_evaluation_items: Array<KipuPatientEvaluationItem>;
+  notes?: string;
+  provider_name?: string;
+  patient_id?: string;
+  items?: Array<KipuEvaluationItemObject>;
+}
+export interface KipuEvaluationItemObject {
+  id: number;
+  field_type: string;
+  name: string;
+  record_names: string;
+  column_names: string;
+  label: string;
+  enabled: boolean;
+  optional: boolean;
+  evaluation_id: number;
+  default_value: string;
+  divider_below: boolean;
+  rule: string;
+  placeholder: string;
+  pre_populate_with_id: number;
+  parent_item_id: string;
+  conditions: string;
+  label_width: string;
+  item_group: string;
+  show_string: string;
+  show_string_css: string;
+  matrix_default_records: number;
+  css_style: string;
+  image?: string;
+  skip_validations?: boolean;
+  question?: string;
+  answer?: string;
+}
+
+export enum KipuPatientEvaluationFieldType {
+  TEXT = 'text',
+  TEXTAREA = 'textarea',
+  NUMBER = 'number',
+  CHECKBOX = 'checkbox',
+  RADIO = 'radio',
+  SELECT = 'select',
+  DATE = 'date',
+  TIME = 'time',
+  DATETIME = 'datetime',
+  FILE = 'file',
+  IMAGE = 'image',
+  SIGNATURE = 'signature',
+  DIVIDER = 'divider',
+  HEADER = 'header',
+  SUBHEADER = 'subheader',
+  PARAGRAPH = 'paragraph',
+  MATRIX = 'matrix',
+  POINTS = 'points'
+}
+
+export interface KipuPatientEvaluation {
+  id: number | string;
+  name: string;
+  status: string;
+  patientCasefileId?: string;
+  patientId?: string;
+  billable?: boolean;
+  placeOfService?: string;
+  billingCodes?: Record<string, any>;
+  requireSignature?: boolean;
+  requirePatientSignature?: boolean;
+  requireGuarantorSignature?: boolean;
+  requireGuardianSignature?: boolean;
+  availableOnPortal?: boolean;
+  isCrm?: boolean;
+  masterTreatmentPlanCategory?: any;
+  forceAllReviewUsersTitles?: boolean;
+  forceAllStaffUsersTitles?: boolean;
+  reviewSignatureUserTitles?: Record<string, any>;
+  signatureUserTitles?: Record<string, any>;
+  locked?: boolean;
+  isRequired?: boolean;
+  evaluationVersionId?: any;
+  ancillary?: any;
+  billableClaimFormat?: any;
+  rendering_provider?: any;
+  evaluationId?: number;
+  patientProcessId?: number;
+  createdAt: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string | null;
+  evaluationContent?: string; // Raw field from KIPU
+  type?: string;
+  evaluationType?: string; // Raw field from KIPU
+  notes?: string;
+  userId?: number;
+  userName?: string;
+  formData?: Record<string, any>;
+  providerName?: string;
+  items?: KipuPatientEvaluationItem[];
+  evaluationItems?: Array<KipuPatientEvaluationItem>;
+  renderingProvider?: any;
+}
+
+export interface KipuPatientEvaluationItemBase {
   id: string;
   name: string;
   evaluation_item_id: number;
   created_at: string;
   updated_at?: string;
-  field_type: PatientEvaluationFieldType;
+  field_type: KipuPatientEvaluationFieldType;
   label: string;
   optional: boolean;
   divider_below: boolean;
 }
 
-/**
- * Patient Evaluation Item
- */
-export interface KipuPatientEvaluationItem extends PatientEvaluationItemBase {
+export interface KipuPatientEvaluationItem {
+  id: string;
+  evaluation_id: string;
+  question: string;
+  answer?: string;
+  answer_type: 'text' | 'number' | 'checkbox' | 'radio' | 'select';
+  options?: { value: string; label: string; }[];
+  required: boolean;
+  created_at: string;
+  updated_at?: string;
   evaluation_name?: string;
   description?: string;
   timestamp?: string | null;
@@ -483,97 +892,4 @@ export interface KipuPatientEvaluationItem extends PatientEvaluationItemBase {
   o2_saturation?: string;
   loc_label?: string;
   loc_value?: string;
-}
-
-/**
- * Evaluation Item Object
- */
-export interface EvaluationItemObject {
-  id: number;
-  field_type: string;
-  name: string;
-  record_names: string;
-  column_names: string;
-  label: string;
-  enabled: boolean;
-  optional: boolean;
-  evaluation_id: number;
-  default_value: string;
-  divider_below: boolean;
-  rule: string;
-  placeholder: string;
-  pre_populate_with_id: number;
-  parent_item_id: string;
-  conditions: string;
-  label_width: string;
-  item_group: string;
-  show_string: string;
-  show_string_css: string;
-  matrix_default_records: number;
-  css_style: string;
-  image?: string;
-  skip_validations?: boolean;
-}
-
-/**
- * Consent Form Record Extended
- */
-export interface ConsentFormRecordExtended {
-  id: number;
-  patient_casefile_id: Casefile;
-  consent_form_id: number;
-  name: string;
-  complete: boolean;
-  expires: boolean;
-  expired: boolean;
-  expiration_date: string | null;
-  error?: string;
-  fields?: Record<string, any>;
-  content?: Record<string, any>;
-}
-
-/**
- * Settings Object
- */
-export interface SettingsObject {
-  Id: number;
-  Code: string;
-  Name?: string;
-}
-
-/**
- * KIPU Evaluation
- */
-export interface KipuEvaluation {
-  id: number | string;
-  evaluation_type: string;
-  created_at: string;
-  updated_at?: string;
-  status: string;
-  notes?: string;
-  patient_id: number | string;
-  user_id?: number;
-  user_name?: string;
-  form_data?: Record<string, any>;
-  provider_name?: string;
-  items?: {
-    id: string;
-    question: string;
-    answer?: string;
-  }[];
-}
-
-/**
- * Patient Evaluation Item
- */
-export interface PatientEvaluationItem {
-  id: string;
-  evaluation_id: string;
-  question: string;
-  answer?: string;
-  answer_type: 'text' | 'number' | 'checkbox' | 'radio' | 'select';
-  options?: { value: string; label: string; }[];
-  required: boolean;
-  created_at: string;
-  updated_at?: string;
 }

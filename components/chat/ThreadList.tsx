@@ -91,7 +91,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
             if (messageContent.trim()) {
                 try {
                 // Generate a title using the API
-                   const response = await fetch('/api/generate-title', {
+                   const response = await fetch('/api/openai/generate-title', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ message: messageContent })

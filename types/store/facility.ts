@@ -21,28 +21,27 @@ export interface Pagination {
 export interface FacilityStore {
   // State
   facilities: Facility[];
-  currentFacilityId: string | null;
+  currentFacilityId: number;
   pagination: Pagination | null;
   isLoading: boolean;
   error: string | null;
   
   // Actions
   setDocuments: (facilities: Facility[]) => void;
-  setCurrentFacilityId: (facilityId: string | null) => void;
+  setCurrentFacilityId: (facilityId: number) => void;
   setPagination: (pagination: Pagination | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-  changeFacilityWithContext: (facilityId: string | null) => void;
+  changeFacilityWithContext: (facilityId: number) => void;
   
   // Data fetching with caching
   fetchFacilities: (page?: number, limit?: number) => Promise<any>;
   
   // Utilities
-  getCurrentFacility: () => Facility | null;
-  clearFacilityStore: () => void;
+  getCurrentFacility: () => Facility | undefined;
   invalidateFacilityCache: () => Promise<void>;
   
   // Legacy methods for backward compatibility
-  updateFacilityApiSettings?: (facilityId: string, settings: FacilityApiSettings) => Promise<boolean>;
-  getFacilityApiSettings?: (facilityId: string) => Promise<FacilityApiSettings | null>;
+  updateFacilityApiSettings?: (facilityId: number, settings: FacilityApiSettings) => Promise<boolean>;
+  getFacilityApiSettings?: (facilityId: number) => Promise<FacilityApiSettings | null>;
 }

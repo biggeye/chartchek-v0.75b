@@ -242,6 +242,19 @@ export const formDefinitions: Record<string, FormDefinition> = {
       }
     ]
   },
+  KipuPatientEvaluation: {
+    formKey: 'PatientEvaluation',
+    title: "Patient Evaluation",
+    sections: [
+      {
+        title: "Evaluation Details",
+        fields: [
+          { label: "Evaluation Name", type: "text", name: "title" },
+          { label: "Evaluation Items", type: "array", name: "items" }
+        ]
+      }
+    ]
+  },
   record_voluntary_admission: {
     formKey: 'record_voluntary_admission',
     title: "Record of Voluntary Admission/Consent to Care & Treatment/Agreement to Comply with Medical Care",

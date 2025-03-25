@@ -56,7 +56,7 @@ export interface PatientContext {
 }
 
 export interface ChatContext {
-  facilityId: string | null;
+  facilityId: number | null;
   patientId: string | null;
   patientName: string | null;
 }

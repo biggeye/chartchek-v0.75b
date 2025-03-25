@@ -150,7 +150,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch('/api/threads/enrich')
+      const response = await fetch('/api/openai/threads/enrich')
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`)
       }

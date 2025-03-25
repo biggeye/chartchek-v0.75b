@@ -3,34 +3,32 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
-import { PatientBasicInfo, PatientEvaluation, PatientVitalSign, PatientAppointment } from '@/types/kipu';
+import { PatientBasicInfo, KipuPatientEvaluation, PatientVitalSign, PatientAppointment } from '@/types/kipu';
 
 // Enhanced context type that wraps patientStore functionality
 interface PatientContextType {
   // UI-specific state and methods
   isPatientContextEnabled: boolean;
-  selectedFacilityId: string | null;
   
   // Wrapped methods from patientStore with enhanced functionality
-  setFacility: (facilityId: string) => Promise<void>;
-  selectPatient: (facilityId: string, patientId: string) => Promise<void>;
+  setFacility: (facilityId: number) => Promise<void>;
+  selectPatient: (patientId: string) => Promise<void>;
   clearSelection: () => void;
   togglePatientContext: () => void;
   
   // New methods for evaluations, vital signs, and appointments
-  fetchEvaluations: (facilityId: string, patientId: string) => Promise<PatientEvaluation[]>;
-  fetchVitalSigns: (facilityId: string, patientId: string) => Promise<PatientVitalSign[]>;
-  fetchAppointments: (facilityId: string, patientId: string) => Promise<PatientAppointment[]>;
-  fetchAllEvaluations: () => Promise<PatientEvaluation[]>;
-  getEvaluationById: (evaluationId: string) => PatientEvaluation | undefined;
+  fetchEvaluations: (patientId: string) => Promise<KipuPatientEvaluation[]>;
+  fetchVitalSigns: (patientId: string) => Promise<PatientVitalSign[]>;
+  fetchAllEvaluations: () => Promise<KipuPatientEvaluation[]>;
+  getEvaluationById: (evaluationId: string) => KipuPatientEvaluation | undefined;
   
   // Convenience accessors that provide typed access to patientStore data
   currentPatient: PatientBasicInfo | null;
+  currentFacilityId: number;
   patients: PatientBasicInfo[];
-  patientEvaluations: PatientEvaluation[];
+  KipuPatientEvaluations: KipuPatientEvaluation[];
   patientVitalSigns: PatientVitalSign[];
-  patientAppointments: PatientAppointment[];
-  allEvaluations: PatientEvaluation[];
+   allEvaluations: KipuPatientEvaluation[];
   isLoading: boolean;
   error: string | null;
 }
@@ -44,10 +42,8 @@ export const PatientProvider = ({ children }: { children: React.ReactNode }) => 
     currentPatient,
     currentPatientEvaluations,
     currentPatientVitalSigns,
-    currentPatientAppointments,
     evaluations,
     isPatientContextEnabled,
-    isLoading,
     error,
     
     // Actions
@@ -55,19 +51,22 @@ export const PatientProvider = ({ children }: { children: React.ReactNode }) => 
     fetchPatientWithDetails,
     fetchPatientEvaluations,
     fetchPatientVitalSigns,
-    fetchPatientAppointments,
-    fetchAllEvaluations,
+    fetchAllPatientEvaluations,
     setCurrentPatient,
     setPatientContextEnabled,
-    clearPatientContext
+    clearPatientContext,
+    isLoadingEvaluations,
+    isLoadingVitals,
+    isLoading
   } = usePatientStore();
   
   // Get facility information from facilityStore
-  const { currentFacilityId, getCurrentFacility } = useFacilityStore();
+  const { currentFacilityId } = useFacilityStore();
   
   // Enhanced method: Set facility and load patients
-  const setFacility = async (facilityId: string) => {
+  const setFacility = async (facilityId: number) => {
     try {
+      // Pass an object with facilityId property instead of just the string
       await fetchPatients(facilityId);
     } catch (error) {
       console.error("Error setting facility:", error);
@@ -114,20 +113,11 @@ export const PatientProvider = ({ children }: { children: React.ReactNode }) => 
     }
   };
   
-  // New method: Fetch appointments for a specific patient
-  const fetchAppointments = async (patientId: string) => {
-    try {
-      return await fetchPatientAppointments(patientId);
-    } catch (error) {
-      console.error("Error fetching appointments:", error);
-      return [];
-    }
-  };
   
   // New method: Fetch all evaluations (not tied to a specific patient)
   const getAllEvaluations = async () => {
     try {
-      return await fetchAllEvaluations();
+      return await fetchAllPatientEvaluations();
     } catch (error) {
       console.error("Error fetching all evaluations:", error);
       return [];
@@ -143,24 +133,17 @@ export const PatientProvider = ({ children }: { children: React.ReactNode }) => 
     // Then check in all evaluations
     return evaluations.find(evaluation => evaluation.id === evaluationId);
   };
-  
-  // Load initial data from current facility on mount and when facility changes
-  useEffect(() => {
-    if (currentFacilityId) {
-      setFacility(currentFacilityId);
-    }
-  }, [currentFacilityId]);
+
   
   return (
     <PatientContext.Provider value={{
       // State
       isPatientContextEnabled,
-      selectedFacilityId: currentFacilityId,
+      currentFacilityId,
       currentPatient,
       patients,
-      patientEvaluations: currentPatientEvaluations,
+      KipuPatientEvaluations: currentPatientEvaluations,
       patientVitalSigns: currentPatientVitalSigns,
-      patientAppointments: currentPatientAppointments,
       allEvaluations: evaluations,
       isLoading,
       error,
@@ -174,7 +157,6 @@ export const PatientProvider = ({ children }: { children: React.ReactNode }) => 
       // New methods
       fetchEvaluations,
       fetchVitalSigns,
-      fetchAppointments,
       fetchAllEvaluations: getAllEvaluations,
       getEvaluationById
     }}>

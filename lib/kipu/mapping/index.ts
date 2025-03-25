@@ -5,9 +5,8 @@
  * It handles the terminology differences and field naming conventions between systems.
  */
 
-import { Facility, Building, PatientBasicInfo as AppPatientBasicInfo, PatientEvaluation as AppPatientEvaluation, PatientVitalSign as AppPatientVitalSign, PatientAppointment as AppPatientAppointment, PaginatedPatientsResponse as AppPaginatedPatientsResponse, KipuEvaluation } from '@/types/kipu';
+import { Facility, Building, PatientBasicInfo as AppPatientBasicInfo, KipuPatientEvaluation as AppPatientEvaluation, PatientVitalSign as AppPatientVitalSign, PatientAppointment as AppPatientAppointment, PaginatedPatientsResponse as AppPaginatedPatientsResponse, KipuEvaluation } from '@/types/kipu';
 import { PatientBasicInfo, Facility as KipuFacility } from '@/types/kipu';
-import { PatientVitalSign, PaginatedPatientsResponse } from '@/lib/kipu/service/patient-service';
 
 /**
  * Maps a KIPU location object to our Facility format
@@ -67,7 +66,7 @@ export function mapKipuLocationToFacility(kipuLocation: any): Facility {
  * @param facilityId - The ID of the parent facility
  * @returns Building object with mapped fields
  */
-function mapKipuBuildingToBuilding(kipuBuilding: any, facilityId: string): Building {
+function mapKipuBuildingToBuilding(kipuBuilding: any, facilityId: number): Building {
   return {
     id: kipuBuilding.id?.toString() || `building-${Math.random().toString(36).substring(2, 9)}`,
     name: kipuBuilding.name || 'Unnamed Building',
@@ -97,7 +96,7 @@ export function mapKipuPatientToPatientBasicInfo(kipuPatient: any): PatientBasic
       mrn: '',
       admissionDate: '',
       dischargeDate: '',
-      facilityId: '',
+      facilityId: 0,
       fullName: '',
       insuranceProvider: '',
       dischargeType: '',
@@ -152,7 +151,7 @@ export function mapKipuPatientToPatientBasicInfo(kipuPatient: any): PatientBasic
  * @param facilityId - The ID of the facility the patient belongs to
  * @returns Application PatientBasicInfo object with mapped fields
  */
-export function mapToAppPatientBasicInfo(kipuPatient: PatientBasicInfo, facilityId: string = ''): AppPatientBasicInfo {
+export function mapToAppPatientBasicInfo(kipuPatient: PatientBasicInfo, facilityId: number): AppPatientBasicInfo {
   if (!kipuPatient) {
     console.error('Attempted to map null or undefined KIPU patient');
     return {
@@ -196,7 +195,7 @@ export function mapToAppPatientBasicInfo(kipuPatient: PatientBasicInfo, facility
     status: kipuPatient.dischargeDate ? 'discharged' : 'active',
     admissionDate: kipuPatient.admissionDate || '',
     dischargeDate: kipuPatient.dischargeDate || '',
-    facilityId: facilityId || kipuPatient.facilityId || '',
+    facilityId: facilityId || kipuPatient.facilityId || 0,
     fullName: fullName || 'Unknown Patient',
     insuranceProvider: kipuPatient.insuranceProvider || '',
     dischargeType: kipuPatient.dischargeType || '',
@@ -215,108 +214,8 @@ export function mapToAppPatientBasicInfo(kipuPatient: PatientBasicInfo, facility
   };
 }
 
-/**
- * Maps a KIPU PatientEvaluation to our application PatientEvaluation format
- * 
- * @param kipuEvaluation - The KipuEvaluation from KIPU API types
- * @param facilityId - The ID of the facility the evaluation belongs to
- * @returns Application PatientEvaluation object with mapped fields
- */
-export function mapToAppPatientEvaluation(kipuEvaluation: KipuEvaluation, facilityId: string = ''): AppPatientEvaluation {
-  if (!kipuEvaluation) {
-    console.error('Attempted to map null or undefined KIPU evaluation');
-    return {
-      id: '',
-      patientId: '',
-      evaluationType: '',
-      evaluationDate: '',
-      status: '',
-      completedBy: '',
-      content: {}
-    };
-  }
 
-  return {
-    id: String(kipuEvaluation.id) || '',
-    patientId: String(kipuEvaluation.patient_id) || '',
-    evaluationType: kipuEvaluation.evaluation_type || '',
-    evaluationDate: kipuEvaluation.created_at || '',
-    status: kipuEvaluation.status || '',
-    completedBy: kipuEvaluation.user_name || '',
-    content: kipuEvaluation.form_data || {}
-  };
-}
 
-/**
- * Maps a KIPU PatientVitalSign to our application PatientVitalSign format
- * 
- * @param kipuVitalSign - The PatientVitalSign from KIPU API types
- * @param facilityId - The ID of the facility the vital sign belongs to
- * @returns Application PatientVitalSign object with mapped fields
- */
-export function mapToAppPatientVitalSign(kipuVitalSign: PatientVitalSign, facilityId: string = ''): AppPatientVitalSign {
-  if (!kipuVitalSign) {
-    console.error('Attempted to map null or undefined KIPU vital sign');
-    return {
-      id: '',
-      patientId: '',
-      facilityId: facilityId,
-      recordedAt: '',
-      recordedBy: '',
-      type: '',
-      value: '',
-      unit: '',
-      notes: ''
-    };
-  }
-
-  // Determine the type of vital sign based on available fields
-  let type = 'unknown';
-  let value: string | number = '';
-  let unit = '';
-
-  if (kipuVitalSign.systolic && kipuVitalSign.diastolic) {
-    type = 'blood_pressure';
-    value = `${kipuVitalSign.systolic}/${kipuVitalSign.diastolic}`;
-    unit = 'mmHg';
-  } else if (kipuVitalSign.pulse) {
-    type = 'pulse';
-    value = kipuVitalSign.pulse;
-    unit = 'bpm';
-  } else if (kipuVitalSign.respirations) {
-    type = 'respirations';
-    value = kipuVitalSign.respirations;
-    unit = 'breaths/min';
-  } else if (kipuVitalSign.temperature) {
-    type = 'temperature';
-    value = kipuVitalSign.temperature;
-    unit = '°F';
-  } else if (kipuVitalSign.o2_saturation) {
-    type = 'o2_saturation';
-    value = kipuVitalSign.o2_saturation;
-    unit = '%';
-  } else if (kipuVitalSign.height) {
-    type = 'height';
-    value = kipuVitalSign.height;
-    unit = 'in';
-  } else if (kipuVitalSign.weight) {
-    type = 'weight';
-    value = kipuVitalSign.weight;
-    unit = 'lbs';
-  }
-
-  return {
-    id: kipuVitalSign.id || '',
-    patientId: kipuVitalSign.patient_id || '',
-    facilityId: facilityId,
-    recordedAt: kipuVitalSign.timestamp || kipuVitalSign.created_at || '',
-    recordedBy: kipuVitalSign.created_by || '',
-    type: type,
-    value: value,
-    unit: unit,
-    notes: kipuVitalSign.notes || ''
-  };
-}
 
 /**
  * Maps a KIPU appointment to our application PatientAppointment format
@@ -325,7 +224,7 @@ export function mapToAppPatientVitalSign(kipuVitalSign: PatientVitalSign, facili
  * @param facilityId - The ID of the facility the appointment belongs to
  * @returns Application PatientAppointment object with mapped fields
  */
-export function mapToAppPatientAppointment(kipuAppointment: any, facilityId: string = ''): AppPatientAppointment {
+export function mapToAppPatientAppointment(kipuAppointment: any, facilityId: number): AppPatientAppointment {
   if (!kipuAppointment) {
     console.error('Attempted to map null or undefined KIPU appointment');
     return {
@@ -355,39 +254,5 @@ export function mapToAppPatientAppointment(kipuAppointment: any, facilityId: str
     provider: kipuAppointment.provider || kipuAppointment.provider_name || '',
     location: kipuAppointment.location || '',
     notes: kipuAppointment.notes || ''
-  };
-}
-
-/**
- * Maps a KIPU PaginatedPatientsResponse to our application PaginatedPatientsResponse format
- * 
- * @param kipuResponse - The PaginatedPatientsResponse from KIPU API
- * @param facilityId - The ID of the facility the patients belong to
- * @returns Application PaginatedPatientsResponse object with mapped fields
- */
-export function mapToAppPaginatedPatientsResponse(kipuResponse: PaginatedPatientsResponse, facilityId: string = ''): AppPaginatedPatientsResponse {
-  if (!kipuResponse) {
-    console.error('Attempted to map null or undefined KIPU paginated patients response');
-    return {
-      patients: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 1,
-        recordsPerPage: 20,
-        totalRecords: 0
-      }
-    };
-  }
-
-  return {
-    patients: Array.isArray(kipuResponse.patients) 
-      ? kipuResponse.patients.map(patient => mapToAppPatientBasicInfo(patient, facilityId))
-      : [],
-    pagination: {
-      currentPage: kipuResponse.pagination?.page || 1,
-      totalPages: kipuResponse.pagination?.pages || 1,
-      recordsPerPage: kipuResponse.pagination?.limit || 20,
-      totalRecords: kipuResponse.pagination?.total || 0
-    }
   };
 }

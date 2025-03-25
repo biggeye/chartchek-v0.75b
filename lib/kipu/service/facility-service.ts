@@ -7,7 +7,7 @@
 
 import { Facility, KipuCredentials, KipuApiResponse } from '@/types/kipu';
 import { createKipuRequestConfig } from '@/lib/kipu/auth/signature';
-import { getFacilityKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { createClient } from '@/utils/supabase/client';
 import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
 
@@ -222,7 +222,7 @@ export async function kipuListFacilities(
  * @returns Promise resolving to the KIPU API response
  */
 export async function kipuGetFacility(
-  facilityId: string,
+  facilityId: number,
   credentials: KipuCredentials
 ): Promise<KipuApiResponse> {
   try {
@@ -263,11 +263,11 @@ export async function kipuGetFacility(
  * @returns Promise resolving to a success/failure result with message
  */
 export async function testKipuConnection(
-  facilityId: string
+  facilityId: number
 ): Promise<{ success: boolean; message: string }> {
   try {
     // Get the KIPU credentials for the facility
-    const credentials = await getFacilityKipuCredentials(facilityId);
+    const credentials = await getKipuCredentials();
     
     if (!credentials) {
       return {

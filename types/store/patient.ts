@@ -1,11 +1,9 @@
 // Patient store types
 import {
   PatientBasicInfo,
-  PatientEvaluation,
+  KipuPatientEvaluation,
   PatientVitalSign,
-  PatientAppointment
 } from '@/types/kipu';
-
 
 // Patient context options for filtering and display
 export interface PatientContextOptions {
@@ -26,56 +24,59 @@ export const DEFAULT_PATIENT_CONTEXT_OPTIONS: PatientContextOptions = {
 // Response type for patient with all details
 export interface PatientWithDetails {
   patient: PatientBasicInfo | null;
-  evaluations: PatientEvaluation[];
-//  vitalSigns: PatientVitalSign[];
-//  appointments: PatientAppointment[];
+  evaluations: KipuPatientEvaluation[];
+  vitalSigns: PatientVitalSign[];
 }
 
+// Patient store state interface
 // Patient store state interface
 export interface PatientStore {
   // State
   patients: PatientBasicInfo[];
   currentPatientId: string | null;
   currentPatient: PatientBasicInfo | null;
-  evaluations: PatientEvaluation[];
+  selectedPatient: PatientBasicInfo | null;  // Added
+  evaluations: KipuPatientEvaluation[];
   vitalSigns: PatientVitalSign[];
-  appointments: PatientAppointment[];
-  contextOptions: PatientContextOptions;
-  isLoading: boolean;
-  error: string | null;
-
-  // Patient context related properties
-  currentPatientEvaluations: PatientEvaluation[];
+  currentPatientEvaluations: KipuPatientEvaluation[];
+  selectedPatientEvaluations: KipuPatientEvaluation[];  // Added
   currentPatientVitalSigns: PatientVitalSign[];
-  currentPatientAppointments: PatientAppointment[];
+  selectedPatientVitalSigns: PatientVitalSign[];  // Added
+  selectedPatientAppointments: any[];  // Added
+  allPatientEvaluations: KipuPatientEvaluation[];
   isPatientContextEnabled: boolean;
   selectedContextOptions: PatientContextOptions;
-
+  contextOptions: PatientContextOptions;
+  isLoading: boolean;
+  isLoadingEvaluations: boolean;  // Added
+  isLoadingVitals: boolean;  // Added
+  isLoadingAppointments: boolean;  // Added
+  error: string | null;
 
   // Actions
-  // Add to PatientStore interface
-  updatePatientContextOptions: (options: PatientContextOptions) => void;
   setPatients: (patients: PatientBasicInfo[]) => void;
-  setCurrentPatientId: (patientId: string | null, facilityId: number) => void;
+  setCurrentPatientId: (patientId: string | null) => void;
   setCurrentPatient: (patient: PatientBasicInfo | null) => void;
-  setEvaluations: (evaluations: PatientEvaluation[]) => void;
+  setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
+  setAllPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => void;
-  setAppointments: (appointments: PatientAppointment[]) => void;
-  setContextOptions: (options: Partial<PatientContextOptions>) => void;
+
+  fetchPatients: (facilityId: number) => Promise<PatientBasicInfo[]>;
+  fetchPatientById: (patientId: string) => Promise<PatientBasicInfo | null>;
+  fetchPatientWithDetails: (patientId: string) => Promise<PatientWithDetails | null>;
+
+  fetchPatientEvaluations: (patientId: string) => Promise<KipuPatientEvaluation[]>;
+  fetchPatientEvaluation: (evaluationId: string) => Promise<KipuPatientEvaluation | null>;
+  fetchAllPatientEvaluations: () => Promise<KipuPatientEvaluation[]>; // Added
+
+  fetchPatientVitalSigns: (patientId: string, options?: { skipLoadingState?: boolean }) => Promise<PatientVitalSign[]>;
+
+  setPatientContextEnabled: (enabled: boolean) => void;
+  setPatientContextOptions: (options: Partial<PatientContextOptions>) => void;
+  updatePatientContextOptions: (options: PatientContextOptions) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-
-  // Data fetching with caching
-  fetchPatients: (facilityId: string) => Promise<PatientBasicInfo[]>;
-  fetchPatientById: (patientId: string) => Promise<PatientBasicInfo | null>;
-  fetchPatientEvaluations: (patientId: string) => Promise<PatientEvaluation[]>;
-  fetchPatientVitalSigns: (patientId: string) => Promise<PatientVitalSign[]>;
-  fetchPatientAppointments: (patientId: string) => Promise<PatientAppointment[]>;
-  fetchPatientWithDetails: (patientId: string) => Promise<PatientWithDetails | null>;
-  fetchAllEvaluations: () => Promise<PatientEvaluation[]>;
-
-  // Utilities
+  
   clearPatientStore: () => void;
   clearPatientContext: () => void;
-  setPatientContextEnabled: (enabled: boolean) => void;
 }

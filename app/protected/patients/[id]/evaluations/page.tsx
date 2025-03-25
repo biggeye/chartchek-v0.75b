@@ -10,42 +10,29 @@ import {
   DocumentTextIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
-import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
+import { KipuPatientEvaluation } from '@/types/kipu';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-// Update the Evaluation interface to match the KIPU API response
-interface Evaluation {
-  id: number;
-  name: string;  // This is the title/name of the evaluation
-  status: string;
-  patient_casefile_id: string;
-  evaluation_id: number;
-  patient_process_id: number;
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  updated_by: string | null;
-  evaluation_content: string;
-}
-
+// Update the Evaluation interface to match the KIPU API respons
 // Simple spinner component
 const Spinner = ({ className }: { className?: string }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-indigo-500 ${className}`}></div>
 );
 
-export default function PatientEvaluationsPage() {
+export default function KipuPatientEvaluationsPage() {
   const { id: patientId } = useParams<{ id: string }>();
-  const { getCurrentFacility } = useFacilityStore();
-  const currentFacility = getCurrentFacility();
-  const { currentPatient } = usePatientStore();
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
+  const { 
+    currentPatientEvaluations, 
+    isLoading, 
+    error 
+  } = usePatientStore();
+  
+  const [evaluations, setEvaluations] = useState<KipuPatientEvaluation[]>([]);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<KipuPatientEvaluation | null>(null);
 
   const evaluationStats = [
     {
@@ -62,32 +49,15 @@ export default function PatientEvaluationsPage() {
     },
   ];
 
+  // Process evaluations data from the store whenever it changes
   useEffect(() => {
-    async function fetchEvaluations() {
-      if (!patientId || !currentFacility) return;
+    if (!currentPatientEvaluations) return;
+    
+    // No need to transform, just use the KipuPatientEvaluation objects directly
+    setEvaluations(currentPatientEvaluations);
+  }, [currentPatientEvaluations]);
 
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/kipu/patients/${patientId}/evaluations`);
-
-        if (!response.ok) {
-          throw new Error(`Error fetching evaluations: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setEvaluations(data.evaluations || []);
-      } catch (err) {
-        console.error('Failed to fetch patient evaluations:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch evaluations');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvaluations();
-  }, [patientId, currentFacility]);
-
-  const handleEvaluationClick = (evaluation: Evaluation) => {
+  const handleEvaluationClick = (evaluation: KipuPatientEvaluation) => {
     // Instead of just setting the selected evaluation
     setSelectedEvaluation(evaluation);
 
@@ -122,7 +92,7 @@ export default function PatientEvaluationsPage() {
       {/* Evaluations List */}
       <div className="overflow-hidden bg-white shadow sm:rounded-md">
         <ul className="divide-y divide-gray-200">
-          {loading ? (
+          {isLoading ? (
             <li className="p-4 text-center">
               <Spinner className="h-8 w-8 mx-auto" />
               <p className="mt-2 text-sm text-gray-500">Loading evaluations...</p>
@@ -158,11 +128,9 @@ export default function PatientEvaluationsPage() {
                     </div>
                     <h2 className="min-w-0 text-sm font-semibold leading-6 text-gray-900">
                       <Link
-                        href={`/protected/patients/${patientId}/evaluations/${evaluation.evaluation_id}`}
+                        href={`/protected/patients/${patientId}/evaluations/${evaluation.id}`}
                         className="block hover:bg-gray-50"
                       >
-
-
                         <button
                           onClick={() => handleEvaluationClick(evaluation)}
                           className="flex gap-x-2"
@@ -177,11 +145,11 @@ export default function PatientEvaluationsPage() {
                     </h2>
                   </div>
                   <div className="mt-3 flex items-center gap-x-2.5 text-xs leading-5 text-gray-500">
-                    <p className="truncate">Created by {evaluation.created_by}</p>
+                    <p className="truncate">Created by {evaluation.createdBy}</p>
                     <svg className="h-0.5 w-0.5 flex-none fill-gray-500" viewBox="0 0 2 2">
                       <circle cx={1} cy={1} r={1} />
                     </svg>
-                    <p className="whitespace-nowrap">Created on {new Date(evaluation.created_at).toLocaleDateString()}</p>
+                    <p className="whitespace-nowrap">Created on {new Date(evaluation.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div

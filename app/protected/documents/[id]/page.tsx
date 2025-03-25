@@ -108,7 +108,7 @@ export default function DocumentDetail() {
       formData.append('file', file);
       
       // Send the file to the OpenAI files API using FormData
-      const openAIfileResponse = await fetch('/api/files', {
+      const openAIfileResponse = await fetch('/api/openai/files', {
         method: 'POST',
         body: formData
       });

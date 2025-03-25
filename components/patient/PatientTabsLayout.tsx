@@ -6,7 +6,7 @@ import { usePatientStore } from '@/store/patientStore';
 
 interface PatientLayoutProps {
   children: React.ReactNode;
-  facilityId: string;
+  facilityId: number;
   patientId: string;
   activeTab?: 'overview' | 'evaluations' | 'appointments' | 'vitals';
 }

@@ -5,16 +5,14 @@ import { useParams } from 'next/navigation';
 import { format, subDays, subMonths } from 'date-fns';
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
 import { HeartIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/24/outline';
-import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
-import { getPatientVitalSigns } from '@/lib/kipu/service/patient-service';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
 interface VitalSign {
-  id: string;
+  id: string | number;
   type: 'blood_pressure' | 'temperature' | 'weight' | 'oxygen' | 'glucose';
   systolic?: number;
   diastolic?: number;
@@ -28,67 +26,57 @@ interface VitalSign {
 
 export default function PatientVitalsPage() {
   const { id: patientId } = useParams<{ id: string }>();
-  const { getCurrentFacility } = useFacilityStore();
-  const currentFacility = getCurrentFacility();
-  const { currentPatient } = usePatientStore();
   
   const [vitalSigns, setVitalSigns] = useState<VitalSign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const [selectedType, setSelectedType] = useState<string | null>(null);
-
+  const { 
+    currentPatientVitalSigns, 
+    isLoading, 
+    error 
+  } = usePatientStore();
+  
+  // Process vital signs data from the store whenever it changes
   useEffect(() => {
-    async function fetchVitalSigns() {
-      if (!patientId || !currentFacility) return;
-      
-      setLoading(true);
-      try {
-        // Fetch vital signs from KIPU API
-        const vitalSignsData = await getPatientVitalSigns(currentFacility.id, patientId as string);
-        
-        // Map the KIPU API response to our VitalSign interface
-        const formattedVitalSigns = vitalSignsData.map((vital: any) => {
-          // Determine the type based on available data
-          let type: VitalSign['type'] = 'temperature';
-          if (vital.systolic && vital.diastolic) {
-            type = 'blood_pressure';
-          } else if (vital.weight) {
-            type = 'weight';
-          } else if (vital.o2_saturation) {
-            type = 'oxygen';
-          } else if (vital.glucose) {
-            type = 'glucose';
-          }
-          
-          // Determine status based on values (simplified logic)
-          let status: VitalSign['status'] = 'normal';
-          
-          return {
-            id: vital.id || '',
-            type,
-            systolic: vital.systolic ? Number(vital.systolic) : undefined,
-            diastolic: vital.diastolic ? Number(vital.diastolic) : undefined,
-            pulse: vital.pulse ? Number(vital.pulse) : undefined,
-            value: vital.temperature || vital.weight || vital.o2_saturation || vital.glucose,
-            unit: type === 'weight' ? 'lbs' : undefined,
-            date: vital.timestamp || vital.created_at || new Date().toISOString(),
-            status,
-            notes: vital.notes || ''
-          };
-        });
-        
-        setVitalSigns(formattedVitalSigns);
-      } catch (err) {
-        console.error('Failed to fetch patient vital signs:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch vital signs');
-      } finally {
-        setLoading(false);
-      }
-    }
+// Ensure currentPatientVitalSigns is an array before mapping over it
+if (!currentPatientVitalSigns || !Array.isArray(currentPatientVitalSigns)) {
+  setVitalSigns([]);
+  return;
+}
     
-    fetchVitalSigns();
-  }, [patientId, currentFacility]);
+    // Map the KIPU API response to our VitalSign interface
+    const formattedVitalSigns = currentPatientVitalSigns.map((vital: any) => {
+      // Determine the type based on available data
+      let type: VitalSign['type'] = 'temperature';
+      if (vital.blood_pressure_systolic && vital.blood_pressure_diastolic) {
+        type = 'blood_pressure';
+      } else if (vital.type === 'weight') {
+        type = 'weight';
+      } else if (vital.type === 'o2_saturation' || vital.o2_saturation) {
+        type = 'oxygen';
+      } else if (vital.type === 'glucose') {
+        type = 'glucose';
+      }
+      
+      // Determine status based on values (simplified logic)
+      let status: VitalSign['status'] = 'normal';
+      
+      return {
+        id: vital.id || '',
+        type,
+        systolic: vital.blood_pressure_systolic ? Number(vital.blood_pressure_systolic) : undefined,
+        diastolic: vital.blood_pressure_diastolic ? Number(vital.blood_pressure_diastolic) : undefined,
+        pulse: vital.pulse ? Number(vital.pulse) : undefined,
+        value: vital.temperature || vital.value || vital.o2_saturation,
+        unit: vital.unit || (type === 'weight' ? 'lbs' : undefined),
+        date: vital.recordedAt || vital.interval_timestamp,
+        status,
+        notes: vital.notes || ''
+      };
+    });
+    
+    setVitalSigns(formattedVitalSigns);
+  }, [currentPatientVitalSigns]);
 
   // Filter vital signs based on selected time range
   const filteredVitalSigns = vitalSigns.filter(vs => {
@@ -191,7 +179,7 @@ export default function PatientVitalsPage() {
 
   return (
     <div className="space-y-8">
-      {loading ? (
+      {isLoading ? (
         <div className="p-4">Loading patient vital signs...</div>
       ) : error ? (
         <div className="p-4 text-red-500">Error: {error}</div>

@@ -3,7 +3,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useStreamStore } from '@/store/streamStore';
 import { useDocumentStore } from '@/store/documentStore';
-import { generateAndUploadPDF, FormType } from '@/lib/forms/pdfGenerator';
+import { generatePDF, FormType } from '@/lib/forms/pdfGenerator';
 import PDFGenerationIndicator from '@/components/ui/PDFGenerationIndicator';
 
 export const PDFGeneratorListener = () => {
@@ -38,18 +38,13 @@ export const PDFGeneratorListener = () => {
       console.log('[PDFGeneratorListener] Prepared form data for PDF generation:', pdfFormData);
       
       // Generate and upload the PDF
-      const result = await generateAndUploadPDF(
-        pdfFormData,
-        uploadDocument,
-        {
-          // Use callbacks for cleaner flow control
-          onComplete: () => setIsStreamingActive(false)
-        }
+      const result = await generatePDF(
+        pdfFormData
       );
 
-      if (result?.document && result.url) {
+      if (result?.url) {
         setPdfPreviewUrl(result.url);
-        console.log('[PDFGeneratorListener] PDF uploaded successfully');
+        console.log('[PDFGeneratorListener] PDF generated successfully');
         return result.url;
       }
     } catch (error) {

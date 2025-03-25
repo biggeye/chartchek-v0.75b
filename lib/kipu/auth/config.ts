@@ -21,11 +21,11 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 /**
  * Parses a composite patient ID into its components
- * @param patientId - The composite patient ID in format "locationPatientId:patientMasterId"
- * @returns An object containing the locationPatientId and patientMasterId
+ * @param patientId - The composite patient ID in format "chartId:patientMasterId"
+ * @returns An object containing the chartId and patientMasterId
  */
-export function parsePatientId(patientId: string): { locationPatientId: string; patientMasterId: string } {
-  if (!patientId) return { locationPatientId: '', patientMasterId: '' };
+export function parsePatientId(patientId: string): { chartId: string; patientMasterId: string } {
+  if (!patientId) return { chartId: '', patientMasterId: '' };
   
   // Decode the patient ID first in case it's already URL-encoded
   const decodedPatientId = decodeURIComponent(patientId);
@@ -34,16 +34,15 @@ export function parsePatientId(patientId: string): { locationPatientId: string; 
   const patientIdParts = decodedPatientId.split(':');
   
   if (patientIdParts.length === 2) {
-    console.log(`Patient ID components: Numeric part=${patientIdParts[0]}, UUID part=${patientIdParts[1]}`);
-    return {
-      locationPatientId: patientIdParts[0],
+      return {
+      chartId: patientIdParts[0],
       patientMasterId: patientIdParts[1]
     };
   } else {
     // If the format is not as expected, use the whole ID for both
     console.log(`Patient ID format is not as expected. Using the whole ID for both components.`);
     return {
-      locationPatientId: decodedPatientId,
+      chartId: decodedPatientId,
       patientMasterId: decodedPatientId
     };
   }

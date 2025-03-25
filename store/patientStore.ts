@@ -1,108 +1,27 @@
 'use client';
 
 import { create } from 'zustand';
-import { PatientStore, PatientContextOptions, PatientWithDetails, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
-import { PatientBasicInfo, PatientEvaluation, PatientVitalSign, PatientAppointment } from '@/types/kipu';
-import { memoizeAsync, memoizeAsyncWithExpiration } from '@/utils/memoization';
-import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
-import { queryKeys } from '@/utils/react-query/config';
+import { PatientStore, PatientContextOptions, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
+import { PatientBasicInfo, KipuPatientEvaluation, PatientVitalSign } from '@/types/kipu';
 import { createClient } from '@/utils/supabase/client';
 import { chatStore } from '@/store/chatStore';
+import { parsePatientId } from '@/lib/kipu/auth/config';
 
 // Initialize Supabase client
 const supabase = createClient();
 
-// API functions that call our internal endpoints
-const fetchPatientsFromAPI = async (page = 1, limit = 20) => {
-  const response = await fetch(`/api/kipu/patients?page=${page}&limit=${limit}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch patients: ${response.statusText}`);
+// Helper function to encode patient IDs properly
+const encodePatientIdForUrl = (patientId: string): string => {
+  try {
+    const decodedId = decodeURIComponent(patientId);
+    const { chartId, patientMasterId } = parsePatientId(decodedId);
+    const formattedId = `${chartId}:${patientMasterId}`;
+    return encodeURIComponent(formattedId);
+  } catch (error) {
+    console.error(`Error encoding patient ID ${patientId}:`, error);
+    return encodeURIComponent(patientId);
   }
-  return response.json();
 };
-
-const fetchPatientByIdFromAPI = async (facilityId: string, patientId: string) => {
-  const response = await fetch(`/api/kipu/patients/${patientId}?facilityId=${facilityId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch patient: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-const fetchPatientEvaluationsFromAPI = async (facilityId: string, patientId: string) => {
-  // Ensure patientId is properly encoded for the URL
-  const decodedPatientId = decodeURIComponent(patientId);
-  const encodedPatientId = encodeURIComponent(decodedPatientId);
-
-  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/evaluations?facilityId=${facilityId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-const fetchEvaluationFromAPI = async (evaluationId: string) => {
-  const response = await fetch(`/api/kipu/evaluations/${evaluationId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch evaluation: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-const fetchPatientVitalSignsFromAPI = async (facilityId: string, patientId: string) => {
-  // Ensure patientId is properly encoded for the URL
-  const decodedPatientId = decodeURIComponent(patientId);
-  const encodedPatientId = encodeURIComponent(decodedPatientId);
-
-  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/vitals?facilityId=${facilityId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-const fetchPatientAppointmentsFromAPI = async (facilityId: string, patientId: string) => {
-  // Ensure patientId is properly encoded for the URL
-  const decodedPatientId = decodeURIComponent(patientId);
-  const encodedPatientId = encodeURIComponent(decodedPatientId);
-
-  const response = await fetch(`/api/kipu/patients/${encodedPatientId}/appointments?facilityId=${facilityId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch appointments: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-// Memoized API functions with the same signatures as the original service functions
-const memoizedListPatients = memoizeAsyncWithExpiration(
-  fetchPatientsFromAPI,
-  5 * 60 * 1000, // 5 minutes TTL
-  10 // Max cache size
-);
-
-const memoizedGetPatient = memoizeAsyncWithExpiration(
-  fetchPatientByIdFromAPI,
-  5 * 60 * 1000,
-  20
-);
-
-const memoizedGetPatientEvaluations = memoizeAsyncWithExpiration(
-  fetchPatientEvaluationsFromAPI,
-  5 * 60 * 1000,
-  20
-);
-
-const memoizedGetPatientVitalSigns = memoizeAsyncWithExpiration(
-  fetchPatientVitalSignsFromAPI,
-  5 * 60 * 1000,
-  20
-);
-
-const memoizedGetPatientAppointments = memoizeAsyncWithExpiration(
-  fetchPatientAppointmentsFromAPI,
-  5 * 60 * 1000,
-  20
-);
 
 // Create patient store with Zustand
 export const usePatientStore = create<PatientStore>((set, get) => ({
@@ -110,18 +29,27 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   patients: [],
   currentPatientId: null,
   currentPatient: null,
+  selectedPatient: null,
   evaluations: [],
   vitalSigns: [],
-  appointments: [],
   currentPatientEvaluations: [],
+  selectedPatientEvaluations: [],
   currentPatientVitalSigns: [],
-  currentPatientAppointments: [],
+  selectedPatientVitalSigns: [],
+  selectedPatientAppointments: [],
+  allPatientEvaluations: [],
   isPatientContextEnabled: false,
   selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   isLoading: false,
+  isLoadingEvaluations: false,
+  isLoadingVitals: false,
+  isLoadingAppointments: false,
   error: null,
 
+  /*
+  _____________SET___________
+  */
   // Set patients
   setPatients: (patients: PatientBasicInfo[]) => set({ patients }),
 
@@ -144,32 +72,29 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   setCurrentPatient: (patient: PatientBasicInfo | null) => set({ currentPatient: patient }),
 
   // Set evaluations
-  setEvaluations: (evaluations: PatientEvaluation[]) => set({ evaluations }),
+  setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => set({ evaluations }),
 
   // Set vital signs
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => set({ vitalSigns }),
 
-  // Set appointments
-  setAppointments: (appointments: PatientAppointment[]) => set({ appointments }),
+  // Set all patient evaluations
+  setAllPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => set({ allPatientEvaluations: evaluations }),
 
   // Set context options
-  setContextOptions: (options: Partial<PatientContextOptions>) => set({
+  setPatientContextOptions: (options: Partial<PatientContextOptions>) => set({
     contextOptions: {
       ...get().contextOptions,
       ...options
     }
   }),
 
-  // Update the updatePatientContextOptions function
+  // Update patient context options
   updatePatientContextOptions: (options: PatientContextOptions) => {
     set({ contextOptions: options });
 
     // If patient context is enabled, update the chat context
     if (get().isPatientContextEnabled && get().currentPatient) {
-      // Get the current patient
       const patient = get().currentPatient;
-
-      // Make sure patient is not null and use patientId instead of id
       if (patient) {
         chatStore.getState().updateChatContext({
           patientId: patient.patientId,
@@ -181,321 +106,324 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
   // Set loading state
   setLoading: (isLoading: boolean) => set({ isLoading }),
+
   // Set error state
   setError: (error: string | null) => set({ error }),
-  // Fetch patients from API with multi-level caching
-  fetchPatients: async () => {
+
+  /*
+  _____________FETCH_________
+  */
+  // Fetch all patients
+  // Standardized fetch functions for patientStore
+
+  // Fetch all patients
+  fetchPatients: async (facilityId: number) => {
     try {
       set({ isLoading: true, error: null });
 
-      // Get context options with fallback to defaults
-      const contextOptions = get().contextOptions || DEFAULT_PATIENT_CONTEXT_OPTIONS;
-      const { showInactive, sortBy, sortOrder, filterBy } = contextOptions;
+      // Add the facilityId to the API request
+      const response = await fetch(`/api/kipu/patients`);
 
-      // Fetch from API without facility filtering
-      const result = await fetchPatientsFromAPI(1, 100);
-
-      // Process the results
-      let patients = result.patients || [];
-
-      // Apply sorting if needed
-      if (sortBy) {
-        patients = [...patients].sort((a, b) => {
-          const aValue = a[sortBy as keyof PatientBasicInfo];
-          const bValue = b[sortBy as keyof PatientBasicInfo];
-
-          if (sortOrder === 'asc') {
-            return aValue > bValue ? 1 : -1;
-          } else {
-            return aValue < bValue ? 1 : -1;
-          }
-        });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch patients: ${response.statusText}`);
       }
 
-      set({ patients, isLoading: false });
-      return patients;
+      const result = await response.json();
+      const allPatients = result.data.patients;
+      console.log('[patientStore] facilityId: ', allPatients);
+
+      // Filter patients by facilityId in memory
+      const filteredPatients = facilityId
+        ? allPatients.filter((patient: PatientBasicInfo) =>
+          patient.facilityId === facilityId)
+        : allPatients;
+
+      set({
+        patients: filteredPatients,
+        isLoading: false
+      });
+
+      return filteredPatients;
     } catch (error) {
       console.error('Error fetching patients:', error);
-      set({ error: error instanceof Error ? error.message : 'Unknown error', isLoading: false });
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   },
 
-  fetchPatientById: async (patientId: string): Promise<PatientBasicInfo | null> => {
+  // Fetch a single patient by ID
+  fetchPatientById: async (patientId: string) => {
     try {
       set({ isLoading: true, error: null });
-
-      // Make the request without facilityId parameter
-      const response = await fetch(`/api/kipu/patients/${patientId}`);
+      const encodedId = encodePatientIdForUrl(patientId);
+      const response = await fetch(`/api/kipu/patients/${encodedId}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch patient: ${response.statusText}`);
       }
 
-      const patient = await response.json();
-      set({ currentPatient: patient });
+      const result = await response.json();
+      const patient = result.success && result.data ? result.data : null;
+
+      if (patient) {
+        set({ selectedPatient: patient, currentPatient: patient, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+
       return patient;
     } catch (error) {
-      console.error(`Error fetching patient ${patientId}:`, error);
-      set({ error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error fetching patient by ID:', error);
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
-    } finally {
-      set({ isLoading: false });
     }
   },
 
-  fetchAllEvaluations: async () => {
-    set({ isLoading: true, error: null });
-
+  // Fetch evaluations for a patient
+  fetchPatientEvaluations: async (patientId: string) => {
     try {
-      // Get current user ID for caching
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id;
-
-      if (!userId) {
-        throw new Error('User not authenticated');
+      set({ isLoadingEvaluations: true, error: null });
+      //    const encodedId = encodePatientIdForUrl(patientId);
+      const response = await fetch(`/api/kipu/patients/${patientId}/evaluations`);
+      console.log('fetchPatientEvaluations: ', response);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
       }
 
-      // Use the existing caching mechanism
-      const cacheKey = cacheKeys.evaluations.list(userId);
+      const result = await response.json();
+      const evaluations = result.success && result.data ? result.data : [];
 
-      const evaluations = await getCachedData<PatientEvaluation[]>(
-        cacheKey,
-        async () => {
-          const response = await fetch('/api/kipu/evaluations');
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch evaluations');
-          }
-
-          const data = await response.json();
-          return data.evaluations || [];
-        },
-        cacheTTL.MEDIUM // 5 minutes
-      );
       set({
-        evaluations,
-        isLoading: false
+        selectedPatientEvaluations: evaluations,
+        currentPatientEvaluations: evaluations,
+        isLoadingEvaluations: false
       });
+      return evaluations;
+    } catch (error) {
+      console.error('Error fetching patient evaluations:', error);
+      set({ isLoadingEvaluations: false, error: error instanceof Error ? error.message : 'Unknown error' });
+      return [];
+    }
+  },
+
+  // Fetch a specific evaluation
+  fetchPatientEvaluation: async (evaluationId: string) => {
+    try {
+      set({ isLoadingEvaluations: true, error: null });
+      const response = await fetch(`/api/kipu/patient_evaluations/${evaluationId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch evaluation: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const evaluation = result.success && result.data ? result.data : null;
+
+      set({ isLoading: false });
+      return evaluation;
+    } catch (error) {
+      console.error(`Error fetching evaluation ${evaluationId}:`, error);
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
+  },
+
+  // Fetch all evaluations across patients
+  fetchAllPatientEvaluations: async (options = {}) => {
+    try {
+      set({ isLoadingEvaluations: true, error: null });
+
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        page: '1',
+        per: '20'
+      });
+
+      // Add any options as query parameters
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+
+      const response = await fetch(`/api/kipu/patient_evaluations?${queryParams.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch all evaluations: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const evaluations = result.success && result.data ? result.data : [];
+
+      set({ allPatientEvaluations: evaluations, isLoading: false });
       return evaluations;
     } catch (error) {
       console.error('Error fetching all evaluations:', error);
-      set({
-        error: error instanceof Error ? error.message : 'Failed to fetch evaluations',
-        isLoading: false
-      });
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   },
-  // Fetch patient evaluations with caching
-  fetchPatientEvaluations: async (patientId: string) => {
-    if (!patientId) return [];
-    try {
-      // Get current user ID for cache key
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'anonymous';
-      // Create cache key
-      const cacheKey = cacheKeys.patients.evaluations(userId, patientId);
-      // Try to get from cache or fetch fresh data
-      const evaluations = await getCachedData<PatientEvaluation[]>(
-        cacheKey,
-        async () => {
-          const response = await fetch(`/api/kipu/patients/${patientId}/evaluations`);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
-          }
-          const data = await response.json();
-          // The API returns evaluations in the 'evaluations' field
-          return data.evaluations || [];
-        },
-      );
-      // Update the store with the fetched evaluations
-      set({
-        evaluations,
-        currentPatientEvaluations: evaluations
-      });
-      return evaluations;
-    } catch (error) {
-      console.error(`Error fetching evaluations for patient ${patientId}:`, error);
-      set({ error: error instanceof Error ? error.message : 'Unknown error' });
-      return [];
-    }
-  },
-  // Fetch patient vital signs with caching
+
+  // Fetch vital signs for a patient
   fetchPatientVitalSigns: async (patientId: string) => {
-    if (!patientId) return [];
-
     try {
-      // Get current user ID for cache key
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'anonymous';
+      set({ isLoadingVitals: true, error: null });
+      const encodedId = encodePatientIdForUrl(patientId);
+      const response = await fetch(`/api/kipu/patients/${encodedId}/vitals`);
 
-      // Create cache key
-      const cacheKey = cacheKeys.patients.vitalSigns(userId, patientId);
-
-      // Try to get from cache or fetch fresh data
-      const vitalSigns = await getCachedData<PatientVitalSign[]>(
-        cacheKey,
-        async () => {
-          // Get the current facility ID
-          const facilityId = get().currentPatient?.facilityId;
-          if (!facilityId) {
-            throw new Error('No facility ID available for patient');
-          }
-
-          // Call the API endpoint through our memoized function
-          return memoizedGetPatientVitalSigns(facilityId.toString(), patientId);
-        },
-        cacheTTL.MEDIUM
-      );
-
-      // Update the vital signs
-      if (vitalSigns) {
-        set({ vitalSigns });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
       }
 
-      return vitalSigns || [];
+      const result = await response.json();
+      const vitalSigns = result.success && result.data ? result.data : [];
+
+      set({
+        selectedPatientVitalSigns: vitalSigns,
+        currentPatientVitalSigns: vitalSigns,
+        isLoadingVitals: false
+      });
+      return vitalSigns;
     } catch (error) {
-      console.error(`Error fetching vital signs for patient ${patientId}:`, error);
+      console.error('Error fetching patient vital signs:', error);
+      set({ isLoadingVitals: false, error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   },
-  // Fetch patient appointments with caching
-  fetchPatientAppointments: async (patientId: string) => {
-    if (!patientId) return [];
-    try {
-      // Get current user ID for cache key
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'anonymous';
-      // Create cache key
-      const cacheKey = cacheKeys.patients.appointments(userId, patientId);
-      // Try to get from cache or fetch fresh data
-      const appointments = await getCachedData<PatientAppointment[]>(
-        cacheKey,
-        async () => {
-          // Call the API endpoint through our memoized function
-          return memoizedGetPatientAppointments(patientId);
-        },
-        cacheTTL.MEDIUM
-      );
-      // Update the appointments
-      if (appointments) {
-        set({ appointments });
-      }
 
-      return appointments || [];
-    } catch (error) {
-      console.error(`Error fetching appointments for patient ${patientId}:`, error);
-      return [];
-    }
-  },
-  // Update fetchPatientWithDetails to not require facilityId
+
+  // Fetch patient with all details
+  // Fetch patient with all details
   fetchPatientWithDetails: async (patientId: string) => {
-    if (!patientId) {
-      console.error('Missing patient ID for fetchPatientWithDetails');
-      return null;
-    }
-
     try {
       set({ isLoading: true, error: null });
 
-      // Use the updated fetchPatientById that doesn't need facilityId
+      // First get the basic patient info
       const patient = await get().fetchPatientById(patientId);
 
       if (!patient) {
-        set({ isLoading: false });
-        return null;
+        throw new Error('Patient not found');
       }
 
-      // Fetch the additional details
-      const [evaluations] = await Promise.all([
-        get().fetchPatientEvaluations(patientId),
-        //     get().fetchPatientVitalSigns(patientId),
-        get().fetchPatientAppointments(patientId)
+      // Then fetch additional details in parallel
+      const [evaluationsResponse, vitalsResponse] = await Promise.all([
+        fetch(`/api/kipu/patients/${encodePatientIdForUrl(patientId)}/evaluations`),
+        fetch(`/api/kipu/patients/${encodePatientIdForUrl(patientId)}/vitals`)
       ]);
 
-      set({ isLoading: false });
+      // Process evaluations
+      let evaluations = [];
+      if (evaluationsResponse.ok) {
+        const evalResult = await evaluationsResponse.json();
+        evaluations = evalResult.success && evalResult.data ? evalResult.data : [];
+      }
 
-      // Return the complete patient data structure
-      return {
+      // Process vitals
+      let vitalSigns = [];
+      if (vitalsResponse.ok) {
+        const vitalsResult = await vitalsResponse.json();
+        vitalSigns = vitalsResult.success && vitalsResult.data ? vitalsResult.data : [];
+      }
+
+      // Construct the object according to PatientWithDetails interface
+      const patientWithDetails = {
         patient,
-        evaluations
+        evaluations,
+        vitalSigns
       };
-    } catch (error) {
-      console.error(`Error in fetchPatientWithDetails for patient ${patientId}:`, error);
+
       set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch patient details'
+        selectedPatientEvaluations: evaluations,
+        currentPatientEvaluations: evaluations,
+        selectedPatientVitalSigns: vitalSigns,
+        currentPatientVitalSigns: vitalSigns,
+        isLoading: false
       });
+
+      return patientWithDetails;
+    } catch (error) {
+      console.error('Error fetching patient with details:', error);
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   },
-  // Clear patient store
+
+  // Add these functions to your store implementation before the closing }));
+
+  // Set patient context enabled state
+  setPatientContextEnabled: (enabled: boolean) => {
+    set({ isPatientContextEnabled: enabled });
+
+    // If disabling, clear the context
+    if (!enabled) {
+      get().clearPatientContext();
+    }
+  },
+
+  // Clear the entire patient store
   clearPatientStore: () => {
     set({
       patients: [],
       currentPatientId: null,
       currentPatient: null,
+      selectedPatient: null,
       evaluations: [],
       vitalSigns: [],
-      appointments: [],
       currentPatientEvaluations: [],
+      selectedPatientEvaluations: [],
       currentPatientVitalSigns: [],
-      currentPatientAppointments: [],
+      selectedPatientVitalSigns: [],
+      selectedPatientAppointments: [],
+      allPatientEvaluations: [],
       isPatientContextEnabled: false,
+      selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
+      contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       isLoading: false,
+      isLoadingEvaluations: false,
+      isLoadingVitals: false,
       error: null
     });
   },
-  // Clear patient context
+
+  // Clear just the patient context
   clearPatientContext: () => {
     set({
+      isPatientContextEnabled: false,
       selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS
     });
 
-    // Also clear the chat context if it's enabled
-    if (get().isPatientContextEnabled) {
-      chatStore.getState().updateChatContext({});
+    // Also clear the chat context if it exists
+    if (chatStore.getState().updateChatContext) {
+      chatStore.getState().updateChatContext({
+        patientId: null,
+        patientName: null
+      });
     }
   },
-  // Set patient context enabled state
-  setPatientContextEnabled: (enabled: boolean) => {
-    set({ isPatientContextEnabled: enabled });
 
-    // If disabling, also clear the context
-    if (!enabled) {
-      chatStore.getState().updateChatContext({});
-    }
-  }
+
+
 }));
 
-/**
- * Initialize patient store subscriptions to facility changes
- * This function sets up a subscription to the facility store to fetch patient data
- * when the current facility changes
- */
 export const initPatientStoreSubscriptions = () => {
-  if (typeof window === 'undefined') {
-    // Return a no-op function if not on client
-    return () => { };
-    // Import the facility store dynamically to avoid circular dependency
-    const { useFacilityStore } = require('./facilityStore');
+  // Subscribe to changes in the patient store
+  const unsubscribe = usePatientStore.subscribe(
+    (state, prevState) => {
+      const currentPatientId = state.currentPatientId;
+      const prevPatientId = prevState.currentPatientId;
 
-    const unsubscribe = useFacilityStore.subscribe((state: any) => {
-      const currentFacilityId = state.currentFacilityId;
-      if (currentFacilityId) {
-        // Clear current patient data when facility changes
-        usePatientStore.getState().clearPatientStore();
-        // Fetch patients for the new facility
-        usePatientStore.getState().fetchPatients(currentFacilityId);
+      // Only proceed if the ID has changed
+      if (currentPatientId !== prevPatientId && currentPatientId) {
+        const currentPatient = state.currentPatient;
+        // Only fetch if we don't already have this patient loaded
+        if (!currentPatient || currentPatient.patientId !== currentPatientId) {
+          usePatientStore.getState().fetchPatientWithDetails(currentPatientId);
+        }
       }
-    });
+    }
+  );
 
-    // Return unsubscribe function in case we need to clean up
-    return unsubscribe;
-  }
-
-  // Return a no-op function if not on client
-  return () => { };
+  console.log('Patient store subscriptions initialized');
+  return unsubscribe; // Return the unsubscribe function
 };

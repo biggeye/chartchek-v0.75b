@@ -1,19 +1,20 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CardTitle } from './CardComponents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PatientEvaluation } from '@/types/kipu';
+import { KipuPatientEvaluation } from '@/types/kipu';
 
 interface EvaluationsCardProps {
-  evaluations: PatientEvaluation[] | null | undefined;
+  adaptedEvaluations: KipuPatientEvaluation[] | null | undefined;
   onNewEvaluation?: () => void;
 }
 
-export function EvaluationsCard({ evaluations, onNewEvaluation }: EvaluationsCardProps) {
+export function EvaluationsCard({ adaptedEvaluations, onNewEvaluation }: EvaluationsCardProps) {
   // If evaluations is null or undefined, show loading state
-  if (!evaluations) {
+  if (!adaptedEvaluations) {
     return (
       <Card>
         <CardHeader>
@@ -47,11 +48,11 @@ export function EvaluationsCard({ evaluations, onNewEvaluation }: EvaluationsCar
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {evaluations.length === 0 ? (
+        {adaptedEvaluations.length === 0 ? (
           <p className="text-muted-foreground">No evaluations found</p>
         ) : (
           <div className="space-y-4">
-            {evaluations.map((evaluation) => (
+            {adaptedEvaluations.map((evaluation) => (
               <div key={evaluation.id} className="border-b pb-4 last:border-0 last:pb-0">
                 <div className="font-medium">{evaluation.name}</div>
                 <p className="text-sm text-muted-foreground">
@@ -61,6 +62,12 @@ export function EvaluationsCard({ evaluations, onNewEvaluation }: EvaluationsCar
                 <p className="text-sm mt-1 line-clamp-2">{evaluation.evaluationContent}</p>
               </div>
             ))}
+            <Link
+              href={`/protected/patients/${adaptedEvaluations[0].patientId}/evaluations`}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              See All
+            </Link>
           </div>
         )}
       </CardContent>

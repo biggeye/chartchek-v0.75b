@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import {
   kipuGetPatientEvaluations,
-} from '@/lib/kipu/service/patient-service';
-import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+} from '@/lib/kipu/service/evaluation-service';
+import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
+import { parsePatientId } from '@/lib/kipu/auth/config';
 
 // Add this near the top of the file, after the imports
 interface KipuEvaluationResponse {
@@ -15,7 +16,6 @@ interface KipuEvaluationResponse {
   };
   patient_evaluations: any[]; // Using 'any' for now, ideally should match the KipuEvaluation type
 }
-// Then update the line with the error:
 
 /**
  * GET handler for retrieving patient evaluations
@@ -26,61 +26,92 @@ interface KipuEvaluationResponse {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { patientId: string } }
+  context: { params: { patientId: string } }
 ) {
+
   try {
-    const { patientId } = params;
-    const supabase = await createServer();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error(`[KIPU DEBUG] API Route - Unauthorized: No user found`);
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
- 
-    const credentials = await getKipuCredentials();
-    if (!credentials) {
-      console.error(`[KIPU DEBUG] API Route - No API credentials found for user ${user.id}`);
-      return NextResponse.json(
-        { error: 'No API credentials found for this user' },
-        { status: 404 }
-      );
-    }
+    const params = await Promise.resolve(context.params);
+    const encodedPatientId = params.patientId;
 
-    const response = await kipuGetPatientEvaluations(patientId, credentials);
-
-    // Add console log to display raw response
-    console.log('[KIPU DEBUG] Raw evaluations response:', JSON.stringify(response, null, 2));
+    // Decode and parse the patient ID to get chartId and patientMasterId components
+    const decodedPatientId = decodeURIComponent(encodedPatientId);
+   
     
-    if (!response.success || !response.data) {
-      console.error('[KIPU DEBUG] API Route - Failed to fetch patient evaluations from KIPU:', response.error);
-      return NextResponse.json(
-        { error: response.error?.message || 'Failed to fetch patient evaluations from KIPU' },
-        { status: response.error?.code ? parseInt(response.error.code) : 500 }
-      );
-    }
-    if (!response.success || !response.data) {
-      console.error('[KIPU DEBUG] API Route - Failed to fetch patient evaluations from KIPU:', response.error);
-      return NextResponse.json(
-        { error: response.error?.message || 'Failed to fetch patient evaluations from KIPU' },
-        { status: response.error?.code ? parseInt(response.error.code) : 500 }
-      );
-    }
-    const evaluationsData = (response.data as KipuEvaluationResponse).patient_evaluations || []; const evaluations = Array.isArray(evaluationsData) ? evaluationsData : [];
-    return NextResponse.json({
-      evaluations,
-      pagination: {
-        total: evaluationsData.length,
-        page: 1,
-        limit: evaluationsData.length,
-        pages: 1
+    // Parse the patient ID to ensure it's in the correct format
+    try {
+      const { chartId, patientMasterId } = parsePatientId(decodedPatientId);
+      
+      if (!chartId || !patientMasterId) {
+        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Invalid patient ID format: ${decodedPatientId}`);
+        return NextResponse.json(
+          { error: 'Invalid patient ID format. Expected format: chartId:patientMasterId' },
+          { status: 400 }
+        );
       }
-    });
+    
+      const supabase = await createServer();
+      const { data: { user } } = await supabase.auth.getUser();
+      const ownerId = user?.id;
+  
+      if (!user) {
+        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Unauthorized: No user found`);
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+ 
+      const credentials = await getKipuCredentials(ownerId);
+      if (!credentials) {
+        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - No API credentials found for user`);
+        return NextResponse.json(
+          { error: 'No API credentials found for this user' },
+          { status: 404 }
+        );
+      }
+
+      const response = await kipuGetPatientEvaluations(decodedPatientId, credentials);
+      
+      if (!response.success || !response.data) {
+        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Failed to fetch patient evaluations from KIPU: ${response.error?.message || 'Unknown error'}`);
+        return NextResponse.json(
+          { error: response.error?.message || 'Failed to fetch patient evaluations from KIPU' },
+          { status: response.error?.code ? parseInt(response.error.code) : 500 }
+        );
+      }
+
+      let evaluations = [];
+      try {
+        const responseData = response.data as KipuEvaluationResponse;
+
+        if (responseData.patient_evaluations && Array.isArray(responseData.patient_evaluations)) {
+          evaluations = responseData.patient_evaluations;
+        } else {
+          // Log the unexpected response structure for debugging
+          console.warn(`[/api/kipu/patients/[patientId]/evaluations] API Route - Unexpected response structure: ${responseData.patient_evaluations ? 'patient_evaluations is not an array' : 'patient_evaluations is missing'}`);
+          console.debug('Response data structure:', JSON.stringify(responseData));
+        }
+      } catch (err) {
+        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error parsing evaluations data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+      
+      // Prepare response data
+      const responseData = {
+        evaluations,
+      
+      };
+      
+      return NextResponse.json(responseData);
+    } catch (error) {
+      console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error in GET /api/kipu/patients/[patientId]/evaluations: ${error instanceof Error ? error.message : 'Internal server error'}`);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Internal server error' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('[KIPU DEBUG] API Route - Error in GET /api/kipu/patients/[patientId]/evaluations:', error);
+    console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error in GET /api/kipu/patients/[patientId]/evaluations: ${error instanceof Error ? error.message : 'Internal server error'}`);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

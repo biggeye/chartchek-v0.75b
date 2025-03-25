@@ -142,13 +142,20 @@ export function TabsTrigger({
 }
 
 export function TabsContent({
+  value,
   className,
   children,
   ...props
 }: TabsContentProps) {
+  const { value: selectedValue } = useTabsContext()
+  const isSelected = selectedValue === value
+  
+  if (!isSelected) return null
+  
   return (
     <div
       role="tabpanel"
+      data-state={isSelected ? "active" : "inactive"}
       className={cn(
         "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className
@@ -159,6 +166,7 @@ export function TabsContent({
     </div>
   )
 }
+
 
 export function TabsPanel({
   value,

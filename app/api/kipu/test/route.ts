@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-api-settings';
+import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 
 export async function GET(request: NextRequest) {
   try {
