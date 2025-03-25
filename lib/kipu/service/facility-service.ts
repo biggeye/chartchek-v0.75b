@@ -10,6 +10,7 @@ import { createKipuRequestConfig } from '@/lib/kipu/auth/signature';
 import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { createClient } from '@/utils/supabase/client';
 import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
+import { kipuServerGet } from '../auth/server';
 
 /**
  * Paginated response for facilities
@@ -47,8 +48,8 @@ export async function listFacilities(
 ): Promise<PaginatedFacilitiesResponse> {
   try {
     // Call the API endpoint for listing facilities
-    const response = await fetch(`/api/kipu/facilities?status=${status}&sort=${sort}&page=${page}&limit=${limit}`);
-    
+    const response = await fetch(`/api/kipu/facilities`);
+    console.log('[facility-service] listFacilities: ', response);
     if (!response.ok) {
       let errorMessage = 'Failed to fetch facilities';
       try {
@@ -102,117 +103,23 @@ export async function listFacilities(
  * @returns Promise resolving to the KIPU API response
  */
 export async function kipuListFacilities(
-  credentials: KipuCredentials,
-  includeBuildings: boolean = true
-): Promise<KipuApiResponse> {
-  try {
+  credentials: KipuCredentials
+): Promise<any> {
+
     // Construct the endpoint with query parameters
-    const endpoint = `/locations?app_id=${credentials.appId}&include_buildings=${includeBuildings}`;
+    const endpoint = `/api/locations`;
+
+    const response = await kipuServerGet<Location[]>(endpoint, credentials);
     
-    // Create request configuration with authentication headers
-    const requestConfig = createKipuRequestConfig('GET', endpoint, credentials);
-    
-    // Make the API call
-    const response = await fetch(`${credentials.baseUrl}${endpoint}`, requestConfig);
-    
-    // Check if response is ok before trying to parse JSON
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`KIPU API error (${response.status}):`, errorText);
-      
-      let errorMessage = `KIPU API error: ${response.statusText}`;
-      let errorDetails = undefined;
-      
-      try {
-        // Try to parse error as JSON if possible
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorMessage;
-        errorDetails = errorJson;
-      } catch (e) {
-        // If not JSON, use the raw text
-        errorDetails = { raw: errorText };
-      }
-      
-      return {
-        success: false,
-        error: {
-          code: response.status.toString(),
-          message: errorMessage,
-          details: errorDetails
-        }
-      };
-    }
-    
-    // Check content type to ensure it's JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.warn('KIPU API returned non-JSON response:', text);
-      
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_CONTENT_TYPE',
-          message: `Expected JSON but got ${contentType || 'unknown content type'}`,
-          details: { raw: text }
-        }
-      };
-    }
-    
-    // Parse JSON response
-    try {
-      const data = await response.json();
-    
-      // Validate that the response contains locations
-      if (!data || !data.locations || !Array.isArray(data.locations)) {
-        console.error('KIPU API returned invalid data structure:', data);
-        return {
-          success: false,
-          error: {
-            code: 'INVALID_RESPONSE',
-            message: 'KIPU API response does not contain locations array',
-            details: data
-          }
-        };
-      }
-      
+
+      const data = await response;
+    if (data) {
       return {
         success: true,
         data: data
-      };
-    } catch (parseError) {
-      console.error('Error parsing response as JSON:', parseError);
-      
-      // Try to get the raw text to help with debugging
-      let rawText = '';
-      try {
-        rawText = await response.text();
-      } catch (e) {
-        rawText = 'Could not retrieve raw response text';
-      }
-      
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_JSON',
-          message: 'Failed to parse KIPU API response as JSON',
-          details: { error: parseError instanceof Error ? parseError.message : String(parseError), raw: rawText }
-        }
-      };
+      }};
+    
     }
-  } catch (error) {
-    console.error('Error in kipuListFacilities:', error);
-    return {
-      success: false,
-      error: {
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : 'Network error occurred',
-        details: error
-      }
-    };
-  }
-}
-
 /**
  * Direct KIPU API call to get a facility (server-side function)
  * This function is used internally by the API routes
@@ -277,7 +184,7 @@ export async function testKipuConnection(
     }
     
     // Try to list facilities as a test
-    const result = await kipuListFacilities(credentials, false);
+    const result = await kipuListFacilities(credentials);
     
     if (result.success) {
       return {
@@ -337,10 +244,12 @@ export async function enrichFacilityWithData(
     
     // Check if API settings are configured for this facility
     const supabase = await createClient();
+    const user = await supabase.auth.getUser();
+    const ownerId = user.data?.user?.id;
     const { data: apiSettings } = await supabase
       .from('user_api_settings')
-      .select('has_api_key_configured, updated_at')
-      .eq('facility_id', facility.id)
+      .select('has_api_key_configured')
+      .eq('owner_id', ownerId)
       .eq('has_api_key_configured', true)
       .limit(1)
       .single();
@@ -348,7 +257,6 @@ export async function enrichFacilityWithData(
     if (apiSettings) {
       facility.api_settings = {
         has_api_key_configured: apiSettings.has_api_key_configured,
-        updated_at: apiSettings.updated_at
       };
     }
     

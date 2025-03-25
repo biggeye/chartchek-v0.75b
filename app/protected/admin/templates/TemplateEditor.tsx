@@ -6,16 +6,25 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { ChartChekTemplate, TemplateField } from '@/types/templates';
+import { ChartChekTemplate, TemplateField } from '@/types/store/templates';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react'; // Add icon for delete button
+import { adaptKipuEvaluationToTemplate } from '@/lib/forms/kipuEvaluationAdapter';
+
 
 interface TemplateEditorProps {
   template?: ChartChekTemplate;
   isNew: boolean;
   onSave?: () => void;
 }
-
+const importFromKipuEvaluation = async (evaluationId: string) => {
+  try {
+    await useTemplateStore.getState().importKipuEvaluation(evaluationId);
+    // The store already updates currentTemplate internally, no need to do it here
+  } catch (error) {
+    console.error('Error importing KIPU evaluation:', error);
+  }
+};
 // Preview component for the template
 const TemplatePreview = ({ template }: { template: Partial<ChartChekTemplate> }) => {
   return (

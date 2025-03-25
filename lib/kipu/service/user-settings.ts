@@ -45,7 +45,7 @@ export async function getUserApiSettings(ownerId?: string): Promise<UserApiSetti
       }
       ownerId = user.id;
     }
-    
+    console.log("getUserApiSettings ownerId: ", ownerId);
     // Query the user_api_settings table
     const { data, error } = await supabase
       .from('user_api_settings')
@@ -121,7 +121,7 @@ export async function updateUserApiSettings(
       // Insert new record
       const result = await supabase
         .from('user_api_settings')
-        .insert(updateData);
+        .upsert(updateData);
       
       error = result.error;
     }

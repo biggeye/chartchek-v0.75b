@@ -1,83 +1,75 @@
+// app/api/kipu/facilities/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { kipuListFacilities } from '@/lib/kipu/service/facility-service';
 import { createServer } from '@/utils/supabase/server';
-import { kipuServerGet } from '@/lib/kipu/auth/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
-import { Facility } from '@/types/kipu';
-import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
+import { cookies } from 'next/headers';
+import { KipuCredentials } from '@/types/kipu';
+
+// Table name for API settings in Supabase
+const API_SETTINGS_TABLE = 'user_api_settings';
 
 /**
- * GET /api/kipu/facilities
- * Lists all facilities (KIPU locations) available to the authenticated user
+ * Loads KIPU API credentials from Supabase (server-side version)
  */
+async function loadKipuCredentialsFromSupabaseServer(): Promise<KipuCredentials | null> {
+  try {
+    const supabase = await createServer();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (!user?.id) {
+      console.warn('Failed to load KIPU credentials from Supabase: User not authenticated');
+      return null;
+    }
+    
+    // Query the api_settings table for KIPU credentials
+    const { data, error } = await supabase
+      .from(API_SETTINGS_TABLE)
+      .select('*')
+      .eq('owner_id', user.id)
+      .single();
+    
+    if (error || !data) {
+      console.warn('Failed to load KIPU credentials from Supabase:', error?.message);
+      return null;
+    }
+    
+    // Map the database fields to our credentials interface
+    return {
+      accessId: data.access_id || '',
+      secretKey: data.secret_key || '',
+      appId: data.app_id || '',
+      baseUrl: data.base_url || 'https://api.kipuapi.com'
+    };
+  } catch (error) {
+    console.error('Error loading KIPU credentials from Supabase:', error);
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '20');
-    const status = url.searchParams.get('status') || 'active';
-    const sort = url.searchParams.get('sort') || 'name_asc';
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
     
-    // Get the KIPU credentials for the current user
-    const credentials = await getKipuCredentials();
-    // Check if KIPU credentials are configured
+    // Get credentials using server-side function
+    const credentials = await loadKipuCredentialsFromSupabaseServer();
+    
     if (!credentials) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'KIPU API credentials are not configured. Please configure your API settings first.' 
-        },
-        { status: 400 }
+        { error: 'Unable to retrieve KIPU credentials' },
+        { status: 401 }
       );
     }
-
-
-    const response = await kipuServerGet<{ locations?: any[] }>('/api/locations', credentials);
     
-    
-    // Map KIPU locations to our facility format
-    const facilities: Facility[] = [];
-    
-    // Check if we have valid data from KIPU
-    if (response.success && response.data) {
-      // Safely access the locations array with proper type checking
-      const locations = response.data.locations as any[] || [];
-      if (Array.isArray(locations)) {
-        // Map KIPU locations to our facility structure using the dedicated mapping function
-        facilities.push(...locations.map(location => mapKipuLocationToFacility(location)));
-      }
-    }
-    
-    // Filter facilities by status if needed
-    const filteredFacilities = status === 'all' 
-      ? facilities 
-      : facilities.filter(f => status === 'active' ? f.status === 'active' : f.status === 'inactive');
-    
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
-    
-    // Add caching headers (5 minutes with stale-while-revalidate for 1 minute)
-    // This implements the multi-level caching strategy mentioned in the integration README
-    return NextResponse.json({
-      facilities: paginatedFacilities,
-      pagination: {
-        total: filteredFacilities.length,
-        page,
-        limit,
-        pages: Math.ceil(filteredFacilities.length / limit)
-      }
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
-        'Vary': 'Authorization' // Ensure cache varies by user authentication
-      }
-    });
-
+    // Make KIPU API call with credentials
+    const response = await kipuListFacilities(credentials);
+    console.log('[api] kipuListFacilities response:', response);
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error in facilities list endpoint:', error);
+    console.error('Error fetching facilities:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to retrieve facilities from KIPU API' },
+      { error: 'Failed to fetch facilities' },
       { status: 500 }
     );
   }

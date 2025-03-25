@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTemplateStore } from '@/store/templateStore';
-import { ChartChekTemplate } from '@/types/templates';
+import { ChartChekTemplate } from '@/types/store/templates';
 import TemplateEditor from './TemplateEditor';
 import { Button } from '@/components/ui/button';
 

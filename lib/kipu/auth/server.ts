@@ -6,7 +6,7 @@
  */
 
 import { KipuCredentials, KipuApiResponse } from '@/types/kipu';
-import { getKipuCredentials, validateKipuCredentials } from './config';
+import { validateKipuCredentials } from './config';
 import { generateKipuAuthHeaders } from './signature';
 import crypto from 'crypto';
 

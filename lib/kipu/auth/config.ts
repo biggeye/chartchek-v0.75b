@@ -1,11 +1,4 @@
-/**
- * KIPU API Configuration
- * 
- * This module provides configuration settings for the KIPU API integration.
- * It uses Supabase as the primary source for credentials with environment
- * variables as a fallback.
- */
-
+import { createClient } from '@/utils/supabase/client';
 import { KipuCredentials } from '@/types/kipu';
 import { getKipuCredentialsWithFallback } from './credentials';
 
@@ -48,49 +41,95 @@ export function parsePatientId(patientId: string): { chartId: string; patientMas
   }
 }
 
-export async function getKipuCredentialsAsync(): Promise<KipuCredentials> {
-  const now = Date.now();
-  
-  // Return cached credentials if they're still valid
-  if (cachedCredentials && (now - lastFetchTime < CACHE_TTL)) {
-    return cachedCredentials;
+const API_SETTINGS_TABLE = 'user_api_settings';
+
+export async function loadKipuCredentialsFromSupabase(): Promise<KipuCredentials | null> {
+  try {
+    const supabase = await createClient();
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    const userId = user?.user?.id;
+    if (!userId) {
+      console.warn('Failed to load KIPU credentials from Supabase: User not authenticated');
+      return null;
+    }
+    // Query the api_settings table for KIPU credentials
+    const { data, error } = await supabase
+      .from('user_api_settings')
+      .select('*')
+      .eq('owner_id', userId)
+      .single();
+    
+    if (error || !data) {
+      console.warn('Failed to load KIPU credentials from Supabase:', error?.message);
+      return null;
+    }
+    
+    // Map the database fields to our credentials interface
+    return {
+      accessId: data.access_id || '',
+      secretKey: data.secret_key || '',
+      appId: data.app_id || '',
+      baseUrl: data.base_url || 'https://api.kipuapi.com'
+    };
+  } catch (error) {
+    console.error('Error loading KIPU credentials from Supabase:', error);
+    return null;
   }
-  
-  // Fetch fresh credentials
-  const credentials = await getKipuCredentialsWithFallback();
-  
-  // Update cache
-  cachedCredentials = credentials;
-  lastFetchTime = now;
-  
-  return credentials;
 }
 
 /**
- * Gets the KIPU API credentials synchronously (from cache or environment variables)
- * This is a fallback for contexts where async isn't possible
- * @returns KIPU API credentials object
+ * Saves KIPU API credentials to Supabase
+ * @param credentials - KIPU API credentials to save
+ * @returns Promise resolving to true if successful, false otherwise
  */
-export function getKipuCredentials(): KipuCredentials {
-  // If we have cached credentials, use them
-  if (cachedCredentials) {
-    return cachedCredentials;
+export async function saveKipuCredentialsToSupabase(credentials: KipuCredentials): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    
+    // Check if a record already exists
+    const { data: existingData } = await supabase
+      .from(API_SETTINGS_TABLE)
+      .select('id')
+      .eq('api_name', 'kipu')
+      .single();
+    
+    const credentialsRecord = {
+      api_name: 'kipu',
+      access_id: credentials.accessId,
+      secret_key: credentials.secretKey,
+      app_id: credentials.appId,
+      base_url: credentials.baseUrl,
+      updated_at: new Date().toISOString()
+    };
+    
+    let result;
+    
+    if (existingData) {
+      // Update existing record
+      result = await supabase
+        .from(API_SETTINGS_TABLE)
+        .update(credentialsRecord)
+        .eq('id', existingData.id);
+    } else {
+      // Insert new record
+      result = await supabase
+        .from(API_SETTINGS_TABLE)
+        .insert({
+          ...credentialsRecord,
+          created_at: new Date().toISOString()
+        });
+    }
+    
+    if (result.error) {
+      console.error('Failed to save KIPU credentials to Supabase:', result.error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving KIPU credentials to Supabase:', error);
+    return false;
   }
-  
-  // Otherwise fall back to environment variables
-  const credentials = {
-    username: process.env.KIPU_USERNAME || '',
-    accessId: process.env.KIPU_ACCESS_ID || '',
-    secretKey: process.env.KIPU_SECRET_KEY || '',
-    appId: process.env.KIPU_APP_ID || '',
-    baseUrl: process.env.KIPU_BASE_URL || 'https://api.kipuapi.com'
-  };
-  
-  // Cache these credentials
-  cachedCredentials = credentials;
-  lastFetchTime = Date.now();
-  
-  return credentials;
 }
 
 /**
@@ -98,8 +137,11 @@ export function getKipuCredentials(): KipuCredentials {
  * @param credentials - Optional credentials to validate (uses getKipuCredentials() if not provided)
  * @returns True if all credentials are present, false otherwise
  */
-export function validateKipuCredentials(credentials?: KipuCredentials): boolean {
-  const creds = credentials || getKipuCredentials();
+export async function validateKipuCredentials(credentials?: KipuCredentials): Promise<boolean> {
+  const creds = credentials || await loadKipuCredentialsFromSupabase();
+  
+  if (!creds) return false;
+  
   return !!(
     creds.accessId &&
     creds.secretKey &&

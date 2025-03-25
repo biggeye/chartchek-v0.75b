@@ -103,7 +103,8 @@ export default function SettingsPage() {
       
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
-      
+      const userId = user?.id;
+      console.log('API Settings userId: ', userId);
       if (!user) {
         console.error('No authenticated user found');
         return;
@@ -113,7 +114,7 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .from('user_api_settings')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', userId)
         .single();
       
       if (error) {
