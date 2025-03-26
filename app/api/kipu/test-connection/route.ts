@@ -7,26 +7,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
+import { createServer } from '@/utils/supabase/server';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 
 /**
  * GET handler for testing KIPU API connection
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get the facility ID from the query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const facilityId = searchParams.get('facilityId');
 
-    if (!facilityId) {
-      return NextResponse.json(
-        { error: 'Facility ID is required' },
-        { status: 400 }
-      );
-    }
+    const supabase = await createServer();
+    const user = await supabase.auth.getUser();
+    const userId = user.data.user?.id;
 
     // Get the KIPU credentials for the current user
-    const credentials = await getKipuCredentials();
+    const credentials = await serverLoadKipuCredentialsFromSupabase(userId);
 
     if (!credentials) {
       return NextResponse.json(

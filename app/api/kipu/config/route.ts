@@ -6,8 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { saveKipuCredentialsToSupabase, loadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/credentials';
-import { clearKipuCredentialsCache } from '@/lib/kipu/auth/config';
+import { serverSaveKipuCredentialsToSupabase, serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { KipuCredentials } from '@/types/kipu';
 
 /**
@@ -16,7 +15,7 @@ import { KipuCredentials } from '@/types/kipu';
 export async function GET(request: NextRequest) {
   try {
     // Load credentials from Supabase
-    const credentials = await loadKipuCredentialsFromSupabase();
+    const credentials = await serverLoadKipuCredentialsFromSupabase();
     
     if (!credentials) {
       return NextResponse.json(
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
     };
     
     // Save credentials to Supabase
-    const success = await saveKipuCredentialsToSupabase(credentials);
+    const success = await serverSaveKipuCredentialsToSupabase(credentials);
     
     if (!success) {
       return NextResponse.json(
@@ -92,9 +91,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    
-    // Clear credentials cache to ensure fresh credentials are used
-    clearKipuCredentialsCache();
     
     return NextResponse.json({
       success: true,

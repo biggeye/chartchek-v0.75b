@@ -78,6 +78,10 @@ const config = {
         "accordion-up": "accordion-up 0.2s ease-out",
         'loading-bar': 'loadingBar 1s ease-in-out infinite',
       },
+      fontFamily: {
+        'barlow': ['var(--font-barlow-condensed)', 'sans-serif'],
+        'montserrat': ['var(--font-montserrat)', 'sans-serif'],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

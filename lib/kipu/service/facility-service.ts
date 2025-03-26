@@ -1,3 +1,4 @@
+'use server'
 /**
  * Facility Service
  * 
@@ -8,7 +9,7 @@
 import { Facility, KipuCredentials, KipuApiResponse } from '@/types/kipu';
 import { createKipuRequestConfig } from '@/lib/kipu/auth/signature';
 import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
-import { createClient } from '@/utils/supabase/client';
+import { createServer } from '@/utils/supabase/server';
 import { mapKipuLocationToFacility } from '@/lib/kipu/mapping';
 import { kipuServerGet } from '../auth/server';
 
@@ -243,7 +244,7 @@ export async function enrichFacilityWithData(
     }
     
     // Check if API settings are configured for this facility
-    const supabase = await createClient();
+    const supabase = await createServer();
     const user = await supabase.auth.getUser();
     const ownerId = user.data?.user?.id;
     const { data: apiSettings } = await supabase

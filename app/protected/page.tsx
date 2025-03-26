@@ -8,7 +8,6 @@ import { PatientSearch } from '@/components/patient/PatientSearch';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { kipuGetPatients } from '@/lib/kipu/service/patient-service';
 import { Calendar, Users, FileCheck, AlertCircle, UserPlus, Star, Activity } from 'lucide-react';
 
 // Define a type that matches the PatientListItem component requirements
@@ -28,14 +27,11 @@ export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { patients, isLoading, error } = usePatientStore();
   const { currentFacilityId } = useFacilityStore();
-
   return (
     <div className="container py-6">
-      <ScrollArea className="h-full w-full overflow-y-auto mb-20">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      
-      {/* Primary Metrics Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <ScrollArea className="h-full w-full overflow-y-auto mb-15">
+        {/* Primary Metrics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
         <Card className="bg-blue-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -89,7 +85,7 @@ export default function PatientsPage() {
       </div>
       
       {/* Middle Section - Treatment Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <h2 className="text-xl font-bold">Treatment Stats</h2>
@@ -104,7 +100,7 @@ export default function PatientsPage() {
         {/* Side Metrics */}
         <div className="space-y-4">
           <Card className="bg-teal-50">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-teal-900">Client Satisfaction</p>
@@ -116,7 +112,7 @@ export default function PatientsPage() {
           </Card>
           
           <Card className="bg-indigo-50">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-indigo-900">Review Average</p>
@@ -128,7 +124,7 @@ export default function PatientsPage() {
           </Card>
           
           <Card className="bg-rose-50">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-rose-900">Inspire Change</p>
@@ -145,7 +141,7 @@ export default function PatientsPage() {
       </div>
       
       {/* Recent Admissions & Upcoming Items */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
         
         <Card>
           <CardHeader>
@@ -197,7 +193,7 @@ export default function PatientsPage() {
     setSearchQuery={setSearchQuery} 
   />
         
-        <div className="mt-6">
+        <div className="mt-4">
         
         </div>
       </div>

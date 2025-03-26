@@ -3,7 +3,7 @@ import { createServer } from '@/utils/supabase/server';
 import {
   kipuGetPatientEvaluations,
 } from '@/lib/kipu/service/evaluation-service';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { parsePatientId } from '@/lib/kipu/auth/config';
 
 // Add this near the top of the file, after the imports
@@ -62,7 +62,7 @@ export async function GET(
         );
       }
  
-      const credentials = await getKipuCredentials(ownerId);
+      const credentials = await serverLoadKipuCredentialsFromSupabase(ownerId);
       if (!credentials) {
         console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - No API credentials found for user`);
         return NextResponse.json(
@@ -72,8 +72,8 @@ export async function GET(
       }
 
       const response = await kipuGetPatientEvaluations(decodedPatientId, credentials);
-      
-      if (!response.success || !response.data) {
+      console.log('[api] kipuGetPatientEvaluations: ', response);
+        if (!response.success || !response.data) {
         console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Failed to fetch patient evaluations from KIPU: ${response.error?.message || 'Unknown error'}`);
         return NextResponse.json(
           { error: response.error?.message || 'Failed to fetch patient evaluations from KIPU' },

@@ -34,16 +34,14 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
     // Build query
     let query = supabase.from('documents').select('*');
     
-    // Add facility filter if provided
-    if (facilityId) {
-      query = query.eq('facility_id', facilityId);
-    }
-    
-    // Execute query
     const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) throw error;
-    
+    if (facilityId){
+      const filteredData = data.filter(doc => doc.facility_id === facilityId);
+      set({ documents: filteredData as Document[], isLoading: false });
+      return filteredData as Document[];
+    }
     set({ documents: data as Document[], isLoading: false });
     return data as Document[];
   } catch (error) {

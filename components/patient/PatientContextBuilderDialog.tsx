@@ -54,7 +54,7 @@ export function PatientContextBuilderDialog({
   // Generate options based on available patient data
   const generateOptions = (): ContextItem[] => {
     const options: ContextItem[] = [];
-
+  
     // Basic patient info
     if (patient) {
       // Name and ID are always included by default, add other basic info
@@ -174,48 +174,31 @@ export function PatientContextBuilderDialog({
       }
     }
     
-    // Evaluation data
-    KipuPatientEvaluations.forEach((evaluation: any, index) => {
-      if (evaluation.diagnosis) {
+    KipuPatientEvaluations?.forEach((evaluation, index) => {
+      if (evaluation) {
         options.push({
-          id: `diagnosis_${index}`,
-          label: `Diagnosis: ${evaluation.diagnosis}`,
-          value: evaluation.diagnosis,
+          id: `evaluation_${index}`,
+          label: `Evaluation: ${evaluation.name || 'Unnamed'}`,
+          value: evaluation.name || 'Unnamed Evaluation',
           category: 'evaluation'
-        })
+        });
       }
+    });
       
-      if (evaluation.assessment) {
-        options.push({
-          id: `assessment_${index}`,
-          label: `Assessment: ${evaluation.assessment.substring(0, 30)}...`,
-          value: evaluation.assessment,
-          category: 'evaluation'
-        })
-      }
-
-      if (evaluation.notes) {
-        options.push({
-          id: `notes_${index}`,
-          label: `${evaluation.evaluationType}: ${evaluation.notes.substring(0, 30)}...`,
-          value: `${evaluation.evaluationType}: ${evaluation.notes}`,
-          category: 'evaluation'
-        })
-      }
-    })
-    
     // Vital signs
-    patientVitalSigns.forEach((vital, index) => {
-      options.push({
-        id: `vital_${index}`,
-        label: `${vital.type}: ${vital.value} ${vital.unit}`,
-        value: `${vital.type}: ${vital.value} ${vital.unit} (${vital.recordedAt})`,
-        category: 'vitalSigns'
-      })
-    })
+    if (patientVitalSigns && Array.isArray(patientVitalSigns)) {
+      patientVitalSigns.forEach((vital, index) => {
+        options.push({
+          id: `vital_${index}`,
+          label: `${vital.type}: ${vital.value} ${vital.unit}`,
+          value: `${vital.value} ${vital.unit}`,
+          category: 'vitals'
+        });
+      });
+    }
     
     return options;
-  };
+  }; 
   
   // Load all available options
   useEffect(() => {

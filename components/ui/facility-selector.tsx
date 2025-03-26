@@ -17,7 +17,7 @@ interface FacilitySelectorProps {
 export function FacilitySelector({ variant = 'header', className }: FacilitySelectorProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const { fetchPatientsCensusByFacility } = usePatientStore();
   // Use the facility store
   const {
     facilities,
@@ -36,7 +36,10 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
 
   // Fetch facilities on component mount
   useEffect(() => {
-    fetchFacilities();
+    if(currentFacilityId){
+      return
+    }
+     fetchFacilities();
   }, [fetchFacilities]);
 
   // Handle facility selection
@@ -47,6 +50,8 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
     // Clear the patient context
     clearPatientContext();
 
+      // Fetch patients for the new facility
+  fetchPatientsCensusByFacility(facilityId);
     // Close the modal
     setIsModalOpen(false);
   };

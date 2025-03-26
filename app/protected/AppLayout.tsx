@@ -46,6 +46,8 @@ import { useSidebarStore } from '@/store/sidebarStore';
 import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingBar } from '@/components/ui/loading-bar';
+import Image from 'next/image';
+import { DebugPanel } from '@/components/dev/DebugPanel';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -136,20 +138,20 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <div className="flex h-screen flex-col overflow-hidden">
         {/* Top navigation */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+        <div className="sticky top-0 z-40 flex sm:h-10 md:h-12 7xl:h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+          <div className="flex flex-1 gap-x-2 self-stretch lg:gap-x-4">
             <div className="flex flex-1 items-center">
               {/* Logo/Brand */}
-              <Link href="/protected" className="flex items-center gap-2">
-                <ShieldCheckIcon className="h-8 w-8 text-primary" />
-                <span className="text-lg font-semibold text-foreground">ChartChek</span>
+              <Link href="/protected" className="flex items-center gap-0.5">
+                <Image src="/logos/logo.png" width="30" height="30" alt="chartChek" />
+            
               </Link>
             </div>
 
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
+            <div className="flex items-center gap-x-2 lg:gap-x-6">
               {/* Facility Selector */}
               <FacilitySelector />
 
@@ -256,9 +258,10 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
             </div>
           </div>
         </div>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 maxw-screen overflow-hidden">
           <LoadingBar />
           {children}
+          <DebugPanel />
           <PDFGeneratorListener />
         </main>
       </div>

@@ -4,6 +4,7 @@ import { kipuGetPatient } from '@/lib/kipu/service/patient-service';
 import { mapKipuPatientToPatientBasicInfo } from '@/lib/kipu/mapping';
 import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { parsePatientId } from '@/lib/kipu/auth/config';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 
 /**
  * GET handler for retrieving a specific patient's details
@@ -20,36 +21,38 @@ export async function GET(
     // Await the params object before destructuring
     const params = await Promise.resolve(context.params);
     const patientId = params.patientId;
-    
     const supabase = await createServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'User not authenticated', code: 'AUTH_REQUIRED' },
         { status: 401 }
       );
     }
     const ownerId = user?.id;
 
-    const credentials = await getKipuCredentials(ownerId);
-    if (!credentials) {
+
+    if (!ownerId) {
       return NextResponse.json(
-        { error: 'No API credentials found for this user' },
-        { status: 404 }
+        { error: 'Unable to retrieve Supabase User ID' },
+        { status: 401 }
       );
+    }
+
+    const kipuCredentials = await serverLoadKipuCredentialsFromSupabase(ownerId);
+    if (!kipuCredentials) {
+      throw new Error('KIPU API credentials not found');
     }
     
     // Decode the patient ID before passing to the service
     const decodedPatientId = decodeURIComponent(patientId);
+  
     
-    // Parse the patient ID to get chartId and patientMasterId components
-    const { chartId, patientMasterId } = parsePatientId(decodedPatientId);
-    
-    const response = await kipuGetPatient<{patient: any}>(decodedPatientId, credentials);
+    const response = await kipuGetPatient<{patient: any}>(decodedPatientId, kipuCredentials);
     if (!response.success || !response.data) {
       console.error('Failed to fetch patient from KIPU:', response.error);
-      
-      // Ensure we have a valid status code (between 200-599)
+       // Ensure we have a valid status code (between 200-599)
       let statusCode = 500;
       if (response.error?.code) {
         const parsedCode = parseInt(response.error.code);

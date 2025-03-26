@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { KipuApiResponse } from '@/types/kipu';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
-
+import { createServer } from '@/utils/supabase/server';
 /**
  * GET /api/kipu/evaluations/[evaluationId]
  * 
@@ -16,9 +16,21 @@ export async function GET(
 ) {
   try {
     const templateId = params.evaluationId;
+    const supabase = await createServer();
     
+    // Get the user session to ensure they're authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get user ID for cache key
+    const userId = session.user.id;
     // Get KIPU credentials
-    const credentials = await getKipuCredentials();
+    const credentials = await serverLoadKipuCredentialsFromSupabase(userId);
     
     if (!credentials) {
       return NextResponse.json(

@@ -4,6 +4,8 @@ import { ThemeProvider } from "next-themes";
 import { ReactNode, Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Barlow_Condensed, Montserrat } from 'next/font/google';
+
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -15,15 +17,26 @@ export const metadata = {
   description: "Compliance & Accreditation",
 };
 
-const geistSans = Geist({
-  display: "swap",
-  subsets: ["latin"],
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-barlow-condensed',
+  display: 'swap',
 });
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
+
+
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning={true} className="scrollbar">
-      <body className={`${geistSans.className}`}>
+      <body className={`${barlowCondensed.variable} ${montserrat.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -31,6 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
         >
           {children}
+   
           <Suspense fallback={null}>
             <Analytics />
             <SpeedInsights />

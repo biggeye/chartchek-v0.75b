@@ -286,7 +286,7 @@ export interface KipuFacility {
  * Application-specific Facility (corresponds to KIPU Location)
  */
 export interface Facility {
-  id: string;
+  id: number;
   name: string;
   code?: string;
   address?: string;
@@ -300,6 +300,7 @@ export interface Facility {
   buildings?: Building[];
   data?: FacilityData;
   api_settings?: FacilityApiSettingsDisplay;
+  enabled?: boolean;
 }
 
 

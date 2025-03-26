@@ -65,57 +65,59 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
     return facilities.find(f => Number(f.id) === currentFacilityId);
   },
 
-  // Fetch facilities from KIPU API via server endpoint
-  fetchFacilities: async (page = 1, limit = 20) => {
-    set({ isLoading: true, error: null });
+// In store/facilityStore.ts
+fetchFacilities: async (page = 1, limit = 20) => {
+  set({ isLoading: true, error: null });
+  
+  try {
+    const response = await fetch(`/api/kipu/facilities`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    try {
-      // Get current user ID for cache key
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'anonymous';
-      
-      // Create cache key
-      const cacheKey = cacheKeys.facilities.list(userId);
-      
-      // Save the current facility ID before fetching
-      const currentId = get().currentFacilityId;
-      
-      // Use server endpoint instead of direct KIPU service call
-      const response = await fetch(`/api/kipu/facilities?page=${page}&limit=${limit}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch facilities: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Update store with fetched data
-      set({ 
-        facilities: data.facilities || [], 
-        pagination: data.pagination || null,
-        isLoading: false 
-      });
-      
-      // Restore selected facility or select first one if none is selected
-      if (!currentId && data.facilities?.length > 0) {
-        get().setCurrentFacilityId(data.facilities[0].id);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching facilities:', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch facilities', 
-        isLoading: false 
-      });
-      return null;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch facilities: ${response.statusText}`);
     }
-  },
+
+    const data = await response.json();
+    
+    // Extract facilities from the nested structure
+    const rawFacilities = data?.data?.data?.locations || [];
+    
+    // Transform facilities to match expected format
+    const facilities = rawFacilities.map((facility: any) => ({
+      id: facility.location_id,
+      name: facility.location_name,
+      enabled: facility.enabled
+    }));
+    
+
+    
+    // Update store with transformed facilities
+    set({ 
+      facilities: facilities, 
+      pagination: null,
+      isLoading: false 
+    });
+    
+    // Restore selected facility or select first one if none is selected
+    if (!get().currentFacilityId && facilities.length > 0) {
+      get().setCurrentFacilityId(facilities[0].id);
+    }
+    
+  
+    return { facilities, pagination: null };
+  } catch (error) {
+    console.error('Error fetching facilities:', error);
+    set({ 
+      error: error instanceof Error ? error.message : 'Failed to fetch facilities', 
+      isLoading: false 
+    });
+    return null;
+  }
+},
 
   // Invalidate facility cache
   invalidateFacilityCache: async () => {

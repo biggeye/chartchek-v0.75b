@@ -1,3 +1,4 @@
+'use client'
 /**
  * API Settings Service
  * 
@@ -10,7 +11,6 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { KipuCredentials } from '@/types/kipu';
-import { createServer } from '@/utils/supabase/server';
 
 /**
  * Interface for user API settings
@@ -45,7 +45,6 @@ export async function getUserApiSettings(ownerId?: string): Promise<UserApiSetti
       }
       ownerId = user.id;
     }
-    console.log("getUserApiSettings ownerId: ", ownerId);
     // Query the user_api_settings table
     const { data, error } = await supabase
       .from('user_api_settings')
@@ -57,8 +56,7 @@ export async function getUserApiSettings(ownerId?: string): Promise<UserApiSetti
       console.warn('Error fetching user API settings:', error);
       return null;
     }
-    
-    return data as UserApiSettings;
+       return data as UserApiSettings;
   } catch (error) {
     console.error('Error getting user API settings:', error);
     return null;
@@ -178,6 +176,7 @@ export async function getKipuCredentials(ownerId?: string): Promise<any | null> 
     const credentials = await getUserKipuCredentials(ownerId);
       // If the user has configured credentials, use those
       if (credentials) {
+        console.log('[user-settings] successfully retrieved user API settings')
         return credentials;
       }
 

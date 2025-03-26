@@ -54,19 +54,13 @@ export async function kipuGetPatient<T>(
   }
 }
 
-/**
- * Retrieves a list of patients from the KIPU API
- * @param credentials - KIPU API credentials
- * @param page - Page number for pagination (default: 1)
- * @param limit - Number of results per page (default: 20)
- * @param status - Patient status filter (default: 'active')
- * @returns Promise resolving to the API response
- */
-export async function kipuGetPatients<T>(
+
+export async function kipuGetPatientsAdmissions<T>(
   credentials: KipuCredentials,
   page = 1,
   limit = 20,
-  status = 'active'
+  startDate: string,
+  endDate: string,
 ): Promise<KipuApiResponse<T>> {
   try {
     // Build the query string with required parameters
@@ -74,13 +68,45 @@ export async function kipuGetPatients<T>(
       app_id: credentials.appId,
       page: page.toString(),
       limit: limit.toString(),
-      status,
+      start_date: startDate.toString() || '01-01-1990',
+      end_date: endDate.toString() || '12-31-2030',
       phi_level: 'high'
     }).toString();
-
-    const endpoint = `/api/patients?${queryParams}`;
-
     // Use kipuServerGet directly as in the API route
+    const endpoint = `/api/patients/admissions?${queryParams}`;
+    return await kipuServerGet(endpoint, credentials);
+  } catch (error) {
+    console.error(`Error in kipuGetPatients:`, error);
+    return {
+      success: false,
+      error: {
+        code: 'server_error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: error
+      }
+    };
+  }
+}
+
+export async function kipuGetPatientsCensus<T>(
+  credentials: KipuCredentials,
+  page = 1,
+  limit = 20,
+): Promise<KipuApiResponse<T>> {
+  try {
+    // Build the query string with required parameters
+    const queryParams = new URLSearchParams({
+      app_id: credentials.appId,
+      page: page.toString(),
+      limit: limit.toString(),    
+      phi_level: 'high',
+      insurance_detail: 'v121',
+      demographics_detail: 'v121',
+      patient_status_detail: 'v121',
+      patient_contacts_detail: 'v121',
+    }).toString();
+    // Use kipuServerGet directly as in the API route
+    const endpoint = `/api/patients/census?${queryParams}`;
     return await kipuServerGet(endpoint, credentials);
   } catch (error) {
     console.error(`Error in kipuGetPatients:`, error);

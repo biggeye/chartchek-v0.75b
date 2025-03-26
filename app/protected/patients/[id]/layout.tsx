@@ -1,100 +1,61 @@
 'use client';
 
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { PatientBreadcrumb } from '@/components/patient/PatientBreadcrumb';
 import { PatientInfoCard } from '@/components/patient/PatientInfoCard';
 import { EvaluationsCard } from '@/components/patient/EvaluationsCard';
 import { VitalSignsCard } from '@/components/patient/VitalSignsCard';
-import { AppointmentsCard } from '@/components/patient/AppointmentsCard';
-import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
-import { PatientVitalSign, KipuPatientEvaluation, PatientAppointment } from '@/types/kipu';
+import { PatientVitalSign, KipuPatientEvaluation } from '@/types/kipu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { usePatient } from '@/lib/contexts/PatientProvider';
 
-// Define the type for the active tab
-type ActiveTabType = 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'orders';
-
-// Adapter interfaces for component props
-interface VitalSign {
-    id: string;
-    patient_id: string;
-    type: string;
-    value: string;
-    timestamp: string;
-}
-
+type ActiveTabType = 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'orders' | 'treatmentPlan';
 
 // Adapter functions to convert KIPU types to component expected types
-const adaptVitalSigns = (vitalSignsData: any, limit?: number): VitalSign[] => {
-    // Check if vitalSignsData is null or undefined
-    if (!vitalSignsData) {
-        console.warn('adaptVitalSigns received null or undefined data');
+const adaptVitalSigns = (vitalSignsData: PatientVitalSign[], limit?: number): any[] => {
+    if (!vitalSignsData || !Array.isArray(vitalSignsData)) {
         return [];
     }
 
-    // Handle both array and object with vital_signs property formats
-    let vitalSigns = vitalSignsData;
-
-    // If vitalSignsData has a 'vital_signs' property and it's an array, use that
-    if (vitalSignsData.vital_signs && Array.isArray(vitalSignsData.vital_signs)) {
-        vitalSigns = vitalSignsData.vital_signs;
-    }
-
-    // Check if vitalSigns is an array
-    if (!Array.isArray(vitalSigns)) {
-        console.warn('adaptVitalSigns: vital_signs is not an array:', vitalSigns);
-        return [];
-    }
-    const mappedData = vitalSigns.map(vs => ({
-        id: String(vs.id),
+    // Map to the format expected by VitalSignsCard component
+    const mappedData = vitalSignsData.map(vs => ({
+        id: String(vs.id || ''),
         patient_id: String(vs.patientId || ''),
         type: vs.type || '',
         value: String(vs.value || ''),
+        unit: vs.unit || '',
+        recorded_at: vs.recordedAt || '',
         timestamp: vs.recordedAt || ''
     }));
 
-    // Return limited data if limit is provided
     return limit ? mappedData.slice(0, limit) : mappedData;
 };
 
-const adaptEvaluations = (evaluationsData: any, limit?: number): KipuPatientEvaluation[] => {
-    // Check if evaluationsData is null or undefined
-    if (!evaluationsData) {
-        console.warn('adaptEvaluations received null or undefined data');
+const adaptEvaluations = (evaluationsData: KipuPatientEvaluation[], limit?: number): KipuPatientEvaluation[] => {
+    if (!evaluationsData || !Array.isArray(evaluationsData)) {
         return [];
     }
 
-    // Handle both array and object with evaluations property formats
-    let evaluations = evaluationsData;
-
-    // If evaluationsData has an 'evaluations' property and it's an array, use that
-    if (evaluationsData.evaluations && Array.isArray(evaluationsData.evaluations)) {
-        evaluations = evaluationsData.evaluations;
-    }
-
-    // Check if evaluations is an array
-    if (!Array.isArray(evaluations)) {
-        console.warn('adaptEvaluations: evaluations is not an array:', evaluations);
-        return [];
-    }
-
-    const mappedData = evaluations.map(evaluation => ({
-        id: evaluation.id,
+    // Map the evaluations with proper type handling
+    const mappedData = evaluationsData.map(evaluation => ({
+        ...evaluation,
+        id: evaluation.id || 0,
         name: evaluation.name || 'Unnamed Evaluation',
         status: evaluation.status || 'open',
         patientCasefileId: evaluation.patientCasefileId || '',
-        evaluationId: evaluation.evaluationId,
-        patientProcessId: evaluation.patientProcessId,
+        evaluationId: evaluation.evaluationId || 0,
+        patientProcessId: evaluation.patientProcessId || 0,
         createdAt: evaluation.createdAt || '',
         createdBy: evaluation.createdBy || 'Unknown',
         updatedAt: evaluation.updatedAt || '',
         updatedBy: evaluation.updatedBy || null,
-        evaluationContent: evaluation.evaluationContent
+        // Fix the type mismatch - evaluationContent should be a string according to your type definition
+        evaluationContent: evaluation.evaluationContent || ''
     }));
 
-    // Return limited data if limit is provided
     return limit ? mappedData.slice(0, limit) : mappedData;
 };
 
@@ -102,11 +63,13 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
     const params = useParams();
     const pathname = usePathname();
     const patientId = params.id as string;
-    const facilityId = useFacilityStore.getState().currentFacilityId;
+    const facilityId = useFacilityStore(state => state.currentFacilityId);
+
     // Determine active tab based on the current pathname
     const getActiveTab = (): ActiveTabType => {
         if (pathname.includes('/evaluations')) return 'evaluations';
         if (pathname.includes('/vitals')) return 'vitals';
+        if (pathname.includes('/treatment')) return 'treatmentPlan';
         return 'overview';
     };
 
@@ -114,36 +77,27 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
 
     const patientNavigation = [
         { name: 'Overview', href: `/protected/patients/${patientId}`, current: activeTab === 'overview' },
+        { name: 'Treatment Plan', href: `/protected/patients/${patientId}/treatment`, current: activeTab === 'treatmentPlan' },
         { name: 'Evaluations', href: `/protected/patients/${patientId}/evaluations`, current: activeTab === 'evaluations' },
         { name: 'Vitals', href: `/protected/patients/${patientId}/vitals`, current: activeTab === 'vitals' },
     ];
 
+    // Use the patient context instead of direct store access
     const {
-        currentPatient,
-        currentPatientEvaluations,
-        currentPatientVitalSigns,
+        currentPatientFile,
+        selectPatient,
         isLoading,
-        error,
-        fetchPatientWithDetails
-    } = usePatientStore.getState();
+        error
+    } = usePatient();
 
-
-    // Fetch patient data only once when the component mounts or patientId changes
+    // Fetch patient data when the component mounts or patientId changes
     useEffect(() => {
-        const fetchPatientDetails = async () => {
-        await fetchPatientWithDetails(patientId);
+        const loadPatient = async () => {
+            await selectPatient(patientId);
+        };
 
-        if (currentPatientEvaluations) {
-            (adaptEvaluations(currentPatientEvaluations, 4)); // Limit to 4 items
-        }
-        if (currentPatientVitalSigns) {
-            (adaptVitalSigns(currentPatientVitalSigns, 4)); // Limit to 4 items
-        }
-    };
-    fetchPatientDetails();
-
-    }, []);
-
+        loadPatient();
+    }, [patientId, selectPatient]);
 
     function classNames(...classes: string[]) {
         return classes.filter(Boolean).join(' ');
@@ -152,18 +106,21 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
     // Only show the dashboard on the overview page
     const showDashboard = activeTab === 'overview';
 
-    // Adapt the KIPU data to the component expected formats
-    // Ensure we always pass arrays (even empty ones) to the adapter functions
-    const adaptedVitalSigns = adaptVitalSigns(currentPatientVitalSigns || [], 4);
-    const adaptedEvaluations = adaptEvaluations(currentPatientEvaluations || [], 4);
+    // Get data from the context
+    const patient = currentPatientFile?.patient;
+    const evaluations = currentPatientFile?.evaluations || [];
+    const vitalSigns = currentPatientFile?.vitalSigns || [];
+
+    // Adapt the data to the component expected formats
+    const adaptedVitalSigns = adaptVitalSigns(vitalSigns, 4);
+    const adaptedEvaluations = adaptEvaluations(evaluations, 4);
 
     return (
         <div className="flex flex-col">
-        
             <PatientBreadcrumb
                 facilityId={facilityId}
                 patientId={patientId}
-                activeTab={activeTab}
+                activeTab={activeTab as any}
             >
                 <div className="flex flex-row w-full">
                     {/* Sidebar Navigation */}
@@ -186,7 +143,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
                     </nav>
 
                     {/* Main Content Area */}
-                    <ScrollArea className="h-full w-full overflow-y-auto mb-20">
+                    <ScrollArea className="h-full w-full overflow-y-auto mb-10">
                         <div className="flex-1 pl-6 py-4">
                             {isLoading ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -205,27 +162,27 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
                                         <h3 className="text-lg font-medium text-red-600">Error loading patient data</h3>
                                         <p className="mt-1 text-sm text-gray-500">{error}</p>
                                         <button
-                                            onClick={() => fetchPatientWithDetails(patientId)}
+                                            onClick={() => selectPatient(patientId)}
                                             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                         >
                                             Try Again
                                         </button>
                                     </div>
                                 </div>
-                            ) : showDashboard && currentPatient ? (
+                            ) : showDashboard && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-6">
-                                        <PatientInfoCard patient={currentPatient} />
-                                        <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} />
-
+                                        {patient && <PatientInfoCard patient={patient} />}
                                     </div>
                                     <div className="space-y-6">
+                                        <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} />
                                         <EvaluationsCard adaptedEvaluations={adaptedEvaluations} />
                                     </div>
                                 </div>
-                            ) : (
-                                children
                             )}
+                            
+                            {/* Render the child pages */}
+                            {!showDashboard && children}
                         </div>
                     </ScrollArea>
                 </div>

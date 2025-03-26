@@ -103,13 +103,12 @@ export default function EvaluationDetailPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{evaluation.name}</h1>
-        <Button className="gray-800" onClick={() => router.push(`/protected/patients/${patientId}/evaluations`)}>
+    <div className="p-1 space-y-4">
+      <div>
+          <Button className="gray-800" onClick={() => router.push(`/protected/patients/${patientId}/evaluations`)}>
           Back to Evaluations
         </Button>
-      </div>
+        </div>
 
       <Card>
         <CardHeader>
@@ -127,7 +126,7 @@ export default function EvaluationDetailPage() {
               {evaluation.notes && <TabsTrigger value="notes">Notes</TabsTrigger>}
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="overview" className="space-y-2">
              {evaluation.createdAt && <p><strong>Created At:</strong> {formatDate(evaluation.createdAt)}</p>}
               {evaluation.updatedAt && <p><strong>Updated At:</strong> {formatDate(evaluation.updatedAt)}</p>}
               {(evaluation.createdBy || evaluation.userName) && <p><strong>Created By:</strong> {evaluation.createdBy || evaluation.userName}</p>}
@@ -152,3 +151,5 @@ export default function EvaluationDetailPage() {
     </div>
   );
 }
+
+

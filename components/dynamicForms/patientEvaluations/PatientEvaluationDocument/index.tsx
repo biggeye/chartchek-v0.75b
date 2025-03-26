@@ -22,27 +22,28 @@ interface Props {
 const KipuPatientEvaluationDocument = ({ items, title = "Patient Evaluation" }: Props) => {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const pdfPreviewUrl = useStreamStore((state) => state.pdfPreviewUrl);
+ 
 
-  return (
-    <div className="relative">
-      <ActionBar
-        title={title}
-        showPdfPreview={showPdfPreview}
-        setShowPdfPreview={setShowPdfPreview}
-        items={items}
-      />
+return (
+  <div className="overflow-hidden bg-gray-50 sm:rounded-lg">
+    <ActionBar
+      title={title}
+      showPdfPreview={showPdfPreview}
+      setShowPdfPreview={setShowPdfPreview}
+      items={items}
+    />
 
-      <div className="max-w-7xl mx-auto px-2 pb-10">
-        {showPdfPreview && pdfPreviewUrl ? (
-          <div className="p-6 bg-white rounded-2xl shadow-lg">
-            <PDFPreview />
-          </div>
-        ) : (
-          <DocumentView items={items} />
-        )}
-      </div>
+    <div className="overflow-hidden bg-gray-50 sm:rounded-lg">
+      {showPdfPreview && pdfPreviewUrl ? (
+
+        <PDFPreview />
+
+      ) : (
+        <DocumentView items={items} />
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default KipuPatientEvaluationDocument;

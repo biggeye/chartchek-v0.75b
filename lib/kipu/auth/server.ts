@@ -6,8 +6,8 @@
  */
 
 import { KipuCredentials, KipuApiResponse } from '@/types/kipu';
-import { validateKipuCredentials } from './config';
 import { generateKipuAuthHeaders } from './signature';
+import { createServer } from '@/utils/supabase/server';
 import crypto from 'crypto';
 
 // Flag to indicate if we're running on the server
@@ -66,11 +66,6 @@ export async function kipuServerGet<T>(
 ): Promise<KipuApiResponse<T>> {
   try {
     const credentials = customCredentials!;
-    
-    if (!validateKipuCredentials()) {
-      throw new Error('KIPU API credentials are missing or invalid');
-    }
-    
     // Ensure endpoint starts with a slash
     const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
@@ -189,10 +184,6 @@ export async function kipuServerPost<T>(
   try {
     const credentials = customCredentials!;
     
-    if (!validateKipuCredentials()) {
-      throw new Error('KIPU API credentials are missing or invalid');
-    }
-    
     // Ensure endpoint starts with a slash
     const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
@@ -246,5 +237,84 @@ export async function kipuServerPost<T>(
         details: error
       }
     };
+  }
+}
+
+
+export async function serverLoadKipuCredentialsFromSupabase(ownerId?: string): Promise<KipuCredentials | null> {
+    const supabase = await createServer();
+    if (!ownerId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return null;
+      }
+      ownerId = user.id;
+    }
+ // Query the user_api_settings table
+ const { data, error } = await supabase
+ .from('user_api_settings')
+ .select('*')
+ .eq('owner_id', ownerId)
+ .single();
+ if (error) {
+  console.warn('Error fetching user API settings:', error);
+  return null;
+}
+return {
+  accessId: data.kipu_access_id,
+  secretKey: data.kipu_secret_key,
+  appId: data.kipu_app_id,
+  baseUrl: data.kipu_api_endpoint
+} }
+
+
+export async function serverSaveKipuCredentialsToSupabase(credentials: KipuCredentials): Promise<boolean> {
+  try {
+    const supabase = await createServer();
+    
+    // Check if a record already exists
+    const { data: existingData } = await supabase
+      .from('user_api_settings')
+      .select('id')
+      .eq('api_name', 'kipu')
+      .single();
+    
+    const credentialsRecord = {
+      api_name: 'kipu',
+      access_id: credentials.accessId,
+      secret_key: credentials.secretKey,
+      app_id: credentials.appId,
+      base_url: credentials.baseUrl,
+      updated_at: new Date().toISOString()
+    };
+    
+    let result;
+    
+    if (existingData) {
+      // Update existing record
+      result = await supabase
+        .from('user_api_settings')
+        .update(credentialsRecord)
+        .eq('id', existingData.id);
+    } else {
+      // Insert new record
+      result = await supabase
+        .from('user_api_settings')
+        .insert({
+          ...credentialsRecord,
+          created_at: new Date().toISOString()
+        });
+    }
+    
+    if (result.error) {
+      console.error('Failed to save KIPU credentials to Supabase:', result.error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving KIPU credentials to Supabase:', error);
+    return false;
   }
 }

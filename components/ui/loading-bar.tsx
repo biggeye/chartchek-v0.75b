@@ -29,8 +29,8 @@ export function LoadingBar() {
   }, [pathname, searchParams]);
 
   return (
-    <div className={`fixed top-0 left-0 right-0 h-1 z-50 transition-opacity duration-300 ${loading ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="h-full bg-blue-500 animate-loading-bar"></div>
+    <div className={`fixed top-0 left-0 right-0 h-1 z-50 transition-opacity duration-750 ${loading ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="h-full bg-indigo-500 animate-loading-bar"></div>
     </div>
   );
 }

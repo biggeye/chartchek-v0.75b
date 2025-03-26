@@ -1,164 +1,104 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
-import { PatientBasicInfo, KipuPatientEvaluation, PatientVitalSign, PatientAppointment } from '@/types/kipu';
+import { PatientBasicInfo, KipuPatientEvaluation, PatientVitalSign } from '@/types/kipu';
 
-// Enhanced context type that wraps patientStore functionality
+// Focus on UI-specific state and combined data
 interface PatientContextType {
-  // UI-specific state and methods
+  // UI-specific state
   isPatientContextEnabled: boolean;
-  
-  // Wrapped methods from patientStore with enhanced functionality
-  setFacility: (facilityId: number) => Promise<void>;
-  selectPatient: (patientId: string) => Promise<void>;
-  clearSelection: () => void;
   togglePatientContext: () => void;
   
-  // New methods for evaluations, vital signs, and appointments
-  fetchEvaluations: (patientId: string) => Promise<KipuPatientEvaluation[]>;
-  fetchVitalSigns: (patientId: string) => Promise<PatientVitalSign[]>;
-  fetchAllEvaluations: () => Promise<KipuPatientEvaluation[]>;
-  getEvaluationById: (evaluationId: string) => KipuPatientEvaluation | undefined;
+  // Aggregated patient data (the real value-add)
+  currentPatientFile: PatientFile | null;
   
-  // Convenience accessors that provide typed access to patientStore data
-  currentPatient: PatientBasicInfo | null;
-  currentFacilityId: number;
-  patients: PatientBasicInfo[];
-  KipuPatientEvaluations: KipuPatientEvaluation[];
-  patientVitalSigns: PatientVitalSign[];
-   allEvaluations: KipuPatientEvaluation[];
+  // High-level UI operations
+  selectPatient: (patientId: string) => Promise<void>;
+  clearSelection: () => void;
+  
+  // Loading states
   isLoading: boolean;
   error: string | null;
+}
+
+interface PatientFile {
+  patient: PatientBasicInfo;
+  evaluations: KipuPatientEvaluation[];
+  vitalSigns: PatientVitalSign[];
+  // Add other patient-related data as needed
 }
 
 const PatientContext = createContext<PatientContextType | null>(null);
 
 export const PatientProvider = ({ children }: { children: React.ReactNode }) => {
-  // Get access to the patientStore
+  // Get data from stores
+  const { currentFacilityId } = useFacilityStore();
   const { 
-    patients,
     currentPatient,
     currentPatientEvaluations,
     currentPatientVitalSigns,
-    evaluations,
     isPatientContextEnabled,
     error,
     
-    // Actions
-    fetchPatients,
+    // Only include the methods you actually need
     fetchPatientWithDetails,
-    fetchPatientEvaluations,
-    fetchPatientVitalSigns,
-    fetchAllPatientEvaluations,
-    setCurrentPatient,
     setPatientContextEnabled,
     clearPatientContext,
-    isLoadingEvaluations,
-    isLoadingVitals,
     isLoading
   } = usePatientStore();
   
-  // Get facility information from facilityStore
-  const { currentFacilityId } = useFacilityStore();
+  // Create the aggregated patient file
+  const [currentPatientFile, setCurrentPatientFile] = useState<PatientFile | null>(null);
   
-  // Enhanced method: Set facility and load patients
-  const setFacility = async (facilityId: number) => {
-    try {
-      // Pass an object with facilityId property instead of just the string
-      await fetchPatients(facilityId);
-    } catch (error) {
-      console.error("Error setting facility:", error);
+  // Update the patient file when relevant store data changes
+  useEffect(() => {
+    if (currentPatient && currentPatientEvaluations && currentPatientVitalSigns) {
+      setCurrentPatientFile({
+        patient: currentPatient,
+        evaluations: currentPatientEvaluations,
+        vitalSigns: currentPatientVitalSigns
+      });
+    } else {
+      setCurrentPatientFile(null);
     }
-  };
+  }, [currentPatient, currentPatientEvaluations, currentPatientVitalSigns]);
   
-  // Enhanced method: Select a patient and load all their details
-  const selectPatient = async (patientId: string) => {
-    try {
-      await fetchPatientWithDetails(patientId);
+ // Enhanced method: Select a patient and load all their details
+ const selectPatient = async (patientId: string) => {
+  try {
+    const patientDetails = await fetchPatientWithDetails(patientId);
+    if (patientDetails) {
+      // Map the returned object to match your PatientFile interface
+      setCurrentPatientFile({
+        patient: patientDetails.patient,
+        evaluations: patientDetails.evaluations,
+        vitalSigns: patientDetails.vitalSigns
+      });
       setPatientContextEnabled(true);
-    } catch (error) {
-      console.error("Error selecting patient:", error);
     }
-  };
-  
-  // Enhanced method: Clear current patient and disable context
-  const clearSelection = () => {
-    clearPatientContext();
-  };
-  
-  // Enhanced method: Toggle patient context visibility
+  } catch (error) {
+    console.error("Error selecting patient:", error);
+  }
+};
   const togglePatientContext = () => {
     setPatientContextEnabled(!isPatientContextEnabled);
   };
   
-  // New method: Fetch evaluations for a specific patient
-  const fetchEvaluations = async (patientId: string) => {
-    try {
-      return await fetchPatientEvaluations(patientId);
-    } catch (error) {
-      console.error("Error fetching evaluations:", error);
-      return [];
-    }
+  const clearSelection = () => {
+    clearPatientContext();
   };
-  
-  // New method: Fetch vital signs for a specific patient
-  const fetchVitalSigns = async (patientId: string) => {
-    try {
-      return await fetchPatientVitalSigns(patientId);
-    } catch (error) {
-      console.error("Error fetching vital signs:", error);
-      return [];
-    }
-  };
-  
-  
-  // New method: Fetch all evaluations (not tied to a specific patient)
-  const getAllEvaluations = async () => {
-    try {
-      return await fetchAllPatientEvaluations();
-    } catch (error) {
-      console.error("Error fetching all evaluations:", error);
-      return [];
-    }
-  };
-  
-  // New method: Get a specific evaluation by ID
-  const getEvaluationById = (evaluationId: string) => {
-    // First check in current patient evaluations
-    const patientEval = currentPatientEvaluations.find(evaluation => evaluation.id === evaluationId);
-    if (patientEval) return patientEval;
-    
-    // Then check in all evaluations
-    return evaluations.find(evaluation => evaluation.id === evaluationId);
-  };
-
   
   return (
     <PatientContext.Provider value={{
-      // State
       isPatientContextEnabled,
-      currentFacilityId,
-      currentPatient,
-      patients,
-      KipuPatientEvaluations: currentPatientEvaluations,
-      patientVitalSigns: currentPatientVitalSigns,
-      allEvaluations: evaluations,
-      isLoading,
-      error,
-      
-      // Actions
-      setFacility,
+      currentPatientFile,
       selectPatient,
       clearSelection,
       togglePatientContext,
-      
-      // New methods
-      fetchEvaluations,
-      fetchVitalSigns,
-      fetchAllEvaluations: getAllEvaluations,
-      getEvaluationById
+      isLoading,
+      error
     }}>
       {children}
     </PatientContext.Provider>

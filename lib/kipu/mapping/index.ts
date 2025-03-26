@@ -20,7 +20,7 @@ export function mapKipuLocationToFacility(kipuLocation: any): Facility {
   if (!kipuLocation) {
     console.error('Attempted to map null or undefined KIPU location');
     return {
-      id: '',
+      id: 0,
       name: '',
       address: '',
       phone: '',

@@ -23,7 +23,7 @@ export const DEFAULT_PATIENT_CONTEXT_OPTIONS: PatientContextOptions = {
 
 // Response type for patient with all details
 export interface PatientWithDetails {
-  patient: PatientBasicInfo | null;
+  patient: PatientBasicInfo;
   evaluations: KipuPatientEvaluation[];
   vitalSigns: PatientVitalSign[];
 }
@@ -48,19 +48,22 @@ export interface PatientStore {
   selectedContextOptions: PatientContextOptions;
   contextOptions: PatientContextOptions;
   isLoading: boolean;
+  isLoadingPatients: boolean;
   isLoadingEvaluations: boolean;  // Added
-  isLoadingVitals: boolean;  // Added
+  isLoadingVitalSigns: boolean;  // Added
   isLoadingAppointments: boolean;  // Added
   error: string | null;
 
   // Actions
   setPatients: (patients: PatientBasicInfo[]) => void;
   setCurrentPatientId: (patientId: string | null) => void;
-  setCurrentPatient: (patient: PatientBasicInfo | null) => void;
+  setCurrentPatient: (patient: PatientBasicInfo) => void;
   setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
   setAllPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => void;
 
+  fetchPatientsAdmissionsByFacility: (facilityId: number, page?: number, limit?: number, startDate?: string, endDate?: string) => Promise<PatientBasicInfo[]>;
+  fetchPatientsCensusByFacility: (facilityId: number, page?: number, limit?: number) => Promise<PatientBasicInfo[]>;
   fetchPatients: (facilityId: number) => Promise<PatientBasicInfo[]>;
   fetchPatientById: (patientId: string) => Promise<PatientBasicInfo | null>;
   fetchPatientWithDetails: (patientId: string) => Promise<PatientWithDetails | null>;

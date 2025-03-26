@@ -2,81 +2,94 @@
 
 import { useEffect, useState } from 'react';
 import { usePatient } from '@/lib/contexts/PatientProvider';
+import { useFacilityStore } from '@/store/facilityStore'; 
+import { usePatientStore } from '@/store/patientStore';// Add this
 import { PatientSearch } from '@/components/patient/PatientSearch';
-import PatientList from '@/components/patient/PatientList';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-
-// Define patient status types and their styling
-const patientStatuses = {
-  'Active': 'text-green-700 bg-green-50 ring-green-600/20',
-  'Inactive': 'text-gray-600 bg-gray-50 ring-gray-500/10',
-  'Discharged': 'text-yellow-800 bg-yellow-50 ring-yellow-600/20',
-};
-
+// Other imports...
 
 export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isClientReady, setIsClientReady] = useState(false);
 
-  // Use the PatientContext instead of direct store access
+  // Use the PatientContext for UI operations
   const {
-    setFacility,
-    currentFacilityId,
-    patients,
+    selectPatient,
+    currentPatientFile,
+    isPatientContextEnabled,
+    togglePatientContext,
     isLoading,
     error
   } = usePatient();
+
+  // Use facility store directly for facility operations
+  const { currentFacilityId, setCurrentFacilityId } = useFacilityStore();
+  
+  // Use patient store directly for patient listing
+  const { patients, fetchPatientsCensusByFacility } = usePatientStore();
 
   const router = useRouter();
 
   // Set client ready state after hydration
   useEffect(() => {
     setIsClientReady(true);
-    setFacility(currentFacilityId);
+    
+    // Load patients for current facility
+    if (currentFacilityId) {
+      fetchPatientsCensusByFacility(currentFacilityId);
+    }
   }, []);
-
 
   // Filter patients based on search query
   const filteredPatients = !patients ? [] : searchQuery.trim() === ''
-  ? patients
-  : patients.filter(patient =>
-      patient && 
-      `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (patient.patientId && patient.patientId.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    ? patients
+    : patients.filter(patient => 
+        // Your existing filter logic
+        (patient.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         patient.lastName?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
 
+  // Handle patient selection
+  const handlePatientSelect = async (patientId: string) => {
+    await selectPatient(patientId);
+    router.push(`/protected/patients/${patientId}`);
+  };
+
+  // Rest of your component...
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-4">Patients</h1>
-        <PatientSearch
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-      </div>
-
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Patients</h1>
+      
+      {/* Search bar */}
+      <PatientSearch 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery} 
+      />
+      
+      {/* Patient list */}
       {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={`loading-${i}`} className="py-4">
-              <Skeleton className="h-6 w-1/3 mb-2" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))}
-        </div>
+        <p>Loading patients...</p>
       ) : error ? (
-        <div className="text-red-500">
-          Error loading patients: {error}
-        </div>
+        <p className="text-red-500">Error: {error}</p>
+      ) : filteredPatients.length === 0 ? (
+        <p>No patients found.</p>
       ) : (
-        <PatientList
-          patients={filteredPatients}
-          currentFacilityId={currentFacilityId}
-          onSelectPatient={(patientId: string) => {
-            router.push(`/protected/patients/${patientId}`);
-          }}
-        />
+        <ul className="divide-y divide-gray-200">
+          {filteredPatients.map(patient => (
+            <li 
+              key={patient.patientId} 
+              className="py-4 cursor-pointer hover:bg-gray-50"
+              onClick={() => handlePatientSelect(patient.patientId)}
+            >
+              <div className="flex items-center">
+                <div>
+                  <p className="font-medium">{patient.lastName}, {patient.firstName}</p>
+                  <p className="text-sm text-gray-500">DOB: {patient.dateOfBirth}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

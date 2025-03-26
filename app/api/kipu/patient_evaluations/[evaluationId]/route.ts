@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { kipuGetPatientEvaluation } from '@/lib/kipu/service/evaluation-service';
 import { KipuEvaluation, KipuPatientEvaluation, KipuPatientEvaluationItem } from '@/types/kipu';
 import { redis, getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
@@ -27,8 +27,7 @@ export async function GET(
         { status: 400 }
       );
     }
-console.log('[/api/kipu/patient_evaluations/[evaluationId]] evaluationId: ', evaluationId);
-    // Create Supabase client
+   // Create Supabase client
     const supabase = await createServer();
     
     // Get the user session to ensure they're authenticated
@@ -51,7 +50,7 @@ console.log('[/api/kipu/patient_evaluations/[evaluationId]] evaluationId: ', eva
       cacheKey,
       async () => {
         // Get KIPU API credentials for the current user
-        const kipuCredentials = await getKipuCredentials();
+        const kipuCredentials = await serverLoadKipuCredentialsFromSupabase(userId);
         if (!kipuCredentials) {
           throw new Error('KIPU API credentials not found');
         }

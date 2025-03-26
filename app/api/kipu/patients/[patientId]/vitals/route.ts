@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { kipuGetPatientVitalSigns } from '@/lib/kipu/service/vitals-service';
-import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
-import { parsePatientId } from '@/lib/kipu/auth/config';
+import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 
 /**
  * GET handler for retrieving a patient's vital signs
@@ -42,7 +41,7 @@ export async function GET(
     const ownerId = user.id;
 
     // Get KIPU API credentials
-    const credentials = await getKipuCredentials(ownerId);
+    const credentials = await serverLoadKipuCredentialsFromSupabase(ownerId);
 
     if (!credentials) {
       console.error(`[/api/kipu/patients/${patientId}/vitals] API Route - No API credentials found for user`);

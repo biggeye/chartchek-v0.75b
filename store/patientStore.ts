@@ -42,8 +42,9 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   isLoading: false,
+  isLoadingPatients: false,
   isLoadingEvaluations: false,
-  isLoadingVitals: false,
+  isLoadingVitalSigns: false,
   isLoadingAppointments: false,
   error: null,
 
@@ -69,7 +70,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   },
 
   // Set current patient
-  setCurrentPatient: (patient: PatientBasicInfo | null) => set({ currentPatient: patient }),
+  setCurrentPatient: (patient: PatientBasicInfo) => set({ currentPatient: patient }),
 
   // Set evaluations
   setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => set({ evaluations }),
@@ -116,13 +117,67 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   // Fetch all patients
   // Standardized fetch functions for patientStore
 
+  fetchPatientsAdmissionsByFacility: async (facilityId: number, page?: number, limit?: number, startDate?: string, endDate?: string) => {
+    set({ isLoadingPatients: true, error: null });
+    try {
+      if (!page) {
+        page = 1;
+      }
+      if (!limit) {
+        limit = 20;
+      }
+      if (!startDate) {
+        startDate = '01-01-1990';
+      }
+      if (!endDate) {
+        endDate = '12-30-2030';
+      }
+      const response = await fetch(`/api/kipu/patients/admissions?facilityId=${facilityId}`); // Fixed query parameter
+      const result = await response.json();
+      const facilityPatients = result.data.patients;
+      set({ patients: facilityPatients, isLoadingPatients: false });
+      return facilityPatients; // Return the patients array to match the type
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch patients', 
+        isLoadingPatients: false 
+      });
+      return []; // Return empty array on error to match the return type
+    }
+  },
+
+  fetchPatientsCensusByFacility: async (facilityId: number, page?: number, limit?: number) => {
+    set({ isLoadingPatients: true, error: null });
+    try {
+      // Call your existing service layer
+      if (!page) {
+        page = 1;
+      }
+      if (!limit) {
+        limit = 20;
+      }
+      const response = await fetch(`/api/kipu/patients/census?page=${page}&limit=${limit}`); // Fixed query parameter
+      const result = await response.json();
+      const facilityPatients = result.data.patients;
+      console.log('[patientStore.ts] facilityPatients: ', facilityPatients  );
+      set({ patients: facilityPatients, isLoadingPatients: false });
+      return facilityPatients; // Return the patients array to match the type
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch patients', 
+        isLoadingPatients: false 
+      });
+      return []; // Return empty array on error to match the return type
+    }
+  },
+
   // Fetch all patients
   fetchPatients: async (facilityId: number) => {
     try {
       set({ isLoading: true, error: null });
 
       // Add the facilityId to the API request
-      const response = await fetch(`/api/kipu/patients`);
+      const response = await fetch(`/api/kipu/patients/census`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch patients: ${response.statusText}`);
@@ -130,7 +185,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
       const result = await response.json();
       const allPatients = result.data.patients;
-      console.log('[patientStore] facilityId: ', allPatients);
 
       // Filter patients by facilityId in memory
       const filteredPatients = facilityId
@@ -157,7 +211,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       set({ isLoading: true, error: null });
       const encodedId = encodePatientIdForUrl(patientId);
       const response = await fetch(`/api/kipu/patients/${encodedId}`);
-
       if (!response.ok) {
         throw new Error(`Failed to fetch patient: ${response.statusText}`);
       }
@@ -179,32 +232,40 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     }
   },
 
-  // Fetch evaluations for a patient
-  fetchPatientEvaluations: async (patientId: string) => {
-    try {
-      set({ isLoadingEvaluations: true, error: null });
-      //    const encodedId = encodePatientIdForUrl(patientId);
-      const response = await fetch(`/api/kipu/patients/${patientId}/evaluations`);
-      console.log('fetchPatientEvaluations: ', response);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
-      }
+// In patientStore.ts - update fetchPatientEvaluations
+// In patientStore.ts - modify fetchPatientEvaluations
+fetchPatientEvaluations: async (patientId: string) => {
+  try {
+    set({ isLoadingEvaluations: true, error: null });
+    const encodedId = await encodePatientIdForUrl(patientId); // Use isLoadingEvaluations instead of isLoading
+    const response = await fetch(`/api/kipu/patients/${encodedId}/evaluations`);
 
-      const result = await response.json();
-      const evaluations = result.success && result.data ? result.data : [];
-
-      set({
-        selectedPatientEvaluations: evaluations,
-        currentPatientEvaluations: evaluations,
-        isLoadingEvaluations: false
-      });
-      return evaluations;
-    } catch (error) {
-      console.error('Error fetching patient evaluations:', error);
-      set({ isLoadingEvaluations: false, error: error instanceof Error ? error.message : 'Unknown error' });
-      return [];
+    console.log('[patientStore] fetchPatientEvaluations: ', response)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch evaluations: ${response.statusText}`);
     }
-  },
+    
+    const result = await response.json();
+    
+    const evaluations = result.patient_evaluations || [];
+    
+    // Set only the evaluations-related state, don't touch other state
+    set({ 
+      currentPatientEvaluations: evaluations, 
+      isLoadingEvaluations: false 
+    });
+    
+    return evaluations;
+  } catch (error) {
+    console.error('Error fetching patient evaluations:', error);
+    set({ 
+      isLoadingEvaluations: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      currentPatientEvaluations: [] 
+    });
+    return [];
+  }
+},
 
   // Fetch a specific evaluation
   fetchPatientEvaluation: async (evaluationId: string) => {
@@ -264,33 +325,58 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     }
   },
 
-  // Fetch vital signs for a patient
-  fetchPatientVitalSigns: async (patientId: string) => {
-    try {
-      set({ isLoadingVitals: true, error: null });
-      const encodedId = encodePatientIdForUrl(patientId);
-      const response = await fetch(`/api/kipu/patients/${encodedId}/vitals`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      const vitalSigns = result.success && result.data ? result.data : [];
-
-      set({
-        selectedPatientVitalSigns: vitalSigns,
-        currentPatientVitalSigns: vitalSigns,
-        isLoadingVitals: false
-      });
-      return vitalSigns;
-    } catch (error) {
-      console.error('Error fetching patient vital signs:', error);
-      set({ isLoadingVitals: false, error: error instanceof Error ? error.message : 'Unknown error' });
-      return [];
+// In patientStore.ts - update fetchPatientVitalSigns
+fetchPatientVitalSigns: async (patientId: string) => {
+  try {
+    set({ isLoadingVitalSigns: true, error: null });
+    const encodedId = encodePatientIdForUrl(patientId);
+    const response = await fetch(`/api/kipu/patients/${encodedId}/vital-signs`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
     }
-  },
 
+    const result = await response.json();
+    console.log("Raw vital signs data:", result);
+    
+    // Transform the data to match VitalSign interface
+    const transformedVitalSigns = result.vital_signs?.map((vs: any) => ({
+      id: vs.id || `vs-${Date.now()}-${Math.random()}`,
+      patient_id: patientId,
+      type: vs.type || vs.vital_sign_type || '',
+      value: vs.value || '',
+      timestamp: vs.timestamp || vs.recorded_at || new Date().toISOString(),
+      recordedAt: vs.recorded_at || vs.timestamp || new Date().toISOString(),
+      interval_timestamp: vs.interval_timestamp || '',
+      unit: vs.unit || '',
+      notes: vs.notes || '',
+      blood_pressure_systolic: vs.blood_pressure_systolic || null,
+      blood_pressure_diastolic: vs.blood_pressure_diastolic || null,
+      temperature: vs.temperature || null,
+      pulse: vs.pulse || null,
+      respirations: vs.respirations || null,
+      o2_saturation: vs.o2_saturation || null,
+      user_name: vs.user_name || vs.recorded_by || ''
+    })) || [];
+    
+    console.log("Transformed vital signs:", transformedVitalSigns);
+    
+    set({ 
+      currentPatientVitalSigns: transformedVitalSigns, 
+      isLoadingVitalSigns: false 
+    });
+    
+    return transformedVitalSigns;
+  } catch (error) {
+    console.error('Error fetching patient vital signs:', error);
+    set({ 
+      isLoadingVitalSigns: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      currentPatientVitalSigns: []
+    });
+    return [];
+  }
+},
 
   // Fetch patient with all details
   // Fetch patient with all details
@@ -380,7 +466,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       isLoading: false,
       isLoadingEvaluations: false,
-      isLoadingVitals: false,
+      isLoadingVitalSigns: false,
       error: null
     });
   },
@@ -423,7 +509,5 @@ export const initPatientStoreSubscriptions = () => {
       }
     }
   );
-
-  console.log('Patient store subscriptions initialized');
   return unsubscribe; // Return the unsubscribe function
 };

@@ -230,69 +230,7 @@ export default function SettingsPage() {
       // If API settings were saved successfully and credentials are configured,
       // fetch and store facilities using the server-side API route
       if (hasApiKeyConfigured) {
-        try {
-          // Make a request to the test API endpoint to fetch facilities
-           const response = await fetch('/api/kipu/facilities');
-          const result = await response.json();
-           if (result.success && result.apiResponse && result.apiResponse.success) {
-            // Extract facilities from the response
-            const facilities = result.apiResponse.data.locations.map((location: any) => ({
-              id: location.location_id.toString(),
-              name: location.location_name,
-              status: location.enabled ? 'active' : 'inactive',
-              // Add other required fields with default values
-              code: '',
-              address: '',
-              city: '',
-              state: '',
-              zip: '',
-              phone: '',
-              created_at: '',
-              updated_at: '',
-              buildings: [],
-              data: {
-                beds: { total: 0, available: 0, occupied: 0 },
-                patients: { total: 0, admitted: 0, discharged: 0 },
-                insights: {}
-              },
-              api_settings: { has_api_key_configured: true }
-            }));
-            
-            // Update the facility store
-            const { useFacilityStore } = await import('@/store/facilityStore');
-            const store = useFacilityStore.getState();
-            
-            store.facilities = facilities;
-            useFacilityStore.setState({ 
-              facilities,
-              pagination: {
-                total: facilities.length,
-                page: 1,
-                limit: facilities.length,
-                pages: 1
-              },
-              isLoading: false,
-              error: null
-            });
-            
-            // If there are facilities and no current facility is selected, select the first one
-            if (facilities.length > 0 && !store.currentFacilityId) {
-              store.setCurrentFacilityId(facilities[0].id);
-            }
-            
-            if (facilities.length > 0) {
-              setSaveSuccess(true);
-              setSuccessMessage(`Your API settings have been saved successfully. ${facilities.length} facilities were loaded from KIPU. You can now use the facility selector to switch between facilities.`);
-            } else {
-              setSaveError('No facilities were found. Please check your credentials and try testing the connection.');
-            }
-          } else {
-            setSaveError('Failed to fetch facilities. Please check your credentials and try testing the connection.');
-          }
-        } catch (facilityError) {
-          console.error('Error fetching facilities:', facilityError);
-          setSaveError('Failed to fetch facilities. Please check your credentials and try testing the connection.');
-        }
+        console.log('api key configured')
       } else {
         setSaveSuccess(true);
         setSuccessMessage('Your API settings have been saved successfully.');
