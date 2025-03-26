@@ -11,7 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, CheckCircle2, Info, Key, Globe, User, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import UserProfile from '@/components/profile/UserProfile';
 
+const supabase = createClient();
+const user = await supabase.auth.getUser();
+const userId = user.data?.user?.id;
 // Custom card components to extend the existing ones
 const CardTitle = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <h3 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props}>
@@ -454,9 +458,7 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Account settings will be available in a future update.
-                  </p>
+                <UserProfile userId={userId || ''} />
                 </CardContent>
               </Card>
             </TabsContent>

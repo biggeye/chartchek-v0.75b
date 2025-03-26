@@ -49,3 +49,4 @@ Primary type definitions reside in /types/* and specific store types in /types/s
 Always check existing definitions thoroughly before creating new ones.
 
 If a new type or interface is required, define it inline at the top of the document using it, clearly commenting it for later migration.
+

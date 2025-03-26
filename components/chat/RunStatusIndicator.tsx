@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { chatStore } from '@/store/chatStore'
+import { useChatStore } from '@/store/chatStore'
 import { XCircleIcon, ClockIcon, ArrowPathIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
 import { RunStatusResponse } from '@/types/store/chat'
 
@@ -10,7 +10,7 @@ interface RunStatusIndicatorProps {
 }
 
 export default function RunStatusIndicator({ onCancel }: RunStatusIndicatorProps) {
-  const { activeRunStatus, currentThread } = chatStore()
+  const { activeRunStatus, currentThread } = useChatStore()
   const [toolOutput, setToolOutput] = useState('')
   const [showInputField, setShowInputField] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)

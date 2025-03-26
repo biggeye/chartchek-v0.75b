@@ -6,7 +6,7 @@ graph TD
     subgraph "Client-Side"
         streamStore["store/streamStore.ts"]
         documentStore["store/documentStore.ts"]
-        chatStore["store/chatStore.ts"]
+        useChatStore["store/chatStore.ts"]
         openaiTypes["types/api/openai.ts"]
         streamTypes["types/store/stream.ts"]
         pdfTypes["types/pdf/biopsychsocialassessment.ts"]
@@ -30,7 +30,7 @@ graph TD
     streamStore --> openaiTypes
     streamStore --> streamTypes
     streamStore --> documentStore
-    streamStore --> chatStore
+    streamStore --> useChatStore
     
     toolHandlers --> pdfTypes
     toolHandlers --> serverOpenai

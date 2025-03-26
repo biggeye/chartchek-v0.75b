@@ -28,6 +28,9 @@ export async function GET(request: Request) {
 
     // Get user ID for cache key
     const userId = session.user.id;
+       // Add console logging for debugging
+       console.log('🔍 KIPU Evaluations Request:', { page, limit, userId });
+    
     // Get KIPU credentials
     const credentials = await serverLoadKipuCredentialsFromSupabase(userId);
     
@@ -61,13 +64,19 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    
-    return NextResponse.json(response.data);
-    
+    console.log('🔍 KIPU Evaluations Response Structure:', {
+      responseKeys: Object.keys(response),
+      dataType: typeof response.data,
+      dataLength: Array.isArray(response.data) ? response.data.length : 'not an array',
+      firstItem: Array.isArray(response.data) && response.data.length > 0 ? 
+        { keys: Object.keys(response.data[0]), sample: JSON.stringify(response.data[0]).substring(0, 500) + '...' } : 
+        'no items'
+    });
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching evaluation templates:', error);
+    console.error('❌ KIPU Evaluations Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch evaluation templates', details: (error as Error).message },
+      { error: 'Failed to fetch KIPU evaluations', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

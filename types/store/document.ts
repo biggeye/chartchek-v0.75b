@@ -153,3 +153,30 @@ export type {
   DocumentCategorization,
   DocumentSearchResult
 };
+
+// types/store/document.ts - add these methods to EnhancedDocumentStoreState
+
+export interface EnhancedDocumentStoreState extends DocumentStoreState {
+  // Keep all existing properties from DocumentStoreState
+  
+  // Add the transient file queue specifically for chat attachments
+  transientFileQueue: Document[];
+  
+  // Include all methods from DocumentStore
+  setDocuments: (documents: Document[]) => void;
+  setLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+  fetchDocuments: (facilityId?: number) => Promise<Document[]>;
+  fetchDocumentsForCurrentFacility: () => Promise<Document[]>;
+  uploadDocument: (file: File, categorization?: DocumentCategorization) => Promise<Document | null>;
+  uploadAndProcessDocument: (file: File, categorization?: DocumentCategorization) => Promise<Document | null>;
+  updateDocumentCategorization: (documentId: string, categorization: DocumentCategorization) => Promise<boolean>;
+  
+  // Add our new methods
+  addFileToQueue: (doc: Document) => void;
+  removeFileFromQueue: (doc: Document) => void;
+  clearFileQueue: () => void;
+  
+  // Combined operations
+  sendMessageWithFiles: (assistantId: string, content: string, files: Document[]) => Promise<any>;
+}

@@ -4,7 +4,7 @@ import { DocumentTextIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/2
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { chatStore } from '@/store/chatStore';
+import { useChatStore } from '@/store/chatStore';
 import Image from 'next/image';
 import { assistantRoster } from '@/lib/assistant/roster';
 import { useStreamStore } from '@/store/streamStore';
@@ -22,7 +22,7 @@ export const MessageList = React.memo(({
   isStreamingActive,
   streamingContent
 }: MessageListProps) => {
-  const { currentThread, fetchOpenAIMessages, error, setError } = chatStore();
+  const { currentThread, fetchOpenAIMessages, error, setError } = useChatStore();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showStreamingMessage, setShowStreamingMessage] = useState(false);

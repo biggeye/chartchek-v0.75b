@@ -1,57 +1,54 @@
-// (store/documentStore.ts)
+// store/documentStore.ts
 
 'use client';
 
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
-import { Document, DocumentStore, DocumentCategorization } from '@/types/store/document';
+import { Document, DocumentStore, DocumentCategorization, EnhancedDocumentStoreState } from '@/types/store/document';
+import { useChatStore } from './chatStore';
 
 // Initialize Supabase client
 const supabase = createClient();
 
-// Create document store with Zustand
-export const useDocumentStore = create<DocumentStore>((set, get) => ({
-  // Initial state
+// Create enhanced document store with Zustand
+export const useDocumentStore = create<EnhancedDocumentStoreState>((set, get) => ({
+  // Initial state (from original DocumentStore)
   documents: [],
   fileQueue: [],
   isLoading: false,
   error: null,
   
-  // Set documents
+  // New state for chat file handling
+  transientFileQueue: [],
+  
+  // Original methods
   setDocuments: (documents: Document[]) => set({ documents }),
-  
-  // Set loading state
   setLoading: (isLoading: boolean) => set({ isLoading }),
-  
-  // Set error state
   setError: (error: string | null) => set({ error }),
   
-  // Fetch documents from Supabase
- // Fetch documents from Supabase
-fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
-  set({ isLoading: true, error: null });
-  try {
-    // Build query
-    let query = supabase.from('documents').select('*');
-    
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    if (facilityId){
-      const filteredData = data.filter(doc => doc.facility_id === facilityId);
-      set({ documents: filteredData as Document[], isLoading: false });
-      return filteredData as Document[];
+  fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
+    set({ isLoading: true, error: null });
+    try {
+      // Build query
+      let query = supabase.from('documents').select('*');
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (facilityId){
+        const filteredData = data.filter(doc => doc.facility_id === facilityId);
+        set({ documents: filteredData as Document[], isLoading: false });
+        return filteredData as Document[];
+      }
+      set({ documents: data as Document[], isLoading: false });
+      return data as Document[];
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      set({ error: (error as Error).message, isLoading: false });
+      return [];
     }
-    set({ documents: data as Document[], isLoading: false });
-    return data as Document[];
-  } catch (error) {
-    console.error('Error fetching documents:', error);
-    set({ error: (error as Error).message, isLoading: false });
-    return [];
-  }
-},
+  },
   
-  // Fetch documents for the currently selected facility
   fetchDocumentsForCurrentFacility: async (): Promise<Document[]> => {
     try {
       const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
@@ -70,26 +67,24 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
     }
   },
   
-  // Add file to queue
+  // Original file queue methods
   addToFileQueue: (document: Document) => {
     set((state) => ({
       fileQueue: [...state.fileQueue, document]
     }));
   },
   
-  // Remove file from queue
   removeFromFileQueue: (document: Document) => {
     set((state) => ({
       fileQueue: state.fileQueue.filter(file => file.document_id !== document.document_id)
     }));
   },
   
-  // Get file queue
   getFileQueue: () => {
     return get().fileQueue;
   },
   
-  // Upload document to Supabase storage
+  // Document upload and processing methods (unchanged)
   uploadDocument: async (file: File, categorization?: DocumentCategorization): Promise<Document | null> => {
     set({ isLoading: true, error: null });
     try {
@@ -104,6 +99,7 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
       const file_name = `${timestamp}_${file.name}`;
       const filePath = `${userId}/${file_name}`;
       console.log('Uploading file:', filePath)
+      
       // Upload file to Supabase storage
       const { data: fileData, error: uploadError } = await supabase.storage
         .from('documents')
@@ -111,6 +107,7 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
       
       if (uploadError) throw uploadError;
       console.log('File uploaded successfully, now indexing');
+      
       // Create document record in database
       const { data: documentData, error: documentError } = await supabase
         .from('documents')
@@ -122,7 +119,6 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
             file_size: file.size,
             user_id: userId,
             bucket: 'documents',
-     //       facility_id: facilityId,
             patient_id: categorization?.patient_id,
             compliance_concern: categorization?.compliance_concern,
             compliance_concern_other: categorization?.compliance_concern_other,
@@ -146,7 +142,6 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
     }
   },
   
-  // Upload and process document (enhanced version that integrates with vector embeddings)
   uploadAndProcessDocument: async (file: File, categorization?: DocumentCategorization): Promise<Document | null> => {
     try {
       // First upload the document to storage
@@ -197,7 +192,6 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
     }
   },
   
-  // Update document categorization
   updateDocumentCategorization: async (documentId: string, categorization: DocumentCategorization): Promise<boolean> => {
     set({ isLoading: true, error: null });
     try {
@@ -222,6 +216,53 @@ fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
       console.error('Error updating document categorization:', error);
       set({ error: error instanceof Error ? error.message : 'Failed to update document', isLoading: false });
       return false;
+    }
+  },
+
+  // NEW METHODS FOR CHAT FILE HANDLING
+  
+  // Add file to chat queue
+  addFileToQueue: (doc: Document) => set((state) => ({
+    transientFileQueue: [...state.transientFileQueue, doc]
+  })),
+  
+  // Remove file from chat queue
+  removeFileFromQueue: (doc: Document) => set((state) => ({
+    transientFileQueue: state.transientFileQueue.filter(
+      (item) => item.document_id !== doc.document_id
+    )
+  })),
+  
+  // Clear chat file queue
+  clearFileQueue: () => set({ transientFileQueue: [] }),
+  
+  // Send message with files
+  sendMessageWithFiles: async (assistantId: string, content: string, files: Document[]) => {
+    try {
+      const chatStore = useChatStore.getState();
+      const threadId = chatStore.currentThread?.thread_id;
+      
+      if (!threadId) {
+        throw new Error('No active thread found');
+      }
+      
+      // Process files if needed
+      const processedFiles = files.map(file => ({
+        file_id: file.openai_file_id || '',
+        // Add any additional processing here
+      })).filter(f => f.file_id); // Filter out files without OpenAI IDs
+      
+      // Send the message with files
+      return chatStore.sendMessage(
+        assistantId,
+        threadId,
+        content,
+        processedFiles
+      );
+    } catch (error) {
+      console.error('Error sending message with files:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to send message with files' });
+      throw error;
     }
   }
 }));
@@ -248,4 +289,4 @@ export const initDocumentStoreSubscriptions = () => {
   return () => {};
 };
 
-export const documentStore = useDocumentStore;
+export default useDocumentStore;

@@ -10,7 +10,7 @@ interface TemplateState {
 
   // Actions
   fetchTemplates: () => Promise<void>;
-  fetchTemplate: (id: string) => Promise<void>;
+  fetchTemplate: (id: string) => Promise<ChartChekTemplate | null>;
   createTemplate: (template: ChartChekTemplate) => Promise<void>;
   saveTemplate: (template: ChartChekTemplate) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
@@ -40,35 +40,20 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     }
   },
 
-// Replace the getTemplate implementation with fetchTemplate
-fetchTemplate: async (id: string) => {
-  set({ isLoading: true, error: null });
-  try {
-    const response = await fetch(`/api/templates/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch template');
-    const template = await response.json();
-    
-    // Set the currentTemplate in state
-    set({ 
-      currentTemplate: template, 
-      isLoading: false 
-    });
-    
-    return template;
-  } catch (error) {
-    set({ error: (error as Error).message, isLoading: false });
-    return null;
-  }
-},
-
-  getTemplate: async (id: string) => {
+  fetchTemplate: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
       const response = await fetch(`/api/admin/templates/${id}`);
       if (!response.ok) throw new Error('Failed to fetch template');
-      const data = await response.json();
-      set({ isLoading: false });
-      return data;
+      const template = await response.json();
+      
+      // Set the currentTemplate in state
+      set({ 
+        currentTemplate: template, 
+        isLoading: false 
+      });
+      
+      return template;
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
       return null;
@@ -130,7 +115,7 @@ fetchTemplate: async (id: string) => {
       set({ error: (error as Error).message, isLoading: false });
     }
   },
-  // Add to templateStore.ts
+
   importKipuEvaluation: async (evaluationId: string) => {
     set({ isLoading: true, error: null });
     try {
@@ -166,5 +151,6 @@ fetchTemplate: async (id: string) => {
       throw error;
     }
   }
-
 }));
+
+export default useTemplateStore;

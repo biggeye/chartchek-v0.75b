@@ -61,47 +61,44 @@ export interface ChatContext {
   patientName: string | null;
 }
 
+
 export interface ChatStoreState {
   // --- CORE STATE ---
+  currentAssistantId: string | null;
   currentThread: Thread | null;
   historicalThreads: Thread[];
   transientFileQueue: Document[];
-  isLoading: boolean;
-  error: string | null;
-  activeRunStatus: RunStatusResponse | null;
-  currentAssistantId: string | null;
   patientContext: PatientContext | null;
   chatContext: ChatContext | null;
+  activeRunStatus: RunStatusResponse | null;
+  isLoading: boolean;
+  error: string | null;
+
+  // --- ASSISTANT MANAGEMENT ---
+  setCurrentAssistantId: (assistantId: string) => void;
 
   // --- THREAD MANAGEMENT ---
   createThread: (assistantId: string) => Promise<string>;
-  fetchHistoricalThreads: () => Promise<Thread[]>;
-  deleteThread: (threadId: string) => Promise<void>;
-  updateThreadTitle: (threadId: string, newTitle: string) => Promise<void>;
   setCurrentThread: (thread: Thread | null) => void;
 
-  // --- MESSAGE MANAGEMENT ---
-  sendMessage: (assistantId: string, threadId: string, content: string, attachments?: ChatMessageAttachment[]) => Promise<SendMessageResult>;
-  sendMessageWithFiles: (assistantId: string, content: string, files: Document[]) => Promise<SendMessageResult>;
-  fetchOpenAIMessages: (threadId: string) => Promise<ThreadMessage[] | undefined>;
-  addMessageReference: (messageId: string, threadId: string, role: string, content: string) => Promise<void>;
-  setCurrentMessages: (messages: ThreadMessage[]) => void;
+  // --- HISTORICAL THREADS ---
+  fetchHistoricalThreads: () => Promise<Thread[]>;
 
-  // --- CONTEXT MANAGEMENT ---
-  updatePatientContext: (context: PatientContext | null) => void;
-  updateChatContext: (context: Partial<ChatContext>) => void;
+  // --- MESSAGE MANAGEMENT ---
+  sendMessage: (
+    assistantId: string,
+    threadId: string,
+    content: string,
+    attachments?: any[]
+  ) => Promise<SendMessageResult>;
   
+  // --- MESSAGE FETCHING ---
+  fetchOpenAIMessages: (threadId: string) => Promise<any[] | undefined>;
+
   // --- RUN MANAGEMENT ---
   checkActiveRun: (threadId: string) => Promise<RunStatusResponse>;
-  updateActiveRunStatus: (status: RunStatusResponse | null) => void;
-  getLatestRun: (threadId: string) => Promise<import('../api/openai').Run | null>;
-  addStreamingMessage: (message: string) => void;
-  // --- FILE / DOCUMENT MANAGEMENT ---
-  addFileToQueue: (doc: Document) => void;
-  removeFileFromQueue: (doc: Document) => void;
-  clearFileQueue: () => void;
 
-  // --- USER / ERROR MANAGEMENT ---
-  setCurrentAssistantId: (assistantId: string) => void;
+  // --- ERROR HANDLING ---
   setError: (error: string | null) => void;
+  clearError: () => void;
 }

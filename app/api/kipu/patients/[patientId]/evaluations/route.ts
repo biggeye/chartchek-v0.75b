@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import {
   kipuGetPatientEvaluations,
-} from '@/lib/kipu/service/evaluation-service';
+} from '@/lib/kipu/service/patient-evaluation-service';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { parsePatientId } from '@/lib/kipu/auth/config';
 

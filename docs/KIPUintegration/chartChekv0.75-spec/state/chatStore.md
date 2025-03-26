@@ -171,10 +171,10 @@ The store state includes the following key properties:
 Below is an example of how you might use the `chatStore` in your React components:
 
 ```typescript
-import { chatStore } from '@/store/chatStore';
+import { useChatStore } from '@/store/chatStore';
 
 // Access current thread from state
-const currentThread = chatStore.getState().currentThread;
+const currentThread = useChatStore.getState().currentThread;
 
 // Create a new thread if needed
 chatStore.getState().createThread('assistant_id_example')

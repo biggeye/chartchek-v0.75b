@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
-import { chatStore } from '@/store/chatStore'
+import { useChatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
 import { ScrollArea } from '../ui/scroll-area'
 
@@ -20,7 +20,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     updateThreadTitle,
     fetchOpenAIMessages,
     checkActiveRun
-  } = chatStore()
+  } = useChatStore()
 
   const [isEditing, setIsEditing] = useState<boolean>(false)
   const [isThreadLoading, setIsThreadLoading] = useState<string | null>(null)

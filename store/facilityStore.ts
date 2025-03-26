@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Facility, FacilityStore, Pagination } from '@/types/store/facility';
 import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
 import { queryKeys } from '@/utils/react-query/config';
-import { chatStore } from '@/store/chatStore';
+import { useChatStore } from '@/store/chatStore';
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -42,7 +42,7 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
     get().setCurrentFacilityId(facilityId);
     
     // Update chat context with new facility ID
-    const chatState = chatStore.getState();
+    const chatState = useChatStore.getState();
     if (chatState.updateChatContext) {
       chatState.updateChatContext({
         facilityId: facilityId

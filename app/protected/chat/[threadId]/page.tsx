@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import React from 'react'
 import { MessageList } from '@/components/chat/MessageList'
-import { chatStore } from '@/store/chatStore'
+import { useChatStore } from '@/store/chatStore'
 import { useStreamStore } from '@/store/streamStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import RunStatusIndicator from '@/components/chat/RunStatusIndicator'
@@ -25,7 +25,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
     fetchOpenAIMessages, 
     activeRunStatus,
     checkActiveRun
-  } = chatStore()
+  } = useChatStore()
   
   const {
     currentStreamContent,

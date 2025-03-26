@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
-import { kipuGetPatientEvaluation } from '@/lib/kipu/service/evaluation-service';
+import { kipuGetPatientEvaluation } from '@/lib/kipu/service/patient-evaluation-service';
 import { KipuEvaluation, KipuPatientEvaluation, KipuPatientEvaluationItem } from '@/types/kipu';
 import { redis, getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
 

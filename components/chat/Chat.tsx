@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { MessageList } from './MessageList';
 import RunStatusIndicator from './RunStatusIndicator';
-import { chatStore } from '@/store/chatStore';
+import { useChatStore } from '@/store/chatStore';
 import { useStreamStore } from '@/store/streamStore';
 import { XCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import ToolCallDebugger from './ToolCallDebugger';
 
 export default function Chat() {
-  const { currentThread, createThread, sendMessage, setCurrentAssistantId, activeRunStatus, currentAssistantId } = chatStore();
+  const { currentThread, createThread, sendMessage, setCurrentAssistantId, activeRunStatus, currentAssistantId } = useChatStore();
   const {
     currentStreamContent,
     isStreamingActive,
@@ -48,12 +48,12 @@ export default function Chat() {
       
       // If we have an active run status, try to cancel it properly
       if (activeRunStatus?.isActive) {
-        // Retrieve the latest run from chatStore
-        const latestRun = await chatStore.getState().getLatestRun(currentThread.thread_id);
+        // Retrieve the latest run from useChatStore
+        const latestRun = await useChatStore.getState().getLatestRun(currentThread.thread_id);
         
         if (latestRun) {
           console.log(`[Chat] Cancelling run ${latestRun.id}`);
-          await chatStore.getState().checkActiveRun(currentThread.thread_id);
+          await useChatStore.getState().checkActiveRun(currentThread.thread_id);
         }
       }
     } catch (error) {

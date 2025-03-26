@@ -1,7 +1,6 @@
 import { createServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
-import { OpenAIProvider } from "@/lib/contexts/OpenAIProvider";
 import { PatientProvider } from "@/lib/contexts/PatientProvider";
 import AppLayout from "./AppLayout";
 
@@ -21,13 +20,11 @@ export default async function ProtectedLayout({
   }
   return (
     <div suppressHydrationWarning={true}>
-      <OpenAIProvider>
         <PatientProvider>
           <AppLayout user_id={user.id}>
             {children}
           </AppLayout>
         </PatientProvider>
-      </OpenAIProvider>
     </div>
   );
 }

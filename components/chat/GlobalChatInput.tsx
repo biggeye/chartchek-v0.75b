@@ -1,6 +1,6 @@
-  'use client'
+'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   PaperClipIcon,
   UserPlusIcon,
@@ -14,8 +14,9 @@ import {
 } from '@heroicons/react/24/outline'
 import { SendIcon, Loader2 } from 'lucide-react'
 import { useDocumentStore } from '@/store/documentStore'
-import { chatStore } from '@/store/chatStore'
+import { useChatStore } from '@/store/chatStore'
 import { useStreamStore } from '@/store/streamStore'
+import { usePatientStore } from '@/store/patientStore'
 import { Document } from '@/types/store/document'
 import { useRouter, usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,8 @@ import { PatientBasicInfo } from '@/types/kipu'
 import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog'
 import { useSidebarStore } from '@/store/sidebarStore'
 import { XMarkIcon, UserIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import { ChatStoreState } from '@/types/store/chat'
+import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore'
 
 // Define a type for patient context options
 type PatientContextOption = {
@@ -62,84 +65,76 @@ export function GlobalChatInputArea() {
   const pathname = usePathname()
   const router = useRouter()
 
-  // Get sidebar collapsed state from store
+  // Get sidebar state
   const { sidebarCollapsed } = useSidebarStore();
 
-  // Auto-resize textarea function
+  // Auto-resize textarea
   const autoResizeTextarea = () => {
     if (textareaRef.current) {
-      // Reset height to auto to get the correct scrollHeight
-      textareaRef.current.style.height = 'auto';
-      // Set height based on scrollHeight (with a small buffer to avoid scrollbar flickering)
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 24)}px`;
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 24)}px`
     }
-  };
+  }
 
-  // Initialize textarea height on component mount and when message changes
   useEffect(() => {
-    autoResizeTextarea();
-  }, [message]);
+    autoResizeTextarea()
+  }, [message])
 
-  // Use stores - declare all store variables first before using them in effects
+  // Destructure store functions directly from the refactored hooks
+
   // Chat store
   const {
     currentThread,
     sendMessage,
     transientFileQueue: storeFileQueue,
-    addFileToQueue,
-    removeFileFromQueue,
     setCurrentAssistantId,
-    clearFileQueue,
-    sendMessageWithFiles,
     createThread,
     activeRunStatus
-  } = chatStore()
+  } = useChatStore()
 
-  // Streaming store
+  // Document store – note we added uploadAndProcessDocument
   const {
-    isStreamingActive,
-    startStream,
-    cancelStream
-  } = useStreamStore()
-
-  // Patient context from PatientProvider
-  const { 
-    currentPatient, 
-    KipuPatientEvaluations, 
-    patientVitalSigns, 
-    allEvaluations,
-    isPatientContextEnabled,
-    fetchEvaluations,
-    fetchAllEvaluations,
-    patients,
-    togglePatientContext,
-    fetchVitalSigns,
-
-    selectPatient
-  } = usePatient()
-
-  // Document store
-  const {
-    documents,
-    isLoading: isDocumentsLoading,
-    fetchDocumentsForCurrentFacility
+    clearFileQueue,
+    sendMessageWithFiles,
+    addFileToQueue,
+    removeFileFromQueue,
+    fetchDocumentsForCurrentFacility,
+    uploadAndProcessDocument
   } = useDocumentStore()
 
-  // Facility store
+  // Stream store
+  const { isStreamingActive, startStream, cancelStream } = useStreamStore()
+
+  // Patient store – added selectPatient
+  const { currentPatient, isPatientContextEnabled, patients } = usePatientStore()
+const patientStore = usePatientStore.getState()
+const selectPatient = patientStore.setCurrentPatient // assuming this is the correct method
+
+  // Kipu Evaluations store – added fetchEvaluations and fetchAllEvaluations
   const {
-    getCurrentFacility,
-    currentFacilityId
-  } = useFacilityStore()
+    evaluationTemplates,
+    selectedEvaluationTemplate,
+    patientEvaluations: KipuPatientEvaluations,
+    selectedPatientEvaluation,
+    isLoading,
+    error
+  } = useKipuEvaluationsStore();
 
-  // Current facility object
-  const currentFacility = getCurrentFacility();
+  const kipuEvaluationsStore = useKipuEvaluationsStore.getState()
+  
+  // For documents (if needed separately)
+  const { documents, isLoading: isDocumentsLoading } = useDocumentStore()
 
-  // Sync isSubmitting state with isStreamingActive
+  // Facility store
+  const { getCurrentFacility, currentFacilityId } = useFacilityStore()
+  const currentFacility = getCurrentFacility()
+
+  // Sync submission state with streaming state
   useEffect(() => {
     if (!isStreamingActive && isSubmitting) {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  }, [isStreamingActive, isSubmitting]);
+  }, [isStreamingActive, isSubmitting])
 
   // Sync isSubmitting state with activeRunStatus
   useEffect(() => {
@@ -150,23 +145,22 @@ export function GlobalChatInputArea() {
     }
   }, [activeRunStatus, isStreamingActive, isSubmitting]);
 
-  // Fetch documents on mount and when facility changes
+  // Fetch documents when facility changes
   useEffect(() => {
     (async () => {
       try {
-        await fetchDocumentsForCurrentFacility();
+        await fetchDocumentsForCurrentFacility()
       } catch (error) {
         console.error('Failed to load documents:', error)
       }
     })()
   }, [fetchDocumentsForCurrentFacility, currentFacilityId])
 
-  // Reset document page when documents change
   useEffect(() => {
     setDocumentPage(0)
   }, [documents.length])
 
-  // Event handlers
+  // Event handlers remain largely the same…
   const toggleAttachFilesPanel = () => {
     setShowAttachFilesPanel(!showAttachFilesPanel)
     setShowPatientPanel(false)
@@ -186,7 +180,7 @@ export function GlobalChatInputArea() {
   }
 
   const handlePatientToggle = () => {
-    togglePatientContext()
+    togglePatientPanel()
     if (isPatientContextEnabled) {
       setSelectedContextOptions([])
     }
@@ -194,7 +188,7 @@ export function GlobalChatInputArea() {
 
   const selectPatientHandler = async (patient: PatientBasicInfo) => {
     if (currentFacilityId && patient.patientId) {
-      await selectPatient(patient.patientId)
+      await selectPatient(patient)
       setShowPatientPanel(false)
     }
   }
@@ -215,20 +209,13 @@ export function GlobalChatInputArea() {
     if (files && files.length > 0) {
       try {
         const file = files[0]
-        // Let the document store handle the entire file upload and processing
-        const documentStore = useDocumentStore.getState();
-        // Check if the method exists before calling it
-        if (typeof documentStore.uploadAndProcessDocument === 'function') {
-          const result = await documentStore.uploadAndProcessDocument(file);
-
-          if (result) {
-            console.log('Document uploaded and processed:', result)
-            // Let chat store handle adding to queue
-            addFileToQueue(result)
-            setShowAttachFilesPanel(false)
-          }
-        } else {
-          console.error('uploadAndProcessDocument method not available');
+        // Use the uploadAndProcessDocument function directly
+        const result = await uploadAndProcessDocument(file)
+        
+        if (result) {
+          console.log('Document uploaded and processed:', result)
+          addFileToQueue(result)
+          setShowAttachFilesPanel(false)
         }
       } catch (error) {
         console.error('File upload failed:', error)
@@ -285,6 +272,7 @@ export function GlobalChatInputArea() {
     setCurrentAssistantId(assistantId);
     console.log(`Assistant changed to: ${key}`)
   };
+  
   // Create dropdown items for the assistant selector
   const assistantDropdownItems = assistantRoster.map(assistant => ({
     label: assistant.name,
@@ -376,24 +364,23 @@ export function GlobalChatInputArea() {
         }
       }
 
-      // Delegate the message sending and file handling to the chat store
-      const result = await chatStore.getState().sendMessageWithFiles(
-        assistantId,
-        messageContent,
-        storeFileQueue
-      );
+      // Use sendMessageWithFiles if there are files, otherwise use regular sendMessage
+      let result;
+      if (storeFileQueue.length > 0) {
+        result = await sendMessageWithFiles(assistantId, messageContent, storeFileQueue);
+      } else {
+        result = await sendMessage(assistantId, messageContent, []);
+      }
 
-      if (result.success) {
-        // Start streaming the response with additionalInstructions
-        if (result.threadId) {
-          await useStreamStore.getState().startStream(
-            result.threadId,
-            assistantId,
-            additionalInstructions
-          );
-        } else {
-          console.error('No threadId returned from sendMessageWithFiles');
-        }
+      // Start streaming the response with additionalInstructions
+      if (result && result.threadId) {
+        await startStream(
+          result.threadId,
+          assistantId,
+          additionalInstructions
+        );
+      } else {
+        console.error('No threadId returned from sendMessageWithFiles');
       }
 
       // Clear the message input
@@ -430,9 +417,7 @@ export function GlobalChatInputArea() {
       setIsLoadingEvaluations(false);
     }
   };
-
-  return (
-    <div
+  <div
       className="fixed bottom-0 z-1000 transition-all duration-300 ease-in-out right-0 left-0 w-full"
     >
       <div
@@ -528,8 +513,8 @@ export function GlobalChatInputArea() {
                             // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
                             const assistantId = getCurrentAssistantId(selectedAssistantKey);
 
-                            // Create new thread with current assistant using the chatStore
-                            const threadId = await chatStore.getState().createThread(assistantId);
+                            // Create new thread with current assistant using the useChatStore
+                            const threadId = await useChatStore.getState().createThread(assistantId);
                             console.log(`Created new thread: ${threadId}`);
                             // Thread state is already updated by the createThread function
                           } catch (error) {
@@ -553,7 +538,7 @@ export function GlobalChatInputArea() {
                   {isPatientContextEnabled && currentPatient && (
                     <div className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs group">
                       <UserIcon className="h-3 w-3 mr-1" />
-                      <button 
+                      <button
                         onClick={openPatientContextBuilder}
                         className="font-medium mr-1 hover:underline focus:outline-none"
                       >
@@ -583,8 +568,8 @@ export function GlobalChatInputArea() {
 
                   {/* Document Attachment Tags */}
                   {storeFileQueue.map((file, index) => (
-                    <div 
-                      key={'document_id' in file ? file.document_id : index} 
+                    <div
+                      key={'document_id' in file ? file.document_id : index}
                       className="flex items-center bg-indigo-100 text-indigo-800 rounded-full px-3 py-1 text-xs"
                     >
                       <DocumentTextIcon className="h-3 w-3 mr-1" />

@@ -26,7 +26,8 @@ export async function GET(
         { status: 401 }
       );
     }
-
+    console.log('🔍 KIPU Single Evaluation Request:', { templateId });
+  
     // Get user ID for cache key
     const userId = session.user.id;
     // Get KIPU credentials
@@ -51,13 +52,33 @@ export async function GET(
         { status: 400 }
       );
     }
+// app/api/kipu/evaluations/[evaluationId]/route.ts
+// Fix for the type errors in the console logging section
+
+// Replace the problematic console.log with this:
+// Fix the console.log to remove statusCode reference
+console.log('🔍 KIPU Single Evaluation Response:', {
+  success: response.success,
+  // Remove the statusCode line completely
+  dataStructure: response.data ? {
+    // Type assertion to handle 'unknown' type
+    keys: Object.keys(response.data as Record<string, any>),
+    nestedKeys: Object.keys(response.data as Record<string, any>).reduce((acc, key) => {
+      const data = response.data as Record<string, any>;
+      acc[key] = typeof data[key] === 'object' ? 
+        (data[key] ? Object.keys(data[key]) : 'null') : 
+        typeof data[key];
+      return acc;
+    }, {} as Record<string, any>),
+    sampleData: JSON.stringify(response.data).substring(0, 1000) + '...'
+  } : 'no data'
+});
     
-    return NextResponse.json(response.data);
-    
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching evaluation template:', error);
+    console.error('❌ KIPU Single Evaluation Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch evaluation template', details: (error as Error).message },
+      { error: 'Failed to fetch KIPU evaluation', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
