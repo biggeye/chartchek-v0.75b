@@ -19,9 +19,8 @@ export default function KipuPatientEvaluationsPage() {
 
   const evaluationStats = [
     { id: 1, name: 'Total Evaluations', value: evaluations.length },
-    { id: 2, name: 'Completed', value: evaluations.filter(e => e.status === 'completed').length },
+    { id: 2, name: 'Completed', value: evaluations.filter(e => e.status === 'complete').length },
     { id: 3, name: 'In Progress', value: evaluations.filter(e => e.status === 'in_progress').length },
-    { id: 4, name: 'Pending', value: evaluations.filter(e => e.status === 'pending').length },
   ];
 
   if (isLoadingEvaluations) {
@@ -66,10 +65,10 @@ export default function KipuPatientEvaluationsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {patientEvaluations.map((evaluation) => (
                     <tr key={evaluation.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{evaluation.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{evaluation.evaluationName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          evaluation.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                          evaluation.status === 'complete' ? 'bg-green-100 text-green-800' : 
                           evaluation.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
                           'bg-yellow-100 text-yellow-800'
                         }`}>

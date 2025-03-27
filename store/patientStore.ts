@@ -35,20 +35,14 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   selectedPatient: null,
   evaluations: [],
   vitalSigns: [],
-  currentPatientEvaluations: [],
-  selectedPatientEvaluations: [],
   currentPatientVitalSigns: [],
   selectedPatientVitalSigns: [],
-  selectedPatientAppointments: [],
-  allPatientEvaluations: [],
   isPatientContextEnabled: false,
   selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   isLoading: false,
   isLoadingPatients: false,
-  isLoadingEvaluations: false,
   isLoadingVitalSigns: false,
-  isLoadingAppointments: false,
   error: null,
 
   /*
@@ -75,14 +69,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   // Set current patient
   setCurrentPatient: (patient: PatientBasicInfo) => set({ currentPatient: patient }),
 
-  // Set evaluations
-  setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => set({ evaluations }),
-
   // Set vital signs
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => set({ vitalSigns }),
-
-  // Set all patient evaluations
-  setAllPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => set({ allPatientEvaluations: evaluations }),
 
   // Set context options
   setPatientContextOptions: (options: Partial<PatientContextOptions>) => set({
@@ -141,22 +129,15 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       currentPatientId: null,
       currentPatient: null,
       selectedPatient: null,
-      evaluations: [],
       vitalSigns: [],
-      currentPatientEvaluations: [],
-      selectedPatientEvaluations: [],
       currentPatientVitalSigns: [],
       selectedPatientVitalSigns: [],
-      selectedPatientAppointments: [],
-      allPatientEvaluations: [],
       isPatientContextEnabled: false,
       selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       isLoading: false,
       isLoadingPatients: false,
-      isLoadingEvaluations: false,
       isLoadingVitalSigns: false,
-      isLoadingAppointments: false,
       error: null
     });
   },
@@ -265,131 +246,18 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     }
   },
 
-  // Fetch patient evaluations
-  fetchPatientEvaluations: async (patientId: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      // Use our new kipuEvaluationsStore to fetch patient evaluations
-      await useKipuEvaluationsStore.getState().fetchPatientEvaluations(patientId);
-      
-      // Get the evaluations from the kipuEvaluationsStore
-      const patientEvaluations = useKipuEvaluationsStore.getState().patientEvaluations;
-      
-      // Convert to the expected type
-      const convertedEvaluations: KipuPatientEvaluation[] = patientEvaluations.map(item => ({
-        id: item.evaluation_id?.toString() || '',
-        name: item.evaluation_name || '',
-        createdAt: item.created_at || '',
-        patientId: item.patient_id?.toString() || '',
-        status: item.status || '',
-        updatedAt: item.updated_at || ''
-        // Remove completedAt as it doesn't exist in the interface
-      }));
-      
-      // Update our local state
-      set({ 
-        evaluations: convertedEvaluations,
-        isLoading: false 
-      });
-      
-      return convertedEvaluations;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ 
-        error: `Failed to fetch patient evaluations: ${errorMessage}`,
-        isLoading: false 
-      });
-      return [];
-    }
-  },
-
-  // Fetch patient evaluation by ID
-  fetchPatientEvaluation: async (evaluationId: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      // Use our new kipuEvaluationsStore to fetch a specific patient evaluation
-      await useKipuEvaluationsStore.getState().fetchPatientEvaluationById(Number(evaluationId));
-      
-      // Get the selected evaluation from the kipuEvaluationsStore
-      const selectedEvaluation = useKipuEvaluationsStore.getState().selectedPatientEvaluation;
-      
-      if (!selectedEvaluation) {
-        throw new Error(`Evaluation with ID ${evaluationId} not found`);
-      }
-      
-      // Convert to the expected type
-      const convertedEvaluation: KipuPatientEvaluation = {
-        id: selectedEvaluation.evaluation_id?.toString() || '',
-        name: selectedEvaluation.evaluation_name || '',
-        createdAt: selectedEvaluation.created_at || '',
-        patientId: selectedEvaluation.patient_id?.toString() || '',
-        status: selectedEvaluation.status || '',
-        updatedAt: selectedEvaluation.updated_at || ''
-        // Remove completedAt as it doesn't exist in the interface
-      };
-      
-      
-      set({ isLoading: false });
-      return convertedEvaluation;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ 
-        error: `Failed to fetch patient evaluation: ${errorMessage}`,
-        isLoading: false 
-      });
-      return null;
-    }
-  },
-
-  // Fetch all evaluations across patients
-  fetchAllPatientEvaluations: async (options = {}) => {
-    set({ isLoadingEvaluations: true, error: null });
-    try {
-      // Build query parameters
-      const queryParams = new URLSearchParams({
-        page: '1',
-        per: '20'
-      });
-
-      // Add any options as query parameters
-      Object.entries(options).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-
-      const response = await fetch(`/api/kipu/patient_evaluations?${queryParams.toString()}`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch all evaluations: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      const evaluations = result.success && result.data ? result.data : [];
-
-      set({ allPatientEvaluations: evaluations, isLoading: false });
-      return evaluations;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error fetching all evaluations:', error);
-      set({ isLoading: false, error: errorMessage });
-      return [];
-    }
-  },
 
   // Fetch patient vital signs
   fetchPatientVitalSigns: async (patientId: string) => {
     set({ isLoadingVitalSigns: true, error: null });
     try {
       const encodedId = encodePatientIdForUrl(patientId);
-      const response = await fetch(`/api/kipu/patients/${encodedId}/vital-signs`);
-
+      const response = await fetch(`/api/kipu/patients/${encodedId}/vitals`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch vital signs: ${response.statusText}`);
+        console.warn(`Failed to fetch vital signs: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log("Raw vital signs data:", result);
 
       // Transform the data to match VitalSign interface
       const transformedVitalSigns = result.vital_signs?.map((vs: any) => ({
@@ -421,7 +289,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       return transformedVitalSigns;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error fetching patient vital signs:', error);
+      console.warn('Error fetching patient vital signs:', error);
       set({
         isLoadingVitalSigns: false,
         error: errorMessage,
@@ -470,8 +338,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       };
 
       set({
-        selectedPatientEvaluations: evaluations,
-        currentPatientEvaluations: evaluations,
         selectedPatientVitalSigns: vitalSigns,
         currentPatientVitalSigns: vitalSigns,
         isLoading: false
@@ -491,7 +357,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     set({
       currentPatientId: null,
       currentPatient: null,
-      currentPatientEvaluations: [],
       currentPatientVitalSigns: [],
       isPatientContextEnabled: false
     });

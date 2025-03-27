@@ -72,7 +72,7 @@ export async function GET(
       }
 
       const response = await kipuGetPatientEvaluations(decodedPatientId, credentials);
-      console.log('[api] kipuGetPatientEvaluations: ', response);
+
         if (!response.success || !response.data) {
         console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Failed to fetch patient evaluations from KIPU: ${response.error?.message || 'Unknown error'}`);
         return NextResponse.json(

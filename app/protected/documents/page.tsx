@@ -93,7 +93,6 @@ export default function DocumentsPage() {
             documents={documents} 
             isLoading={isLoading}
             detailsUrlPrefix="/protected/documents"
-            className="overflow-x-auto"
           />
                   
         </TabsContent>

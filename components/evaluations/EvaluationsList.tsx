@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuEvaluationItem, PatientEvaluation } from '@/types/kipu/evaluations';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -152,7 +152,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleViewDetails(evaluation)}
                   >
-                    <TableCell className="font-medium">{evaluation.type}</TableCell>
                     <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
                     <TableCell>{formatDate(evaluation.createdAt)}</TableCell>
                     <TableCell>
@@ -205,15 +204,15 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
             <>
               <DialogHeader>
                 <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl">{selectedEvaluation.evaluation_type}</DialogTitle>
+                  <DialogTitle className="text-xl">{selectedEvaluation.evaluationId}</DialogTitle>
                   {getStatusBadge(selectedEvaluation.status)}
                 </div>
                 <DialogDescription className="flex items-center gap-2 mt-1">
                   <CalendarIcon className="h-4 w-4" />
-                  {formatDate(selectedEvaluation.created_at)}
-                  {selectedEvaluation.provider_name && (
+                  {formatDate(selectedEvaluation.createdAt)}
+                  {selectedEvaluation.createdBy && (
                     <span className="text-sm">
-                      by {selectedEvaluation.provider_name}
+                      by {selectedEvaluation.createdBy}
                     </span>
                   )}
                 </DialogDescription>
@@ -223,11 +222,11 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Patient ID</h4>
-                    <p>{selectedEvaluation.patient_id}</p>
+                    <p>{selectedEvaluation.patientId}</p>
                   </div>
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Last Updated</h4>
-                    <p>{selectedEvaluation.updated_at ? formatDate(selectedEvaluation.updated_at) : 'N/A'}</p>
+                    <p>{selectedEvaluation.updatedAt ? formatDate(selectedEvaluation.updatedAt) : 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Evaluation ID</h4>
@@ -258,7 +257,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                   }}>
                     <textarea
                       id="notes"
-                      defaultValue={selectedEvaluation.notes || ''}
                       rows={6}
                       className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border w-full min-h-[150px]"
                     />
@@ -286,19 +284,19 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                 ) : (
                   <div className="space-y-4">
                     <div className="bg-gray-50 p-6 rounded-md whitespace-pre-wrap border min-h-[150px]">
-                      {selectedEvaluation.notes || 'No notes recorded'}
+                      'No notes recorded'
                     </div>
                   </div>
                 )}
-                {selectedEvaluation.items && selectedEvaluation.items.length > 0 && (
+                {selectedEvaluation.evaluationItems && selectedEvaluation.evaluationItems.length > 0 && (
                   <div className="mt-6 space-y-4">
                     <h3 className="text-lg font-semibold">Assessment Items</h3>
                     <div className="border rounded-md divide-y">
-                      {selectedEvaluation.items.map((item: KipuEvaluationItemObject) => (
+                      {selectedEvaluation.evaluationItems.map((item: KipuEvaluationItem) => (
                         <div key={item.id} className="p-4">
-                          <div className="font-medium">{item.question}</div>
+                          <div className="font-medium">{item.label}</div>
                           <div className="text-gray-700 mt-1">
-                            {item.answer || 'No response'}
+                            {item.name || 'No response'}
                           </div>
                         </div>
                       ))}

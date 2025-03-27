@@ -52,30 +52,21 @@ export interface PatientStore {
   currentPatientId: string | null;
   currentPatient: PatientBasicInfo | null;
   selectedPatient: PatientBasicInfo | null;  // Added
-  evaluations: KipuPatientEvaluation[];
   vitalSigns: PatientVitalSign[];
-  currentPatientEvaluations: KipuPatientEvaluation[];
-  selectedPatientEvaluations: KipuPatientEvaluation[];  // Added
   currentPatientVitalSigns: PatientVitalSign[];
   selectedPatientVitalSigns: PatientVitalSign[];  // Added
-  selectedPatientAppointments: any[];  // Added
-  allPatientEvaluations: KipuPatientEvaluation[];
   isPatientContextEnabled: boolean;
   selectedContextOptions: PatientContextOptions;
   contextOptions: PatientContextOptions;
   isLoading: boolean;
-  isLoadingPatients: boolean;
-  isLoadingEvaluations: boolean;  // Added
+  isLoadingPatients: boolean; // Added
   isLoadingVitalSigns: boolean;  // Added
-  isLoadingAppointments: boolean;  // Added
   error: string | null;
 
   // Actions
   setPatients: (patients: PatientBasicInfo[]) => void;
   setCurrentPatientId: (patientId: string | null) => void;
   setCurrentPatient: (patient: PatientBasicInfo) => void;
-  setPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
-  setAllPatientEvaluations: (evaluations: KipuPatientEvaluation[]) => void;
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => void;
 
   fetchPatientsAdmissionsByFacility: (facilityId: number, page?: number, limit?: number, startDate?: string, endDate?: string) => Promise<PatientBasicInfo[]>;
@@ -83,10 +74,6 @@ export interface PatientStore {
   fetchPatients: (facilityId: number) => Promise<PatientBasicInfo[]>;
   fetchPatientById: (patientId: string) => Promise<PatientBasicInfo | null>;
   fetchPatientWithDetails: (patientId: string) => Promise<PatientWithDetails | null>;
-
-  fetchPatientEvaluations: (patientId: string) => Promise<KipuPatientEvaluation[]>;
-  fetchPatientEvaluation: (evaluationId: string) => Promise<KipuPatientEvaluation | null>;
-  fetchAllPatientEvaluations: () => Promise<KipuPatientEvaluation[]>; // Added
 
   fetchPatientVitalSigns: (patientId: string, options?: { skipLoadingState?: boolean }) => Promise<PatientVitalSign[]>;
 

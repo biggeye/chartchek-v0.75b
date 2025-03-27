@@ -60,7 +60,7 @@ export async function GET(
       page,
       limit
     );
-
+console.log('[api] patientVitalSigns: ', response); 
     if (!response.success || !response.data) {
       console.error(`[/api/kipu/patients/${patientId}/vitals] API Route - Failed to fetch patient vital signs from KIPU: ${response.error?.message || 'Unknown error'}`);
       return NextResponse.json(

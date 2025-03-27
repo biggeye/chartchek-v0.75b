@@ -218,7 +218,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
                                     {currentPatient && <PatientInfoCard patient={currentPatient} />}
                                     </div>
                                     <div className="space-y-6">
-                                        <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} />
+                                      {adaptedVitalSigns &&  <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} /> }
                                         <EvaluationsCard adaptedEvaluations={adaptedEvaluations as any} />
                                     </div>
                                 </div>

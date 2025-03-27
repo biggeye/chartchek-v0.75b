@@ -263,7 +263,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         </main>
       <PDFGeneratorListener />
       <DebugPanel />
-      <Footer />
+   
     </div>
 
   )
