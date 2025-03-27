@@ -178,5 +178,5 @@ export interface EnhancedDocumentStoreState extends DocumentStoreState {
   clearFileQueue: () => void;
   
   // Combined operations
-  sendMessageWithFiles: (assistantId: string, content: string, files: Document[]) => Promise<any>;
+  sendMessageWithFiles: (assistantId: string, threadId: string, content: string, files?: Document[]) => Promise<any>;
 }

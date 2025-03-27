@@ -5,6 +5,22 @@ import {
   PatientVitalSign,
 } from '@/types/kipu';
 
+// types/store/chat.ts
+
+export interface PatientContext {
+  patientId: string | null;
+  patientName: string | null;
+  facilityId?: string | null;
+}
+// components/chat/GlobalChatInput.tsx
+
+export type PatientContextOption = {
+  id: string;
+  label: string;
+  value: string;
+  category: 'basic' | 'evaluation' | 'vitalSigns' | 'appointments';
+}
+
 // Patient context options for filtering and display
 export interface PatientContextOptions {
   showInactive: boolean;

@@ -1,9 +1,8 @@
 import { createServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
-import { PatientProvider } from "@/lib/contexts/PatientProvider";
 import AppLayout from "./AppLayout";
-
+import Footer from "@/components/ui/modules/Footer";
 export default async function ProtectedLayout({
   children
 }: {
@@ -19,12 +18,11 @@ export default async function ProtectedLayout({
       redirect("/login");
   }
   return (
-    <div suppressHydrationWarning={true}>
-        <PatientProvider>
-          <AppLayout user_id={user.id}>
+
+          <AppLayout user_id={user.id} >
             {children}
+
           </AppLayout>
-        </PatientProvider>
-    </div>
+
   );
 }

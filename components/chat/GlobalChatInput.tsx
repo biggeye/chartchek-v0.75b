@@ -1,69 +1,59 @@
-'use client'
-
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react';
 import {
   PaperClipIcon,
   UserPlusIcon,
-  XCircleIcon,
+  XMarkIcon,
   ChatBubbleBottomCenterIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
   DocumentIcon,
   AdjustmentsHorizontalIcon,
-  PlusIcon
-} from '@heroicons/react/24/outline'
-import { SendIcon, Loader2 } from 'lucide-react'
-import { useDocumentStore } from '@/store/documentStore'
-import { useChatStore } from '@/store/chatStore'
-import { useStreamStore } from '@/store/streamStore'
-import { usePatientStore } from '@/store/patientStore'
-import { Document } from '@/types/store/document'
-import { useRouter, usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import * as Headless from '@headlessui/react'
-import { Button } from '@/components/ui/button'
-import { assistantRoster } from '@/lib/assistant/roster'
-import DropdownMenu from '@/components/ui/dropdown-menu2'
-import Image from 'next/image'
-import { Transition } from '@headlessui/react'
-import { DynamicPaginatedDocumentList } from '@/components/documents/DynamicPaginatedDocumentList'
-import { usePatient } from '@/lib/contexts/PatientProvider'
-import { useFacilityStore } from '@/store/facilityStore'
-import { PatientBasicInfo } from '@/types/kipu'
-import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog'
-import { useSidebarStore } from '@/store/sidebarStore'
-import { XMarkIcon, UserIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
-import { ChatStoreState } from '@/types/store/chat'
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore'
+  PlusIcon,
+  UserIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
+import { SendIcon, Loader2 } from 'lucide-react';
+import { useDocumentStore } from '@/store/documentStore';
+import { useChatStore } from '@/store/chatStore';
+import { useStreamStore } from '@/store/streamStore';
+import { usePatientStore } from '@/store/patientStore';
+import { useRouter, usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import * as Headless from '@headlessui/react';
+import { Button } from '@/components/ui/button';
+import { assistantRoster } from '@/lib/assistant/roster';
+import DropdownMenu from '@/components/ui/dropdown-menu2';
+import Image from 'next/image';
+import { Transition } from '@headlessui/react';
+import { DynamicPaginatedDocumentList } from '@/components/documents/DynamicPaginatedDocumentList';
+import { usePatient } from '@/lib/contexts/PatientProvider';
+import { useFacilityStore } from '@/store/facilityStore';
+import { PatientBasicInfo } from '@/types/kipu';
+import { Document } from '@/types/store/document';
 
-// Define a type for patient context options
-type PatientContextOption = {
-  id: string
-  label: string
-  value: string
-  category: 'basic' | 'evaluation' | 'vitalSigns' | 'appointments'
-}
+import { PatientContextOption, PatientContextOptions } from '@/types/store/patient'
+import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog';
+import { useSidebarStore } from '@/store/sidebarStore';
+import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
 
-export function GlobalChatInputArea() {
+export default function GlobalChatInput() {
   // State management
-  const [message, setMessage] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showAttachFilesPanel, setShowAttachFilesPanel] = useState(false)
-  const [showPatientPanel, setShowPatientPanel] = useState(false)
-  const [showDocumentListPanel, setShowDocumentListPanel] = useState(false)
-  const [documentPage, setDocumentPage] = useState(0)
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [selectedAssistantKey, setSelectedAssistantKey] = useState<string>(assistantRoster[0].key)
-  const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false)
-  const [selectedContextOptions, setSelectedContextOptions] = useState<PatientContextOption[]>([])
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [showEvaluationsPanel, setShowEvaluationsPanel] = useState(false)
-  const [isLoadingEvaluations, setIsLoadingEvaluations] = useState(false)
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAttachFilesPanel, setShowAttachFilesPanel] = useState(false);
+  const [showPatientPanel, setShowPatientPanel] = useState(false);
+  const [showDocumentListPanel, setShowDocumentListPanel] = useState(false);
+  const [documentPage, setDocumentPage] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedAssistantKey, setSelectedAssistantKey] = useState<string>(assistantRoster[0].key);
+  const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false);
+  const [selectedContextOptions, setSelectedContextOptions] = useState<PatientContextOptions[]>([]);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showEvaluationsPanel, setShowEvaluationsPanel] = useState(false);
+  const [isLoadingEvaluations, setIsLoadingEvaluations] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const pathname = usePathname()
-  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   // Get sidebar state
   const { sidebarCollapsed } = useSidebarStore();
@@ -71,14 +61,14 @@ export function GlobalChatInputArea() {
   // Auto-resize textarea
   const autoResizeTextarea = () => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 24)}px`
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 24)}px`;
     }
-  }
+  };
 
   useEffect(() => {
-    autoResizeTextarea()
-  }, [message])
+    autoResizeTextarea();
+  }, [message]);
 
   // Destructure store functions directly from the refactored hooks
 
@@ -90,9 +80,9 @@ export function GlobalChatInputArea() {
     setCurrentAssistantId,
     createThread,
     activeRunStatus
-  } = useChatStore()
+  } = useChatStore();
 
-  // Document store – note we added uploadAndProcessDocument
+  // Document store
   const {
     clearFileQueue,
     sendMessageWithFiles,
@@ -100,17 +90,17 @@ export function GlobalChatInputArea() {
     removeFileFromQueue,
     fetchDocumentsForCurrentFacility,
     uploadAndProcessDocument
-  } = useDocumentStore()
+  } = useDocumentStore();
 
   // Stream store
-  const { isStreamingActive, startStream, cancelStream } = useStreamStore()
+  const { isStreamingActive, startStream, cancelStream } = useStreamStore();
 
-  // Patient store – added selectPatient
-  const { currentPatient, isPatientContextEnabled, patients } = usePatientStore()
-const patientStore = usePatientStore.getState()
-const selectPatient = patientStore.setCurrentPatient // assuming this is the correct method
+  // Patient store
+  const { currentPatient, isPatientContextEnabled, patients } = usePatientStore();
+  const patientStore = usePatientStore.getState();
+  const selectPatient = patientStore.setCurrentPatient;
 
-  // Kipu Evaluations store – added fetchEvaluations and fetchAllEvaluations
+  // Kipu Evaluations store
   const {
     evaluationTemplates,
     selectedEvaluationTemplate,
@@ -120,21 +110,21 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
     error
   } = useKipuEvaluationsStore();
 
-  const kipuEvaluationsStore = useKipuEvaluationsStore.getState()
-  
+  const kipuEvaluationsStore = useKipuEvaluationsStore.getState();
+
   // For documents (if needed separately)
-  const { documents, isLoading: isDocumentsLoading } = useDocumentStore()
+  const { documents, isLoading: isDocumentsLoading } = useDocumentStore();
 
   // Facility store
-  const { getCurrentFacility, currentFacilityId } = useFacilityStore()
-  const currentFacility = getCurrentFacility()
+  const { getCurrentFacility, currentFacilityId } = useFacilityStore();
+  const currentFacility = getCurrentFacility();
 
   // Sync submission state with streaming state
   useEffect(() => {
     if (!isStreamingActive && isSubmitting) {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }, [isStreamingActive, isSubmitting])
+  }, [isStreamingActive, isSubmitting]);
 
   // Sync isSubmitting state with activeRunStatus
   useEffect(() => {
@@ -149,110 +139,110 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
   useEffect(() => {
     (async () => {
       try {
-        await fetchDocumentsForCurrentFacility()
+        await fetchDocumentsForCurrentFacility();
       } catch (error) {
-        console.error('Failed to load documents:', error)
+        console.error('Failed to load documents:', error);
       }
-    })()
-  }, [fetchDocumentsForCurrentFacility, currentFacilityId])
+    })();
+  }, [fetchDocumentsForCurrentFacility, currentFacilityId]);
 
   useEffect(() => {
-    setDocumentPage(0)
-  }, [documents.length])
+    setDocumentPage(0);
+  }, [documents.length]);
 
-  // Event handlers remain largely the same…
+  // Event handlers remain largely the same
   const toggleAttachFilesPanel = () => {
-    setShowAttachFilesPanel(!showAttachFilesPanel)
-    setShowPatientPanel(false)
-    setShowDocumentListPanel(false)
-  }
+    setShowAttachFilesPanel(!showAttachFilesPanel);
+    setShowPatientPanel(false);
+    setShowDocumentListPanel(false);
+  };
 
   const togglePatientPanel = () => {
-    setShowPatientPanel(!showPatientPanel)
-    setShowAttachFilesPanel(false)
-    setShowDocumentListPanel(false)
-  }
+    setShowPatientPanel(!showPatientPanel);
+    setShowAttachFilesPanel(false);
+    setShowDocumentListPanel(false);
+  };
 
   const toggleDocumentListPanel = () => {
-    setShowDocumentListPanel(!showDocumentListPanel)
-    setShowAttachFilesPanel(false)
-    setShowPatientPanel(false)
-  }
+    setShowDocumentListPanel(!showDocumentListPanel);
+    setShowAttachFilesPanel(false);
+    setShowPatientPanel(false);
+  };
 
   const handlePatientToggle = () => {
-    togglePatientPanel()
+    togglePatientPanel();
     if (isPatientContextEnabled) {
-      setSelectedContextOptions([])
+      setSelectedContextOptions([]);
     }
-  }
+  };
 
   const selectPatientHandler = async (patient: PatientBasicInfo) => {
     if (currentFacilityId && patient.patientId) {
-      await selectPatient(patient)
-      setShowPatientPanel(false)
+      await selectPatient(patient);
+      setShowPatientPanel(false);
     }
-  }
+  };
 
   const openPatientContextBuilder = () => {
     if (currentPatient && isPatientContextEnabled) {
-      setIsPatientContextBuilderOpen(true)
+      setIsPatientContextBuilderOpen(true);
     }
-  }
+  };
 
-  const handleContextBuilderApply = (options: PatientContextOption[]) => {
-    setSelectedContextOptions(options)
-    setIsPatientContextBuilderOpen(false)
-  }
+  const handleContextBuilderApply = (options: PatientContextOptions[]) => {
+    setSelectedContextOptions(options);
+    setIsPatientContextBuilderOpen(false);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
+    const files = event.target.files;
     if (files && files.length > 0) {
       try {
-        const file = files[0]
+        const file = files[0];
         // Use the uploadAndProcessDocument function directly
-        const result = await uploadAndProcessDocument(file)
-        
+        const result = await uploadAndProcessDocument(file);
+
         if (result) {
-          console.log('Document uploaded and processed:', result)
-          addFileToQueue(result)
-          setShowAttachFilesPanel(false)
+          console.log('Document uploaded and processed:', result);
+          addFileToQueue(result);
+          setShowAttachFilesPanel(false);
         }
       } catch (error) {
-        console.error('File upload failed:', error)
+        console.error('File upload failed:', error);
       }
     }
-  }
+  };
 
   const removeFile = (index: number) => {
-    const fileToRemove = storeFileQueue[index]
-    removeFileFromQueue(fileToRemove)
-  }
+    const fileToRemove = storeFileQueue[index];
+    removeFileFromQueue(fileToRemove);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
+      e.preventDefault();
+      handleSubmit();
     }
-  }
+  };
 
   const handleCheckboxChange = (doc: Document) => {
     if (!doc.openai_file_id) {
-      console.warn(`Document ${doc.file_name} has no OpenAI file id yet.`)
-      return
+      console.warn(`Document ${doc.file_name} has no OpenAI file id yet.`);
+      return;
     }
 
     if (storeFileQueue.some((f: Document) => f.document_id === doc.document_id)) {
-      removeFileFromQueue(doc)
+      removeFileFromQueue(doc);
     } else {
-      addFileToQueue(doc)
+      addFileToQueue(doc);
     }
-  }
+  };
 
   // Determine if the current thread is active
   const isThreadActive =
     currentThread &&
     currentThread.tool_resources?.file_search?.vector_store_ids &&
-    currentThread.tool_resources.file_search.vector_store_ids[0] !== 'temp-vector-store'
+    currentThread.tool_resources.file_search.vector_store_ids[0] !== 'temp-vector-store';
 
   // Get the current assistant ID based on the selected key
   const getCurrentAssistantId = (key: string): string => {
@@ -270,9 +260,9 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
     setSelectedAssistantKey(key);
     const assistantId = getCurrentAssistantId(key);
     setCurrentAssistantId(assistantId);
-    console.log(`Assistant changed to: ${key}`)
+    console.log(`Assistant changed to: ${key}`);
   };
-  
+
   // Create dropdown items for the assistant selector
   const assistantDropdownItems = assistantRoster.map(assistant => ({
     label: assistant.name,
@@ -304,6 +294,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
     try {
       // Get the assistant ID based on the selected key
       const assistantId = getCurrentAssistantId(selectedAssistantKey);
+      const threadId = useChatStore.getState().currentThread?.thread_id;
 
       if (!assistantId) {
         throw new Error('No assistant ID available. Please check your configuration.');
@@ -318,47 +309,10 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
           // Create a properly formatted patient context with all selected data
           const patientHeader = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
 
-          // Group options by category for better organization
-          const categorizedOptions: Record<string, string[]> = {};
-
-          selectedContextOptions.forEach(opt => {
-            if (!categorizedOptions[opt.category]) {
-              categorizedOptions[opt.category] = [];
-            }
-            categorizedOptions[opt.category].push(opt.value);
-          });
-
+        
           // Build context string with category headers
           const contextSections: string[] = [patientHeader];
 
-          // Add Basic Info section
-          if (categorizedOptions['basic'] && categorizedOptions['basic'].length > 0) {
-            contextSections.push('--- Basic Information ---');
-            contextSections.push(categorizedOptions['basic'].join('\n'));
-          }
-
-          // Add Evaluations section
-          if (categorizedOptions['evaluation'] && categorizedOptions['evaluation'].length > 0) {
-            contextSections.push('--- Evaluations ---');
-            contextSections.push(categorizedOptions['evaluation'].join('\n'));
-          }
-
-          // Add Vital Signs section
-          if (categorizedOptions['vitalSigns'] && categorizedOptions['vitalSigns'].length > 0) {
-            contextSections.push('--- Vital Signs ---');
-            contextSections.push(categorizedOptions['vitalSigns'].join('\n'));
-          }
-
-          // Add Appointments section
-          if (categorizedOptions['appointments'] && categorizedOptions['appointments'].length > 0) {
-            contextSections.push('--- Appointments ---');
-            contextSections.push(categorizedOptions['appointments'].join('\n'));
-          }
-
-          additionalInstructions = contextSections.join('\n\n');
-
-          console.log('Patient context being sent to the API:', additionalInstructions);
-        } else {
           // Use basic patient info if no specific options were selected
           additionalInstructions = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
         }
@@ -367,9 +321,9 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
       // Use sendMessageWithFiles if there are files, otherwise use regular sendMessage
       let result;
       if (storeFileQueue.length > 0) {
-        result = await sendMessageWithFiles(assistantId, messageContent, storeFileQueue);
+        result = await sendMessageWithFiles(assistantId, threadId!, messageContent, storeFileQueue);
       } else {
-        result = await sendMessage(assistantId, messageContent, []);
+        result = await sendMessage(assistantId, threadId!, messageContent);
       }
 
       // Start streaming the response with additionalInstructions
@@ -402,12 +356,12 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
     try {
       if (currentPatient?.patientId) {
         // Fetch evaluations for the current patient
-        await fetchEvaluations(currentPatient.patientId);
+        await kipuEvaluationsStore.fetchPatientEvaluations(currentPatient.patientId);
         console.log('Patient evaluations fetched:', KipuPatientEvaluations);
-        
+
         // Optionally fetch all evaluations
-        await fetchAllEvaluations();
-        console.log('All evaluations fetched:', allEvaluations);
+        await useKipuEvaluationsStore.getState().fetchPatientEvaluations
+        console.log('All evaluations fetched:', useKipuEvaluationsStore.getState().fetchPatientEvaluations);
       } else {
         console.warn('Cannot fetch evaluations: No facility or patient selected');
       }
@@ -417,12 +371,10 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
       setIsLoadingEvaluations(false);
     }
   };
-  <div
-      className="fixed bottom-0 z-1000 transition-all duration-300 ease-in-out right-0 left-0 w-full"
-    >
-      <div
-        className="w-full px-2 sm:px-4 lg:px-6 flex justify-center"
-      >
+
+  return (
+    <div className="fixed bottom-0 z-1000 transition-all duration-300 ease-in-out right-0 left-0 w-full">
+      <div className="w-full px-2 sm:px-4 lg:px-6 flex justify-center">
         <div
           className={`
             ${!isExpanded
@@ -493,7 +445,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                     </div>
                   </div>
                 </div>
-
+  
                 {/* Centered HIDE button */}
                 <button
                   onClick={() => setIsExpanded(false)}
@@ -501,7 +453,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                 >
                   HIDE
                 </button>
-
+  
                 {/* Right side with New conversation button in a tab */}
                 <div className="flex items-center">
                   {/* New conversation button */}
@@ -512,7 +464,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                           try {
                             // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
                             const assistantId = getCurrentAssistantId(selectedAssistantKey);
-
+  
                             // Create new thread with current assistant using the useChatStore
                             const threadId = await useChatStore.getState().createThread(assistantId);
                             console.log(`Created new thread: ${threadId}`);
@@ -530,7 +482,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                   </div>
                 </div>
               </div>
-
+  
               {/* Unified Context and Attachments Row - Only show when there's content */}
               {((isPatientContextEnabled && currentPatient) || storeFileQueue.length > 0) && (
                 <div className="flex flex-wrap gap-2 px-3 py-2 border-x-2 border-t-2 border-gray-300 bg-gray-50">
@@ -565,7 +517,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                       </button>
                     </div>
                   )}
-
+  
                   {/* Document Attachment Tags */}
                   {storeFileQueue.map((file, index) => (
                     <div
@@ -586,7 +538,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                   ))}
                 </div>
               )}
-
+  
               {/* Main Input Area - Expanded to full width */}
               <div className="relative">
                 <div
@@ -606,9 +558,9 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                         className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
                       >
                         <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
-
+  
                       </button>
-
+  
                       {showMobileMenu && (
                         <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-[100]">
                           <div className="py-1">
@@ -656,7 +608,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                         </div>
                       )}
                     </div>
-
+  
                     {/* Desktop individual buttons */}
                     <div className="hidden md:flex items-center">
                       <div className="relative">
@@ -669,7 +621,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                           <PaperClipIcon className="h-5 w-5" />
                         </button>
                       </div>
-
+  
                       <div className="relative z-[100]">
                         <button
                           type="button"
@@ -680,7 +632,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                           <UserPlusIcon className="h-5 w-5" />
                         </button>
                       </div>
-
+  
                       <div className="relative">
                         <button
                           type="button"
@@ -703,7 +655,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                       </div>
                     </div>
                   </div>
-
+  
                   <textarea
                     rows={1}
                     name="message"
@@ -719,7 +671,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                     className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
                     placeholder="Type your message..."
                   />
-
+  
                   {/* Right side send button */}
                   <div className="flex-shrink-0 ml-2 pl-2 border-l">
                     <button
@@ -755,7 +707,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                 className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={toggleAttachFilesPanel}
               />
-
+  
               {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
@@ -776,7 +728,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                       <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
-
+  
                   {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
                     <div className="flex flex-col items-center justify-center space-y-4 py-8">
@@ -807,7 +759,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                       </div>
                     </div>
                   </div>
-
+  
                   {/* Modal Footer */}
                   <div className="border-t p-4 flex justify-between">
                     <Button
@@ -830,7 +782,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
               </Headless.Transition.Child>
             </div>
           </Headless.Transition>
-
+  
           {/* Document List Modal */}
           <Headless.Transition
             show={showDocumentListPanel}
@@ -847,7 +799,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                 className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={toggleDocumentListPanel}
               />
-
+  
               {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
@@ -862,7 +814,7 @@ const selectPatient = patientStore.setCurrentPatient // assuming this is the cor
                   <div className="flex items-center p-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
                   </div>
-
+  
                   {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
                     {/* Use the new DynamicPaginatedDocumentList component */}

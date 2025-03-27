@@ -12,7 +12,7 @@ interface KipuEvaluationsState {
   selectedPatientEvaluation: KipuPatientEvaluation | null;
   
   // UI State
-  isLoading: boolean;
+  isLoadingEvaluations: boolean;
   error: string | null;
   
   // Actions - Evaluation Templates
@@ -32,12 +32,12 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
   selectedEvaluationTemplate: null,
   patientEvaluations: [],
   selectedPatientEvaluation: null,
-  isLoading: false,
+  isLoadingEvaluations: false,
   error: null,
   
   // Evaluation Templates actions
   fetchEvaluationTemplates: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingEvaluations: true, error: null });
     try {
       const response = await fetch('/api/kipu/evaluation-templates');
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -54,12 +54,12 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
       set({ error: `Failed to fetch evaluation templates: ${errorMessage}` });
       console.error('Error fetching evaluation templates:', error);
     } finally {
-      set({ isLoading: false });
+      set({ isLoadingEvaluations: false });
     }
   },
   
   fetchEvaluationTemplateById: async (id: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingEvaluations: true, error: null });
     try {
       const response = await fetch(`/api/kipu/evaluation-templates/${id}`);
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -76,7 +76,7 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
       set({ error: `Failed to fetch evaluation template: ${errorMessage}` });
       console.error('Error fetching evaluation template:', error);
     } finally {
-      set({ isLoading: false });
+      set({ isLoadingEvaluations: false });
     }
   },
   
@@ -84,7 +84,7 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
   
   // Patient Evaluations actions
   fetchPatientEvaluations: async (patientId?: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingEvaluations: true, error: null });
     try {
       const url = patientId 
         ? `/api/kipu/patients/${patientId}/evaluations` 
@@ -105,12 +105,12 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
       set({ error: `Failed to fetch patient evaluations: ${errorMessage}` });
       console.error('Error fetching patient evaluations:', error);
     } finally {
-      set({ isLoading: false });
+      set({ isLoadingEvaluations: false });
     }
   },
   
   fetchPatientEvaluationById: async (id: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingEvaluations: true, error: null });
     try {
       const response = await fetch(`/api/kipu/patient-evaluations/${id}`);
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -127,7 +127,7 @@ export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
       set({ error: `Failed to fetch patient evaluation: ${errorMessage}` });
       console.error('Error fetching patient evaluation:', error);
     } finally {
-      set({ isLoading: false });
+      set({ isLoadingEvaluations: false });
     }
   },
   

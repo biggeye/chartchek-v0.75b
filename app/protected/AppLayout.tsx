@@ -48,6 +48,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingBar } from '@/components/ui/loading-bar';
 import Image from 'next/image';
 import { DebugPanel } from '@/components/dev/DebugPanel';
+import Footer from '@/components/ui/modules/Footer';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -138,133 +139,132 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      <div className="flex h-screen flex-col overflow-hidden">
-        {/* Top navigation */}
-        <div className="sticky top-0 z-40 flex sm:h-10 md:h-12 7xl:h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <div className="flex flex-1 gap-x-2 self-stretch lg:gap-x-4">
-            <div className="flex flex-1 items-center">
-              {/* Logo/Brand */}
-              <Link href="/protected" className="flex items-center gap-0.5">
-                <Image src="/logos/logo.png" width="30" height="30" alt="chartChek" />
-            
-              </Link>
-            </div>
+    <div className="min-h-screen bg-background">
+      <LoadingBar />
+      <div className="sticky top-0 z-40 flex sm:h-10 md:h-12 7xl:h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        <div className="flex flex-1 gap-x-2 self-stretch lg:gap-x-4">
+          <div className="flex flex-1 items-center">
+            {/* Logo/Brand */}
+            <Link href="/protected" className="flex items-center gap-0.5">
+              <Image src="/logos/logo.png" width="30" height="30" alt="chartChek" />
 
-            <div className="flex items-center gap-x-2 lg:gap-x-6">
-              {/* Facility Selector */}
-              <FacilitySelector />
+            </Link>
+          </div>
 
-              {/* User dropdown */}
-              <div className="flex items-center gap-x-4 lg:gap-x-6">
-                <Menu as="div" className="relative inline-block text-left">
-                  <MenuButton className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted">
-                    <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
+          <div className="flex items-center gap-x-2 lg:gap-x-6">
+            {/* Facility Selector */}
+            <FacilitySelector />
 
-                    <ChevronDownIcon className="h-5 w-5 text-foreground-muted" aria-hidden="true" />
-                  </MenuButton>
-                  <Transition
-                    as={Fragment}
-                    enter="transition ease-out duration-100"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
-                  >
-                    <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-background shadow-lg ring-1 ring-border ring-opacity-5 focus:outline-none">
-                      {/* Navigation section */}
-                      <div className="py-1">
-                        {navigation.map((item) => (
-                          <MenuItem key={item.name}>
-                            {({ active }) => (
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  active ? 'bg-muted text-foreground' : 'text-foreground-muted',
-                                  item.current ? 'bg-muted/50 font-medium' : '',
-                                  'flex items-center px-4 py-2 text-sm'
-                                )}
-                              >
-                                <item.icon className="mr-3 h-5 w-5 flex-shrink-0" aria-hidden="true" />
-                                {item.name}
-                              </Link>
+            {/* User dropdown */}
+            <div className="flex items-center gap-x-4 lg:gap-x-6">
+              <Menu as="div" className="relative inline-block text-left">
+                <MenuButton className="flex items-center gap-x-2 text-sm font-medium text-foreground hover:text-foreground-muted">
+                  <UserCircleIcon className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
+
+                  <ChevronDownIcon className="h-5 w-5 text-foreground-muted" aria-hidden="true" />
+                </MenuButton>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-background shadow-lg ring-1 ring-border ring-opacity-5 focus:outline-none">
+                    {/* Navigation section */}
+                    <div className="py-1">
+                      {navigation.map((item) => (
+                        <MenuItem key={item.name}>
+                          {({ active }) => (
+                            <Link
+                              href={item.href}
+                              className={cn(
+                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                                item.current ? 'bg-muted/50 font-medium' : '',
+                                'flex items-center px-4 py-2 text-sm'
+                              )}
+                            >
+                              <item.icon className="mr-3 h-5 w-5 flex-shrink-0" aria-hidden="true" />
+                              {item.name}
+                            </Link>
+                          )}
+                        </MenuItem>
+                      ))}
+                    </div>
+
+                    {/* User settings section */}
+                    <div className="py-1">
+                      <MenuItem>
+                        {({ active }) => (
+                          <Link
+                            href="/protected/account"
+                            className={cn(
+                              active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                              'block px-4 py-2 text-sm'
                             )}
-                          </MenuItem>
-                        ))}
-                      </div>
-
-                      {/* User settings section */}
-                      <div className="py-1">
-                        <MenuItem>
-                          {({ active }) => (
-                            <Link
-                              href="/protected/account"
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
-                                'block px-4 py-2 text-sm'
-                              )}
-                            >
-                              Your Profile
-                            </Link>
-                          )}
-                        </MenuItem>
-                        <MenuItem>
-                          {({ active }) => (
-                            <Link
-                              href="/protected/settings"
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
-                                'block px-4 py-2 text-sm'
-                              )}
-                            >
-                              Facility Settings
-                            </Link>
-                          )}
-                        </MenuItem>
-                        <MenuItem>
-                          {({ active }) => (
-                            <div
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
-                                'block px-4 py-2 text-sm'
-                              )}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>Theme</span>
-                                <ThemeSwitcher />
-                              </div>
+                          >
+                            Your Profile
+                          </Link>
+                        )}
+                      </MenuItem>
+                      <MenuItem>
+                        {({ active }) => (
+                          <Link
+                            href="/protected/settings"
+                            className={cn(
+                              active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                              'block px-4 py-2 text-sm'
+                            )}
+                          >
+                            Facility Settings
+                          </Link>
+                        )}
+                      </MenuItem>
+                      <MenuItem>
+                        {({ active }) => (
+                          <div
+                            className={cn(
+                              active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                              'block px-4 py-2 text-sm'
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>Theme</span>
+                              <ThemeSwitcher />
                             </div>
-                          )}
-                        </MenuItem>
-                        <MenuItem>
-                          {({ active }) => (
-                            <button
-                              onClick={async () => await signOutAction()}
-                              className={cn(
-                                active ? 'bg-muted text-foreground' : 'text-foreground-muted',
-                                'block w-full text-left px-4 py-2 text-sm'
-                              )}
-                            >
-                              Sign out
-                            </button>
-                          )}
-                        </MenuItem>
-                      </div>
-                    </MenuItems>
-                  </Transition>
-                </Menu>
-              </div>
+                          </div>
+                        )}
+                      </MenuItem>
+                      <MenuItem>
+                        {({ active }) => (
+                          <button
+                            onClick={async () => await signOutAction()}
+                            className={cn(
+                              active ? 'bg-muted text-foreground' : 'text-foreground-muted',
+                              'block w-full text-left px-4 py-2 text-sm'
+                            )}
+                          >
+                            Sign out
+                          </button>
+                        )}
+                      </MenuItem>
+                    </div>
+                  </MenuItems>
+                </Transition>
+              </Menu>
             </div>
           </div>
         </div>
-        <main className="flex-1 maxw-screen overflow-hidden">
-          <LoadingBar />
-          {children}
-          <DebugPanel />
-          <PDFGeneratorListener />
-        </main>
       </div>
+        <main className="flex-1 maxw-screen">
+          {children}
+        </main>
+      <PDFGeneratorListener />
+      <DebugPanel />
+      <Footer />
     </div>
+
   )
 }

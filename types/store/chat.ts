@@ -89,7 +89,7 @@ export interface ChatStoreState {
     assistantId: string,
     threadId: string,
     content: string,
-    attachments?: any[]
+    attachments?: any[] | [],
   ) => Promise<SendMessageResult>;
   
   // --- MESSAGE FETCHING ---

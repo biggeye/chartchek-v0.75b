@@ -54,9 +54,8 @@ export default function DocumentsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">Document Library</h1>
         
-      <ScrollArea className="h-full w-full overflow-y-auto overflow-x-auto pb-20 mb-20">
+      
       {error && (
         <div className="rounded-md bg-red-50 p-4 border border-red-200">
           <div className="flex">
@@ -72,8 +71,7 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
-      
-      <div className="flex justify-between items-center mb-4">
+       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Documents</h2>
         <Button 
           onClick={() => setIsUploadDialogOpen(true)}
@@ -88,15 +86,20 @@ export default function DocumentsPage() {
         <TabsList>
           <TabsTrigger value="all">All Documents</TabsTrigger>
         </TabsList>
+        <ScrollArea className="h-[calc(100vh-20rem)] overflow-y-auto">
+      
         <TabsContent value="all" className="mt-4">
           <DocumentsTable 
             documents={documents} 
             isLoading={isLoading}
             detailsUrlPrefix="/protected/documents"
+            className="overflow-x-auto"
           />
+                  
         </TabsContent>
+        </ScrollArea> 
       </Tabs>
-      </ScrollArea>      
+
       <DocumentUploadDialog 
         isOpen={isUploadDialogOpen} 
         onClose={() => setIsUploadDialogOpen(false)} 

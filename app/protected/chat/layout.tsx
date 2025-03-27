@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react'
 import { ThreadList } from '@/components/chat/ThreadList'
-import { GlobalChatInputArea } from '@/components/chat/GlobalChatInput'
+import GlobalChatInput  from '@/components/chat/GlobalChatInput'
 import { Bars3Icon } from '@heroicons/react/24/solid'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
@@ -43,7 +43,7 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
       </aside>
       
       {/* Chat Input Area */}
-      <GlobalChatInputArea />
+      <GlobalChatInput />
     </div>
   )
 }

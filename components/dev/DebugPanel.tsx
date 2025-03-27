@@ -2,13 +2,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePatient } from '@/lib/contexts/PatientProvider';
 import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
 import { useChatStore } from '@/store/chatStore';
 import { useStreamStore } from '@/store/streamStore';
 
 import { X } from 'lucide-react';
+import useDocumentStore from '@/store/documentStore';
+import useContextStore from '@/store/contextStore';
+import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
 
 interface DebugSectionProps {
   title: string;
@@ -289,11 +291,16 @@ export const DebugPanel = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   // Get all the contexts and stores
-  const patientContext = usePatient();
-  const patientStore = usePatientStore();
+
   const facilityStore = useFacilityStore();
+  const patientStore = usePatientStore();
+  const documentStore = useDocumentStore();
+  const contextStore = useContextStore();
+  const kipuEvaluationsStore = useKipuEvaluationsStore();
   const chatStore = useChatStore();
   const streamStore = useStreamStore();
+
+
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -327,19 +334,19 @@ export const DebugPanel = () => {
             className={`px-3 py-1 rounded ${activeTab === 'context' ? 'bg-indigo-600' : 'bg-gray-700'}`}
             onClick={() => setActiveTab('context')}
           >
-            Contexts
+            chartChek State
           </button>
           <button
             className={`px-3 py-1 rounded ${activeTab === 'kipuState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
             onClick={() => setActiveTab('kipuState')}
           >
-            Zustand
+            KIPU State
           </button>
           <button
             className={`px-3 py-1 rounded ${activeTab === 'openaiState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
             onClick={() => setActiveTab('openaiState')}
           >
-            Zustand
+            OpenAI State
           </button>
         </div>
         <button
@@ -354,10 +361,16 @@ export const DebugPanel = () => {
         {activeTab === 'context' && (
           <div className="space-y-2">
             <DebugSection
-              title="Patient Context"
-              data={patientContext}
-              isExpanded={expandedSections['patientContext']}
-              onToggle={() => toggleSection('patientContext')}
+              title="Context Store"
+              data={contextStore}
+              isExpanded={expandedSections['contextStore']}
+              onToggle={() => toggleSection('contextStore')}
+            />
+            <DebugSection
+            title="Document Store"
+            data={documentStore}
+            isExpanded={expandedSections['documentStore']}
+            onToggle={() => toggleSection('documentStore')}
             />
           </div>
         )}
@@ -376,25 +389,30 @@ export const DebugPanel = () => {
               isExpanded={expandedSections['facilityStore']}
               onToggle={() => toggleSection('facilityStore')}
             />
-
+            <DebugSection
+              title="Evaluations Store"
+              data={kipuEvaluationsStore}
+              isExpanded={expandedSections['kipuEvaluationsStore']}
+              onToggle={() => toggleSection('kipuEvaluationsStore')}
+            />
           </div>
+
         )}
 
         {activeTab === 'openaiState' && (
           <div className="space-y-2">
             <DebugSection
               title="Chat Store"
-              data={useChatStore}
-              isExpanded={expandedSections['patientStore']}
-              onToggle={() => toggleSection('patientStore')}
+              data={chatStore}
+              isExpanded={expandedSections['chatStore']}
+              onToggle={() => toggleSection('chatStore')}
             />
             <DebugSection
               title="Stream Store"
               data={streamStore}
-              isExpanded={expandedSections['facilityStore']}
-              onToggle={() => toggleSection('facilityStore')}
+              isExpanded={expandedSections['streamStore']}
+              onToggle={() => toggleSection('streamStore')}
             />
-
           </div>
         )}
       </div>
@@ -426,7 +444,7 @@ function replacer(key: string, value: any) {
       body = body.substring(0, 100) + '...';
     }
 
-    return `[Function: ${fnName}(${params}) { ${body} }]`;
+    return `[Function: ${fnName}(${params}) {${body} }]`;
   }
 
   // Handle React elements

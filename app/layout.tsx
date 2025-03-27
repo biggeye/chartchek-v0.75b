@@ -1,11 +1,10 @@
-import { Geist } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { ReactNode, Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Barlow_Condensed, Montserrat } from 'next/font/google';
-
+import Footer from "@/components/ui/modules/Footer";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -43,9 +42,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-   
           <Suspense fallback={null}>
+            {children}
             <Analytics />
             <SpeedInsights />
           </Suspense>

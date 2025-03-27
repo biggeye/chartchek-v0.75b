@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuEvaluation, KipuPatientEvaluationItem, KipuPatientEvaluationItemBase, KipuEvaluationItemObject } from '@/types/kipu';
+import { PatientEvaluation } from '@/types/kipu/evaluations';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -26,7 +26,7 @@ interface EvaluationItem {
 }
 
 interface EvaluationsListProps {
-  evaluations: KipuEvaluation[];
+  evaluations: PatientEvaluation[];
   facilityId: number;
   patientId: string;
   onEdit: (evaluationId: string) => void;
@@ -36,7 +36,7 @@ interface EvaluationsListProps {
 export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, onNew }: EvaluationsListProps) {
   const router = useRouter();
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<KipuEvaluation | null>(null);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<PatientEvaluation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -46,8 +46,8 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
       // Apply search filter
       const matchesSearch =
         !searchTerm ||
-        evaluation.evaluation_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (evaluation.evaluation_content?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        evaluation.evaluationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (evaluation.evaluationItems?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       // Apply status filter
       const matchesStatus = !statusFilter || evaluation.status === statusFilter;
@@ -62,7 +62,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
   // Add a toggle function
   const toggleEditMode = () => setIsEditMode(prev => !prev);
 
-  const handleViewDetails = (evaluation: KipuEvaluation) => {
+  const handleViewDetails = (evaluation: PatientEvaluation) => {
     setSelectedEvaluation(evaluation);
     setIsDetailModalOpen(true);
   };
@@ -152,11 +152,11 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() => handleViewDetails(evaluation)}
                   >
-                    <TableCell className="font-medium">{evaluation.evaluation_type}</TableCell>
+                    <TableCell className="font-medium">{evaluation.type}</TableCell>
                     <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
-                    <TableCell>{formatDate(evaluation.created_at)}</TableCell>
+                    <TableCell>{formatDate(evaluation.createdAt)}</TableCell>
                     <TableCell>
-                      {evaluation.provider_name || "System"}
+                      {evaluation.completedBy}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>

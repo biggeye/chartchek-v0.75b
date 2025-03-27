@@ -178,15 +178,19 @@ export interface KipuEvaluationResponse {
     id: number;
     evaluationId: number;
     patientId: string;
+    patientProcessId: number;
     casefileId: Casefile;
     createdAt: string;
-    updatedAt: string;
+    createdBy: string;
+    updatedAt?: string;
+    updatedBy?: string;
     completedAt: string | null;
     completedBy: string | null;
     status: 'incomplete' | 'complete' | 'in_progress';
     data: Record<string, any>;
     evaluationName: string;
     evaluationVersionId: number;
+    evaluationItems: KipuEvaluationItem[] | any; 
   }
 /**
  * Application-specific Evaluation Item

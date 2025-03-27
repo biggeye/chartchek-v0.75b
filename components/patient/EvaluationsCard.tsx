@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CardTitle } from './CardComponents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { KipuPatientEvaluation } from '@/types/kipu';
+import { PatientEvaluation } from '@/types/kipu/evaluations';
 
 interface EvaluationsCardProps {
-  adaptedEvaluations: KipuPatientEvaluation[] | null | undefined;
+  adaptedEvaluations: PatientEvaluation[] | null | undefined;
   onNewEvaluation?: () => void;
 }
 
@@ -52,14 +52,14 @@ export function EvaluationsCard({ adaptedEvaluations, onNewEvaluation }: Evaluat
           <p className="text-muted-foreground">No evaluations found</p>
         ) : (
           <div className="space-y-4">
-            {adaptedEvaluations.map((evaluation) => (
-              <div key={evaluation.id} className="border-b pb-4 last:border-0 last:pb-0">
-                <div className="font-medium">{evaluation.name}</div>
+            {adaptedEvaluations.map((e) => (
+              <div key={e.id} className="border-b pb-4 last:border-0 last:pb-0">
+                <div className="font-medium">{e.evaluationName}</div>
                 <p className="text-sm text-muted-foreground">
                   {/* Use ISO format to avoid hydration errors */}
-                  {evaluation.createdAt ? new Date(evaluation.createdAt).toISOString().split('T')[0] : 'Unknown date'}
+                  {e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : 'Unknown date'}
                 </p>
-                <p className="text-sm mt-1 line-clamp-2">{evaluation.evaluationContent}</p>
+                <p className="text-sm mt-1 line-clamp-2">{e.evaluationItems}</p>
               </div>
             ))}
             <Link

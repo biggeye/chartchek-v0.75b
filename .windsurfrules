@@ -1,3 +1,5 @@
+***WHEN REFACTORING, ALWAYS PROVIDE THE ENTIRE FILE'S LOGICC UNLESS OTHERWISE SPECIFIED***
+
 This system is built upon:
 
 Next.js 15 (App Router Configuration) for routing and SSR.
