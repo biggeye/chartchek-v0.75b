@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuEvaluationItem,KipuPatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/evaluations';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -46,12 +46,11 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
       // Apply search filter
       const matchesSearch =
         !searchTerm ||
-        evaluation.evaluationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (evaluation.evaluationItems?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-
+        evaluation.name.toLowerCase().includes(searchTerm.toLowerCase());
+  
       // Apply status filter
       const matchesStatus = !statusFilter || evaluation.status === statusFilter;
-
+  
       return matchesSearch && matchesStatus;
     }) || [];
   }, [evaluations, searchTerm, statusFilter]);
@@ -155,7 +154,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
                     <TableCell>{formatDate(evaluation.createdAt)}</TableCell>
                     <TableCell>
-                      {evaluation.completedBy}
+                      {evaluation.createdBy}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -221,10 +220,6 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
               <DialogBody>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-gray-500">Patient ID</h4>
-                    <p>{selectedEvaluation.patientId}</p>
-                  </div>
-                  <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Last Updated</h4>
                     <p>{selectedEvaluation.updatedAt ? formatDate(selectedEvaluation.updatedAt) : 'N/A'}</p>
                   </div>
@@ -288,11 +283,11 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     </div>
                   </div>
                 )}
-                {selectedEvaluation.evaluationItems && selectedEvaluation.evaluationItems.length > 0 && (
+                {selectedEvaluation.patientEvaluationItems && selectedEvaluation.patientEvaluationItems.length > 0 && (
                   <div className="mt-6 space-y-4">
                     <h3 className="text-lg font-semibold">Assessment Items</h3>
                     <div className="border rounded-md divide-y">
-                      {selectedEvaluation.evaluationItems.map((item: KipuEvaluationItem) => (
+                      {selectedEvaluation.patientEvaluationItems.map((item: KipuPatientEvaluationItem) => (
                         <div key={item.id} className="p-4">
                           <div className="font-medium">{item.label}</div>
                           <div className="text-gray-700 mt-1">

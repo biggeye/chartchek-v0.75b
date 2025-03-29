@@ -46,16 +46,7 @@ export default function Chat() {
       cancelStream(currentThread.thread_id, currentRunId || undefined);
       console.log(`[Chat] Cancelled any active streams for thread ${currentThread.thread_id}`);
       
-      // If we have an active run status, try to cancel it properly
-      if (activeRunStatus?.isActive) {
-        // Retrieve the latest run from useChatStore
-        const latestRun = await useChatStore.getState().getLatestRun(currentThread.thread_id);
-        
-        if (latestRun) {
-          console.log(`[Chat] Cancelling run ${latestRun.id}`);
-          await useChatStore.getState().checkActiveRun(currentThread.thread_id);
-        }
-      }
+     
     } catch (error) {
       console.error('[Chat] Error during cancel operation:', error);
       // Don't set error state - we're trying to exit gracefully

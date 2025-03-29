@@ -48,7 +48,7 @@ export default function PatientTreatmentPlan() {
         activities.push({
           id: `eval-${evaluation.id}`,
           type: 'evaluation',
-          title: evaluation.evaluationName,
+          title: evaluation.name,
           date: evaluation.createdAt,
           description: `Status: ${evaluation.status}`,
           icon: activityTypeIcons['evaluation']

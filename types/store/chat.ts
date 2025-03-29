@@ -82,7 +82,8 @@ export interface ChatStoreState {
   // --- THREAD MANAGEMENT ---
   createThread: (assistantId: string) => Promise<string>;
   setCurrentThread: (thread: Thread | null) => void;
-
+  deleteThread: (threadId: string) => Promise<void>;
+  updateThreadTitle: (threadId: string, newTitle: string) => Promise<any>;
   // --- HISTORICAL THREADS ---
   fetchHistoricalThreads: () => Promise<Thread[]>;
 

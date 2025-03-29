@@ -94,6 +94,7 @@ export default function GlobalChatInput() {
     fetchPatientContextData,
     preparePatientContext,
     buildContextForPatient,
+    patientContext,
     clearContextStore,
     setPatientContext,
     setContextCategories
@@ -126,8 +127,6 @@ export default function GlobalChatInput() {
   
   // Kipu Evaluations store – note we now use the store’s property name directly without aliasing
   const {
-    evaluationTemplates,
-    selectedEvaluationTemplate,
     patientEvaluations,
     selectedPatientEvaluation,
     fetchPatientEvaluations,
@@ -952,7 +951,7 @@ export default function GlobalChatInput() {
     isOpen={isPatientContextBuilderOpen}
     onClose={() => setIsPatientContextBuilderOpen(false)}
     onApply={(options) => {
-      buildContextForPatient(currentPatient, options);
+      buildContextForPatient(currentPatient, patientContext);
       setIsPatientContextBuilderOpen(false);
     }}
   />

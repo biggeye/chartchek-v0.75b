@@ -6,6 +6,14 @@ import { useChatStore } from '@/store/chatStore'
 import { Thread } from '@/types/store/chat'
 import { ScrollArea } from '../ui/scroll-area'
 
+interface MessageContentItem {
+  type?: string;
+  text?: {
+    value: string;
+    annotations?: any[];
+  };
+}
+
 export function ThreadList({ assistantId }: { assistantId?: string }) {
   const {
     historicalThreads,
@@ -68,9 +76,9 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
               const textContent = firstUserMessage.content.find(item => item.type === 'text')
               if (textContent && textContent.text) {
                 messageContent = textContent.text.value || ''
-                } else {
+              } else {
                 // Try to extract text from any content item that might have text
-                for (const item of firstUserMessage.content) {
+                for (const item of firstUserMessage.content as MessageContentItem[]) {
                       if (item.text && item.text.value) {
                     messageContent = item.text.value;
                         break;

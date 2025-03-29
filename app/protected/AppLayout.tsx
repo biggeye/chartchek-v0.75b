@@ -259,13 +259,12 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
           </div>
         </div>
       </div>
-        <main className="flex-1 maxw-screen">
-          {children}
-          <GlobalChatInput />
-        </main>
+      <main className="flex-1 maxw-screen">
+        {children}
+        <GlobalChatInput />
+      </main>
       <PDFGeneratorListener />
       <DebugPanel />
- 
     </div>
 
   )

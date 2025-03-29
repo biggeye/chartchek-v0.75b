@@ -2,8 +2,6 @@ import { NextRequest } from 'next/server'
 import { createServer } from "@/utils/supabase/server"
 import { getOpenAIClient } from '@/utils/openai/server'
 
-import type { ThreadListResponse, ApiResponse } from '@/types/api/routes'
-
 const openai = getOpenAIClient()
 
   

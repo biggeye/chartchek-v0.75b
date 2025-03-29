@@ -4,8 +4,6 @@
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
 import { ChatStoreState, SendMessageResult, Thread, ChatContext, PatientContext } from '@/types/store/chat';
-import { Document } from '@/types/store/document';
-import { ChatMessage } from '@/types/database';
 import { Run, ThreadMessage } from '@/types/api/openai';
 import { RunStatusResponse } from '@/types/store/chat';
 import { OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
@@ -29,13 +27,13 @@ const getUserId = async () => {
 // Helper function to merge messages while preserving order
 const mergeMessages = (existing: ThreadMessage[], incoming: ThreadMessage[]): ThreadMessage[] => {
   const messageMap = new Map<string, ThreadMessage>();
-  
+
   // Add existing messages to map
   existing.forEach(msg => messageMap.set(msg.id, msg));
-  
+
   // Add or update with incoming messages
   incoming.forEach(msg => messageMap.set(msg.id, msg));
-  
+
   // Convert back to array and sort by created_at
   return Array.from(messageMap.values())
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -65,7 +63,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       if (!assistantId) {
         throw new Error('Assistant ID is required');
       }
-      
+
       const { currentThread } = get();
       set({
         currentAssistantId: assistantId,
@@ -91,17 +89,17 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
 
       // Get user ID - await it properly
       const userId = await getUserId();
-      
+
       // Create thread in OpenAI
       const response = await fetch('/api/openai/threads', { method: 'POST' });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to create thread: ${response.status}`);
       }
-      
+
       const { threadId } = await response.json();
-      
+
       if (!threadId) {
         throw new Error('No thread ID returned from API');
       }
@@ -123,19 +121,19 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         const errorData = await metadataResponse.json();
         console.error('[chatStore:createThread] Failed to update metadata:', errorData);
       }
-      
+
       // Set as current thread and assistant ID
       set({
-        currentThread: { 
-          thread_id: threadId, 
-          messages: [], 
+        currentThread: {
+          thread_id: threadId,
+          messages: [],
           tool_resources: null,
           assistant_id: assistantId
         },
         currentAssistantId: assistantId,
         isLoading: false
       });
-      
+
       return threadId;
     } catch (error: any) {
       console.error('[chatStore:createThread] Error:', error);
@@ -156,7 +154,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       if (!assistantId) {
         throw new Error('No assistant ID available');
       }
-      
+
       set({
         currentThread: thread,
         currentAssistantId: assistantId
@@ -171,16 +169,16 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
   fetchHistoricalThreads: async () => {
     try {
       set({ isLoading: true, error: null });
-      
+
       const userId = await getUserId();
       const supabase = getSupabaseClient();
-      
+
       const { data: threads, error } = await supabase
         .from('chat_threads')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
 
       const historicalThreads: Thread[] = threads.map((thread: any) => ({
@@ -191,20 +189,69 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         messages: [],
         tool_resources: thread.tool_resources
       }));
-      
-      set(state => ({ 
+
+      set(state => ({
         ...state,
-        historicalThreads, 
-        isLoading: false 
+        historicalThreads,
+        isLoading: false
       }));
-      
+
       return historicalThreads;
     } catch (error: any) {
       console.error('[chatStore:fetchHistoricalThreads] Error:', error);
-      set(state => ({ 
+      set(state => ({
         ...state,
-        error: error.message || 'Failed to fetch threads', 
-        isLoading: false 
+        error: error.message || 'Failed to fetch threads',
+        isLoading: false
+      }));
+      throw error;
+    }
+  },
+
+  updateThreadTitle: async (threadId: string) => {
+    try {
+      const data = await fetch(`/api/openai/threads/${threadId}/generate-title`);
+      const { title } = await data.json();
+      return title;
+    } catch (error: any) {
+      console.error('[chatStore:updateThreadTitle] Error:', error);
+      set(state => ({
+        ...state,
+        error: error.message || 'Failed to update thread title'
+      }));
+      throw error;
+    }
+  },
+
+  deleteThread: async (threadId: string) => {
+    try {
+      set(state => ({ ...state, isLoading: true, error: null }))
+      
+      const response = await fetch(`/api/openai/threads/${threadId}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete thread: ${response.status}`);
+      }
+  
+      // Remove the deleted thread from historical threads
+      set(state => ({
+        ...state,
+        historicalThreads: state.historicalThreads.filter(t => t.thread_id !== threadId),
+        // If the current thread was deleted, clear it
+        currentThread: state.currentThread?.thread_id === threadId ? null : state.currentThread,
+        isLoading: false
+      }));
+  
+    } catch (error: any) {
+      console.error('[chatStore:deleteThread] Error:', error);
+      set(state => ({
+        ...state,
+        error: error.message || 'Failed to delete thread',
+        isLoading: false
       }));
       throw error;
     }
@@ -239,23 +286,23 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         assistant_id: assistantId,
         ...(attachments.length > 0 && { attachments })
       };
-      
+
       const response = await fetch(`/api/openai/threads/${threadId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to send message: ${response.status}`);
       }
-      
+
       const messageData = await response.json();
-      
+
       // Fetch updated messages to ensure state is current
       await get().fetchOpenAIMessages(threadId);
-      
+
       return {
         success: true,
         messageId: messageData.id
@@ -269,7 +316,6 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       };
     }
   },
-
   // --- MESSAGE FETCHING ---
   fetchOpenAIMessages: async (threadId: string): Promise<ThreadMessage[] | undefined> => {
     if (!threadId) {
@@ -296,17 +342,17 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       set(state => {
         const currentThreadId = state.currentThread?.thread_id;
         if (currentThreadId !== threadId) return state;
-        
+
         return {
           ...state,
           error: null,
           currentThread: state.currentThread
             ? {
-                ...state.currentThread,
-                messages: mergeMessages(state.currentThread.messages || [], messages),
-                has_more: messagesResponse.has_more || false,
-                next_page: messagesResponse.next_page
-              }
+              ...state.currentThread,
+              messages: mergeMessages(state.currentThread.messages || [], messages),
+              has_more: messagesResponse.has_more || false,
+              next_page: messagesResponse.next_page
+            }
             : null
         };
       });
@@ -321,7 +367,6 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       return undefined;
     }
   },
-
   // --- RUN MANAGEMENT ---
   checkActiveRun: async (threadId: string): Promise<RunStatusResponse> => {
     if (!threadId) {
@@ -331,7 +376,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
 
     try {
       const response = await fetch(`/api/openai/threads/${threadId}/run/check`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           // No active run found - this is a valid state
@@ -341,7 +386,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to check run status: ${response.status}`);
       }
-      
+
       const runStatus = await response.json();
       const statusResponse: RunStatusResponse = {
         isActive: !isTerminalState(runStatus.status),
@@ -352,12 +397,12 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       };
 
       set({ activeRunStatus: statusResponse });
-      
+
       // If run is in a terminal state, fetch messages to get final response
       if (isTerminalState(runStatus.status)) {
         await get().fetchOpenAIMessages(threadId);
       }
-      
+
       return statusResponse;
     } catch (error: any) {
       console.error('[chatStore:checkActiveRun] Error checking run status:', error.message);

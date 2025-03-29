@@ -1,9 +1,8 @@
 // app/api/threads/[threadId]/run/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from "@/utils/supabase/server";
-import { getOpenAIClient } from '@/utils/openai/server'
-;
-import type { RunCreateResponse, ApiResponse } from '@/types/api/routes';
+import { getOpenAIClient } from '@/utils/openai/server';
+
 
 const openai = getOpenAIClient();
 

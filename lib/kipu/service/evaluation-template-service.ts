@@ -1,6 +1,6 @@
 // lib/kipu/service/evaluation-template-service.ts
 import { KipuCredentials, KipuApiResponse } from '@/types/kipu';
-import { KipuEvaluation, KipuEvaluationsResponse } from '@/types/kipu/evaluations';
+import { KipuEvaluation, KipuEvaluationResponse } from '@/types/kipu/evaluations';
 import { kipuServerGet } from '../auth/server';
 
 /**
@@ -16,7 +16,7 @@ export async function kipuListEvaluationTemplates(
     page?: number;
     per?: number;
   } = {}
-): Promise<KipuApiResponse<KipuEvaluationsResponse>> {
+): Promise<KipuApiResponse<KipuEvaluationResponse>> {
   try {
     // Build the query parameters
     const queryParams = new URLSearchParams({
@@ -29,7 +29,7 @@ export async function kipuListEvaluationTemplates(
 
     const endpoint = `/api/evaluations?${queryParams.toString()}`;
     
-    return await kipuServerGet<KipuEvaluationsResponse>(endpoint, credentials);
+    return await kipuServerGet<KipuEvaluationResponse>(endpoint, credentials);
   } catch (error) {
     console.error('Error in kipuListEvaluationTemplates:', error);
     return {

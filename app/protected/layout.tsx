@@ -18,10 +18,8 @@ export default async function ProtectedLayout({
       redirect("/login");
   }
   return (
-
           <AppLayout user_id={user.id} >
             {children}
-    
           </AppLayout>
 
   );

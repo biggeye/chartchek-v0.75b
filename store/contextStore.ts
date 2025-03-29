@@ -3,7 +3,7 @@ import { KipuPatientBasicInfo, PatientBasicInfo } from '@/types/kipu';
 import { useDocumentStore } from './documentStore';
 import { usePatientStore } from './patientStore';
 import { useKipuEvaluationsStore } from './kipuEvaluationsStore';
-import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation } from '@/types/chartChek/evaluations';
 import { PatientVitalSign } from '@/types/kipu';
 
 export type ContextItem = {
@@ -33,7 +33,7 @@ export interface ContextStoreState {
   contextCategories: ContextCategory[];
   contextItems: ContextItem[];
   selectedContextItems: ContextItem[];
-  patientContext: PatientContext | null;
+  patientContext: PatientContext[] | [];
   isLoading: boolean;
   error: string | null;
   
@@ -46,7 +46,7 @@ export interface ContextStoreState {
   setError: (error: string | null) => void;
   
   generateContextItems: (patient?: PatientBasicInfo, kipuPatientEvaluations?: KipuPatientEvaluation[], patientVitalSigns?: any[]) => void;
-  buildContextForPatient: (patient: any, selectedOptions: ContextItem[]) => PatientContext | null;
+  buildContextForPatient: (patient: any, selectedOptions: ContextItem[]) => Promise<PatientContext>;
   preparePatientContext: (patient: PatientBasicInfo, selectedOptions: ContextItem[]) => Promise<PatientContext | null>;
   fetchPatientContextData: (patient: PatientBasicInfo, selectedOptions: ContextItem[]) => Promise<void>;
   clearContextStore: () => void;
@@ -120,7 +120,7 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
   contextCategories: defaultContextCategories,
   contextItems: [] as ContextItem[],
   selectedContextItems: defaultContextCategories[0].items.filter(item => item.selected),
-  patientContext: null,
+  patientContext: [],
   isLoading: false,
   error: null,
 
@@ -297,7 +297,7 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
       return options;
   },
 
-  buildContextForPatient: (patient, selectedOptions) => {
+  buildContextForPatient: (patient, selectedContextItems) => {
     if (!patient) return null;
     
     // Create a basic context with patient info

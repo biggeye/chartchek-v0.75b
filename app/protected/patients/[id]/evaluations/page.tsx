@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
-import { PatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
 
 export default function KipuPatientEvaluationsPage() {
   const { id: patientId } = useParams<{ id: string }>();
-  const [evaluations, setEvaluations] = useState<PatientEvaluation[]>([]);
+  const [evaluations, setEvaluations] = useState<KipuPatientEvaluation[]>([]);
   
   const {
     patientEvaluations,
@@ -76,10 +76,10 @@ export default function KipuPatientEvaluationsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(evaluation.created_at).toLocaleDateString()}
+                        {new Date(evaluation.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {evaluation.updated_at ? new Date(evaluation.updated_at).toLocaleDateString() : 'N/A'}
+                        {evaluation.updatedAt ? new Date(evaluation.updatedAt).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}
