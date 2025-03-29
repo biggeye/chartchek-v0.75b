@@ -80,7 +80,7 @@ export interface PatientStore {
   setPatientContextEnabled: (enabled: boolean) => void;
   setPatientContextOptions: (options: Partial<PatientContextOptions>) => void;
   updatePatientContextOptions: (options: PatientContextOptions) => void;
-  setLoading: (isLoading: boolean) => void;
+  setIsLoadingPatients: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   
   clearPatientStore: () => void;

@@ -49,6 +49,7 @@ import { LoadingBar } from '@/components/ui/loading-bar';
 import Image from 'next/image';
 import { DebugPanel } from '@/components/dev/DebugPanel';
 import Footer from '@/components/ui/modules/Footer';
+import GlobalChatInput from '@/components/chat/GlobalChatInput';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -260,10 +261,11 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
       </div>
         <main className="flex-1 maxw-screen">
           {children}
+          <GlobalChatInput />
         </main>
       <PDFGeneratorListener />
       <DebugPanel />
-   
+ 
     </div>
 
   )

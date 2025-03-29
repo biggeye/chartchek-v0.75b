@@ -12,7 +12,7 @@ import { AlertCircle } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function DocumentsPage() {
-  const { documents, isLoading, error, fetchDocuments, uploadAndProcessDocument } = useDocumentStore()
+  const { documents, isLoadingDocuments, error, fetchDocuments, uploadAndProcessDocument } = useDocumentStore()
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   
@@ -76,7 +76,7 @@ export default function DocumentsPage() {
         <Button 
           onClick={() => setIsUploadDialogOpen(true)}
           className="rounded-full p-2 h-9 w-9 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white"
-          disabled={isLoading}
+          disabled={isLoadingDocuments}
         >
           <PlusIcon className="h-5 w-5" />
         </Button>
@@ -91,7 +91,7 @@ export default function DocumentsPage() {
         <TabsContent value="all" className="mt-4">
           <DocumentsTable 
             documents={documents} 
-            isLoading={isLoading}
+            isLoading={isLoadingDocuments}
             detailsUrlPrefix="/protected/documents"
           />
                   
@@ -103,7 +103,7 @@ export default function DocumentsPage() {
         isOpen={isUploadDialogOpen} 
         onClose={() => setIsUploadDialogOpen(false)} 
         onUpload={handleFileUpload}
-        isLoading={isLoading}
+        isLoading={isLoadingDocuments}
         error={uploadError}
       />
     </div>

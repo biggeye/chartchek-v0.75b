@@ -7,9 +7,9 @@ import { useStreamStore } from '@/store/streamStore';
 
 interface EvaluationItem {
   id: number;
-  field_type: string;
+  fieldType: string;
   label: string;
-  divider_below: boolean;
+  dividerBelow: boolean;
   value?: string | null;
   [key: string]: any;
 }

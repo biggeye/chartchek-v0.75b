@@ -72,6 +72,8 @@ export interface ChatStoreState {
   chatContext: ChatContext | null;
   activeRunStatus: RunStatusResponse | null;
   isLoading: boolean;
+  // In store/chatStore.ts
+  setIsLoading: (isLoading: boolean) => void;
   error: string | null;
 
   // --- ASSISTANT MANAGEMENT ---

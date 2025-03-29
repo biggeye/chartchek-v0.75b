@@ -1,26 +1,58 @@
 // types/store/context.ts
 import { PatientContext, ChatContext } from './chat';
+import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
 
-// Let's use a more generic type for now
-export interface KipuPatientEvaluation {
+// Define inline for migration to /types/kipu/index.ts
+interface PatientBasicInfo {
+  patientId: string;
+  firstName: string;
+  lastName: string;
+  age: number;
+  gender?: string;
+  insuranceProvider?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  emergencyContact?: string;
+}
+
+export type PatientContextOptions = ContextItem;
+
+export interface ContextItem {
   id: string;
-  type: string;
-  patient_id: string;
-  created_at: string;
-  updated_at: string;
-  data: Record<string, any>; // This will hold the evaluation data
-  [key: string]: any; // Allow for additional properties
+  category: string;
+  label: string;
+  description?: string;
+  source: 'basic' | 'evaluation' | 'vitals';
+  evaluationId?: number;
+  path?: string;
 }
 
 export interface ContextStoreState {
+  // State properties
   patientContext: PatientContext | null;
   chatContext: ChatContext | null;
+  contextOptions: ContextItem[];
+  selectedContextOptions: ContextItem[];
+  isContextEnabled: boolean;
+  currentPatientContext: string | null;
+  evaluationContext: any | null;
   
-  // --- CONTEXT MANAGEMENT ---
+  // Context options management
+  setContextOptions: (options: ContextItem[]) => void;
+  toggleContextEnabled: () => void;
+  setSelectedContextOptions: (options: ContextItem[]) => void;
+  
+  // Context management
   updatePatientContext: (context: PatientContext | null) => void;
   updateChatContext: (context: Partial<ChatContext>) => void;
   
-  // --- CONTEXT BUILDING ---
+  // Context building
+  buildContextForPatient: (patient: PatientBasicInfo, selectedOptions: ContextItem[]) => string | null;
   buildContextFromEvaluation: (evaluation: KipuPatientEvaluation) => any;
   buildContextFromTemplate: (evaluation: KipuPatientEvaluation, templateId: string) => any;
+  buildPatientContextInstructions: (patient: PatientBasicInfo, selectedOptions: ContextItem[]) => string;
+  
+  // Apply context
+  applyContextOptions: (options: ContextItem[]) => ContextItem[];
 }

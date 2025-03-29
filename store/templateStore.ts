@@ -1,67 +1,75 @@
 // store/templateStore.ts
 import { create } from 'zustand';
 import { ChartChekTemplate } from '@/types/store/templates';
+import { KipuEvaluation, KipuEvaluationItemObject } from '@/types/kipu';
 
 interface TemplateState {
   templates: ChartChekTemplate[];
-  currentTemplate: ChartChekTemplate | null;
-  isLoading: boolean;
+  selectedTemplate: ChartChekTemplate | null;
+  isLoadingTemplates: boolean;
+
+  kipuTemplates: KipuEvaluation[];
+  selectedKipuTemplate: KipuEvaluation | null;
+  isLoadingKipuTemplates: boolean;
+
   error: string | null;
 
   // Actions
   fetchTemplates: () => Promise<void>;
-  fetchTemplate: (id: string) => Promise<ChartChekTemplate | null>;
+  fetchTemplate: (id: string) => Promise<void>;
+  setSelectedTemplate: (template: ChartChekTemplate | null) => void;
   createTemplate: (template: ChartChekTemplate) => Promise<void>;
   saveTemplate: (template: ChartChekTemplate) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
-  importKipuEvaluation: (evaluationId: string) => Promise<ChartChekTemplate>;
-  setCurrentTemplate: (template: ChartChekTemplate | null) => void;
+
+  fetchKipuTemplates: () => Promise<void>;
+  fetchKipuTemplate: (evaluationId: number) => Promise<void>;
+  setSelectedKipuTemplate: (kipuTemplate: KipuEvaluation | null) => void;
+  importKipuTemplate: (kipuTemplate: KipuEvaluation) => Promise<ChartChekTemplate>;
+
 }
 
 export const useTemplateStore = create<TemplateState>((set, get) => ({
-  currentTemplate: null,
   templates: [],
-  isLoading: false,
+  selectedTemplate: null,
+  isLoadingTemplates: false,
+
+  kipuTemplates: [],
+  selectedKipuTemplate: null,
+  isLoadingKipuTemplates: false,
   error: null,
 
-  setCurrentTemplate: (template: ChartChekTemplate | null) => {
-    set({ currentTemplate: template });
-  },
-
   fetchTemplates: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
     try {
       const response = await fetch('/api/admin/templates');
       if (!response.ok) throw new Error('Failed to fetch templates');
-      const data = await response.json();
-      set({ templates: data, isLoading: false });
+      const templates = await response.json();
+      set({ templates, isLoadingTemplates: false });
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({ error: (error as Error).message, isLoadingTemplates: false });
     }
   },
-
+  
   fetchTemplate: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
     try {
       const response = await fetch(`/api/admin/templates/${id}`);
       if (!response.ok) throw new Error('Failed to fetch template');
       const template = await response.json();
-      
-      // Set the currentTemplate in state
-      set({ 
-        currentTemplate: template, 
-        isLoading: false 
-      });
-      
-      return template;
+      set({ selectedTemplate: template, isLoadingTemplates: false });
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
-      return null;
+      set({ error: (error as Error).message, isLoadingTemplates: false });
     }
   },
 
+  setSelectedTemplate: (template: ChartChekTemplate | null) => {
+    set({ selectedTemplate: template || null });
+  },
+
+
   createTemplate: async (template: ChartChekTemplate) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
     try {
       const response = await fetch('/api/admin/templates', {
         method: 'POST',
@@ -75,12 +83,11 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({ error: (error as Error).message, isLoadingTemplates: false });
     }
   },
-
   saveTemplate: async (template: ChartChekTemplate) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
     try {
       const response = await fetch(`/api/admin/templates/${template.id}`, {
         method: 'PUT',
@@ -96,12 +103,11 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({ error: (error as Error).message, isLoadingTemplates: false });
     }
   },
-
   deleteTemplate: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
     try {
       const response = await fetch(`/api/admin/templates/${id}`, {
         method: 'DELETE'
@@ -112,45 +118,89 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({ error: (error as Error).message, isLoadingTemplates: false });
     }
   },
+clearSelectedTemplate: () => set({ selectedTemplate: null}),
 
-  importKipuEvaluation: async (evaluationId: string) => {
-    set({ isLoading: true, error: null });
+  // Kipu Evaluation Templates actions
+  fetchKipuTemplates: async () => {
+    set({ isLoadingKipuTemplates: true, error: null });
     try {
-      const response = await fetch(`/api/kipu/evaluations/${evaluationId}`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch KIPU evaluation: ${response.statusText}`);
-      }
+      const response = await fetch('/api/kipu/evaluations');
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
       const data = await response.json();
 
-      if (!data.success || !data.data) {
-        throw new Error(data.error?.message || 'Failed to load evaluation template');
+      if (data.success && data.data && data.data.evaluations) {
+        set({ kipuTemplates: data.data.evaluations });
+      } else {
+        throw new Error('Unexpected response format');
       }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      set({ error: `Failed to fetch evaluation templates: ${errorMessage}` });
+      console.error('Error fetching evaluation templates:', error);
+    } finally {
+      set({ isLoadingKipuTemplates: false });
+    }
+  },
+  setSelectedKipuTemplate: (kipuTemplate?: KipuEvaluation | null) => {
+    set({ selectedKipuTemplate: kipuTemplate });
+  },
+  fetchKipuTemplate: async (evaluationId: number) => {
+    set({ isLoadingKipuTemplates: true, error: null });
+    try {
+      const response = await fetch(`/api/kipu/evaluations/${evaluationId}`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
-      // Use the adapter to convert KIPU format to our template format
+      const data = await response.json();
+
+      if (data.success && data.data && data.data.evaluation) {
+        set({ selectedKipuTemplate: data.data.evaluation });
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      set({ error: `Failed to fetch evaluation template: ${errorMessage}` });
+      console.error('Error fetching evaluation template:', error);
+    } finally {
+      set({ isLoadingKipuTemplates: false });
+    }
+  },
+  importKipuTemplate: async (kipuTemplate: KipuEvaluation) => {
+    set({ isLoadingKipuTemplates: true, error: null });
+    set({ isLoadingTemplates: true, error: null });
+    try {
+
       const { adaptKipuEvaluationToTemplate } = await import('@/lib/forms/kipuEvaluationAdapter');
-      const convertedTemplate = adaptKipuEvaluationToTemplate(data.data);
+      const convertedTemplate = await adaptKipuEvaluationToTemplate(kipuTemplate);
 
       // Update state with the new template
       set(state => ({
         ...state,
         currentTemplate: convertedTemplate,
-        isLoading: false
+        isLoadingTemplates: false,
+        isLoadingKipuTemplates: false
       }));
 
       return convertedTemplate;
     } catch (error) {
       set({
         error: (error as Error).message,
-        isLoading: false
+        isLoadingTemplates: false,
+        isLoadingKipuTemplates: false
       });
       throw error;
     }
-  }
+  },
+
+  clearSelectedKipuTemplate: () => set({ selectedKipuTemplate: null }),
+
+
+
+
 }));
 
 export default useTemplateStore;

@@ -364,7 +364,7 @@ const useChatStore = create<ChatStoreState>((set, get) => ({
       return { isActive: false };
     }
   },
-
+  setIsLoading: (isLoading: boolean) => set({ isLoading }),
   // --- ERROR HANDLING ---
   setError: (error: string | null) => set({ error }),
   clearError: () => set({ error: null }),

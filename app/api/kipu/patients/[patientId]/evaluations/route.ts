@@ -5,7 +5,8 @@ import {
 } from '@/lib/kipu/service/patient-evaluation-service';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { parsePatientId } from '@/lib/kipu/auth/config';
-
+import { KipuPatientEvaluationsResponse } from '@/types/kipu/evaluations';
+import { snakeToCamel } from '@/utils/case-converters';
 // Add this near the top of the file, after the imports
 interface KipuEvaluationResponse {
   pagination: {
@@ -39,7 +40,7 @@ export async function GET(
    
     
     // Parse the patient ID to ensure it's in the correct format
-    try {
+    
       const { chartId, patientMasterId } = parsePatientId(decodedPatientId);
       
       if (!chartId || !patientMasterId) {
@@ -72,7 +73,7 @@ export async function GET(
       }
 
       const response = await kipuGetPatientEvaluations(decodedPatientId, credentials);
-
+       console.log(response);
         if (!response.success || !response.data) {
         console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Failed to fetch patient evaluations from KIPU: ${response.error?.message || 'Unknown error'}`);
         return NextResponse.json(
@@ -81,35 +82,15 @@ export async function GET(
         );
       }
 
-      let evaluations = [];
-      try {
-        const responseData = response.data as KipuEvaluationResponse;
+ 
+      const responseData = response.data as KipuPatientEvaluationsResponse;
 
-        if (responseData.patient_evaluations && Array.isArray(responseData.patient_evaluations)) {
-          evaluations = responseData.patient_evaluations;
-        } else {
-          // Log the unexpected response structure for debugging
-          console.warn(`[/api/kipu/patients/[patientId]/evaluations] API Route - Unexpected response structure: ${responseData.patient_evaluations ? 'patient_evaluations is not an array' : 'patient_evaluations is missing'}`);
-          console.debug('Response data structure:', JSON.stringify(responseData));
-        }
-      } catch (err) {
-        console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error parsing evaluations data: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      }
+      // Convert to camelCase for frontend consumption
+      const camelCaseData = snakeToCamel(responseData);
       
-      // Prepare response data
-      const responseData = {
-        evaluations,
+      return NextResponse.json(camelCaseData);
       
-      };
-      
-      return NextResponse.json(responseData);
-    } catch (error) {
-      console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error in GET /api/kipu/patients/[patientId]/evaluations: ${error instanceof Error ? error.message : 'Internal server error'}`);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Internal server error' },
-        { status: 500 }
-      );
-    }
+    
   } catch (error) {
     console.error(`[/api/kipu/patients/[patientId]/evaluations] API Route - Error in GET /api/kipu/patients/[patientId]/evaluations: ${error instanceof Error ? error.message : 'Internal server error'}`);
     return NextResponse.json(

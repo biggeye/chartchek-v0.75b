@@ -12,7 +12,7 @@ import { usePatientStore } from '@/store/patientStore';
 import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
 
 import { PatientVitalSign } from '@/types/kipu';
-import { PatientEvaluation, KipuEvaluationItem } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation, KipuEvaluationItem } from '@/types/kipu/evaluations';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ActiveTabType = 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'orders' | 'treatmentPlan';
@@ -20,21 +20,21 @@ type ActiveTabType = 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'o
 
 // Create a unified type that works with both your store and components
 type UnifiedEvaluation = {
-  id: number;
-  name: string;
-  status: "incomplete" | "complete" | "in_progress";
-  patientCasefileId: string;
-  evaluationId: number;
-  patientProcessId: number;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-  completedAt?: string;
-  completedBy?: string;
-  evaluationName: string;
-  evaluationVersionId: number;
-  evaluationItems: KipuEvaluationItem[];
+    id: number;
+    name: string;
+    status: "incomplete" | "complete" | "in_progress";
+    patientCasefileId: string;
+    evaluationId: number;
+    patientProcessId: number;
+    createdAt: string;
+    createdBy: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    completedAt?: string;
+    completedBy?: string;
+    evaluationName: string;
+    evaluationVersionId: number;
+    evaluationItems: KipuEvaluationItem[];
 };
 
 // Adapter functions to convert KIPU types to component expected types
@@ -57,44 +57,6 @@ const adaptVitalSigns = (vitalSignsData: PatientVitalSign[], limit?: number): an
     return limit ? mappedData.slice(0, limit) : mappedData;
 };
 
-const adaptEvaluations = (evaluationsData: any[] | undefined, limit?: number): UnifiedEvaluation[] => {
-    if (!evaluationsData || !Array.isArray(evaluationsData)) {
-      return [];
-    }
-    
-    const mappedData = evaluationsData.map(evaluation => {
-        // First, map the evaluation items
-        const mappedItems = (evaluation.evaluationItems || []).map((item: any) => ({
-            question: item.question || item.name || '',
-            answer_type: item.answer_type || 'text',
-            required: item.required || false,
-            created_at: item.created_at || item.createdAt || '',
-            // Include any other properties needed
-            ...item
-        }));
-        
-        // Then return the full evaluation object
-        return {
-            id: evaluation.id || 0,
-            name: evaluation.evaluationName || evaluation.name || 'Unnamed Evaluation',
-            status: evaluation.status || 'incomplete',
-            patientCasefileId: evaluation.casefileId || evaluation.patientCasefileId || '',
-            evaluationId: evaluation.evaluationId || 0,
-            patientProcessId: evaluation.patientProcessId || 0,
-            createdAt: evaluation.createdAt || '',
-            createdBy: evaluation.createdBy || '',
-            updatedAt: evaluation.updatedAt || undefined,
-            updatedBy: evaluation.updatedBy || undefined,
-            completedAt: evaluation.completedAt || undefined,
-            completedBy: evaluation.completedBy || undefined,
-            evaluationName: evaluation.evaluationName || evaluation.name || '',
-            evaluationVersionId: evaluation.evaluationVersionId || 0,
-            evaluationItems: mappedItems
-        };
-    });
-    
-    return limit ? mappedData.slice(0, limit) : mappedData;
-};
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
     const {
@@ -152,8 +114,8 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
 
     // Adapt the data to the component expected formats
     const adaptedVitalSigns = adaptVitalSigns(currentPatientVitalSigns, 4);
-    const adaptedEvaluations = adaptEvaluations(patientEvaluations, 4);
-
+    const adaptedEvaluations = patientEvaluations && patientEvaluations.length > 0 ? patientEvaluations.slice(0, 4) : [];
+   
     return (
         <div className="flex flex-col">
             <PatientBreadcrumb
@@ -205,7 +167,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
                                                 fetchPatientById(patientId);
                                                 fetchPatientEvaluations(patientId);
                                                 fetchPatientVitalSigns(patientId);
-                                              }}
+                                            }}
                                             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                         >
                                             Try Again
@@ -215,14 +177,23 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
                             ) : showDashboard && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-6">
-                                    {currentPatient && <PatientInfoCard patient={currentPatient} />}
+                                        {currentPatient && <PatientInfoCard patient={currentPatient} />}
                                     </div>
                                     <div className="space-y-6">
-                                      {adaptedVitalSigns &&  <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} /> }
-                                        <EvaluationsCard adaptedEvaluations={adaptedEvaluations as any} />
+                                        {adaptedVitalSigns && <VitalSignsCard adaptedVitalSigns={adaptedVitalSigns} />}
+                                        {isLoadingEvaluations ? (
+                                        <div className="space-y-6">
+                                        <div className="animate-pulse bg-gray-100 rounded-lg h-64"></div>
+                                        <div className="animate-pulse bg-gray-100 rounded-lg h-64"></div>
+                                    </div>
+                                        ) : (
+                                            <EvaluationsCard adaptedEvaluations={adaptedEvaluations as any} />
+                                        )
+                                        }
                                     </div>
                                 </div>
-                            )}
+                            )
+                        }
 
                             {/* Render the child pages */}
                             {!showDashboard && children}

@@ -1,138 +1,90 @@
 // store/kipuEvaluationsStore.ts
 import { create } from 'zustand';
-import { PatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation } from '@/types/chartChek/evaluations';
 
 interface KipuEvaluationsState {
-  // Evaluation Templates
-  evaluationTemplates: PatientEvaluation[];
-  selectedEvaluationTemplate: PatientEvaluation | null;
-  
-  // Patient Evaluations
-  patientEvaluations: PatientEvaluation[];
-  selectedPatientEvaluation: PatientEvaluation | null;
-  
   // UI State
   isLoadingEvaluations: boolean;
   error: string | null;
-  
-  // Actions - Evaluation Templates
-  fetchEvaluationTemplates: () => Promise<void>;
-  fetchEvaluationTemplateById: (id: number) => Promise<void>;
-  clearSelectedEvaluationTemplate: () => void;
-  
+
+  // Patient Evaluations
+  patientEvaluations: KipuPatientEvaluation[];
+  selectedPatientEvaluation: KipuPatientEvaluation | null;
+
   // Actions - Patient Evaluations
-  fetchPatientEvaluations: (patientId?: string) => Promise<void>;
-  fetchPatientEvaluationById: (id: number) => Promise<void>;
+  fetchPatientEvaluations: (patientId?: string, options?: any[]) => Promise<void>;
+  fetchPatientEvaluationById: (id: number) => Promise<KipuPatientEvaluation>;
   clearSelectedPatientEvaluation: () => void;
 }
 
 export const useKipuEvaluationsStore = create<KipuEvaluationsState>((set) => ({
   // Initial state
-  evaluationTemplates: [],
-  selectedEvaluationTemplate: null,
   patientEvaluations: [],
   selectedPatientEvaluation: null,
   isLoadingEvaluations: false,
   error: null,
-  
-  // Evaluation Templates actions
-  fetchEvaluationTemplates: async () => {
-    set({ isLoadingEvaluations: true, error: null });
-    try {
-      const response = await fetch('/api/kipu/evaluation-templates');
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-      
-      const data = await response.json();
-      
-      if (data.success && data.data && data.data.evaluations) {
-        set({ evaluationTemplates: data.data.evaluations });
-      } else {
-        throw new Error('Unexpected response format');
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ error: `Failed to fetch evaluation templates: ${errorMessage}` });
-      console.error('Error fetching evaluation templates:', error);
-    } finally {
-      set({ isLoadingEvaluations: false });
-    }
-  },
-  
-  fetchEvaluationTemplateById: async (id: number) => {
-    set({ isLoadingEvaluations: true, error: null });
-    try {
-      const response = await fetch(`/api/kipu/evaluation-templates/${id}`);
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-      
-      const data = await response.json();
-      
-      if (data.success && data.data && data.data.evaluation) {
-        set({ selectedEvaluationTemplate: data.data.evaluation });
-      } else {
-        throw new Error('Unexpected response format');
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ error: `Failed to fetch evaluation template: ${errorMessage}` });
-      console.error('Error fetching evaluation template:', error);
-    } finally {
-      set({ isLoadingEvaluations: false });
-    }
-  },
-  
-  clearSelectedEvaluationTemplate: () => set({ selectedEvaluationTemplate: null }),
-  
-  // Patient Evaluations actions
-// Patient Evaluations actions
-fetchPatientEvaluations: async (patientId?: string) => {
-  set({ isLoadingEvaluations: true, error: null });
-  try {
-    const url = patientId 
-      ? `/api/kipu/patients/${patientId}/evaluations` 
-      : '/api/kipu/patient-evaluations';
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-    
-    const data = await response.json();
-    console.log(data);
-    if (data.patient_evaluations) {
-      set({ patientEvaluations: data.patient_evaluations });
 
-    } else {
-      console.warn('Unexpected response format');
+
+
+  fetchPatientEvaluations: async (patientId?: string, options?: {
+    page?: number;
+    per?: number;
+    startDate?: string;
+    endDate?: string;
+    completedOnly?: boolean;
+  }) => {
+    set({ isLoadingEvaluations: true, error: null });
+    try {
+      // Build the URL with proper path
+      const baseUrl = patientId
+        ? `/api/kipu/patients/${patientId}/evaluations`
+        : '/api/kipu/patient_evaluations'; // Fixed underscore
+
+      // Add query parameters if provided
+      const queryParams = new URLSearchParams();
+      if (options?.page) queryParams.append('page', options.page.toString());
+      if (options?.per) queryParams.append('per', options.per.toString());
+      if (options?.startDate) queryParams.append('start_date', options.startDate);
+      if (options?.endDate) queryParams.append('end_date', options.endDate);
+      if (options?.completedOnly) queryParams.append('completed_only', 'true');
+
+      const url = queryParams.toString() ? `${baseUrl}?${queryParams.toString()}` : baseUrl;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      const data = await response.json();
+
+      if (data.patientEvaluations) {
+        set({
+          patientEvaluations: data.patientEvaluations,
+        });
+      } else {
+        console.warn('Unexpected response format from evaluations API');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      set({ error: `Failed to fetch patient evaluations: ${errorMessage}` });
+      console.error('Error fetching patient evaluations:', error);
+    } finally {
+      set({ isLoadingEvaluations: false });
     }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    set({ error: `Failed to fetch patient evaluations: ${errorMessage}` });
-    console.error('Error fetching patient evaluations:', error);
-  } finally {
-    set({ isLoadingEvaluations: false });
-  }
-},
-  
+  },
   fetchPatientEvaluationById: async (id: number) => {
     set({ isLoadingEvaluations: true, error: null });
     try {
-      const response = await fetch(`/api/kipu/patient-evaluations/${id}`);
+      const response = await fetch(`/api/kipu/patient_evaluations/${id}`);
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-      
+  
       const data = await response.json();
-      
-      if (data.success && data.data && data.data.patient_evaluation) {
-        set({ selectedPatientEvaluation: data.data.patient_evaluation });
-      } else {
-        throw new Error('Unexpected response format');
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ error: `Failed to fetch patient evaluation: ${errorMessage}` });
+      console.log('Fetched patient evaluation:', data);
+      // Just return the data directly without expecting a specific format
+      return data;
+    } catch (error) {
       console.error('Error fetching patient evaluation:', error);
+      set({ error: error instanceof Error ? error.message : 'Unknown error' });
+      throw error;
     } finally {
       set({ isLoadingEvaluations: false });
     }
   },
-  
   clearSelectedPatientEvaluation: () => set({ selectedPatientEvaluation: null })
 }));

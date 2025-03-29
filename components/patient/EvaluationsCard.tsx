@@ -5,15 +5,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CardTitle } from './CardComponents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PatientEvaluation } from '@/types/kipu/evaluations';
+import { useRouter } from 'next/navigation';
 
 interface EvaluationsCardProps {
-  adaptedEvaluations: PatientEvaluation[] | null | undefined;
+  adaptedEvaluations: any[] | null | undefined;
   onNewEvaluation?: () => void;
 }
 
 export function EvaluationsCard({ adaptedEvaluations, onNewEvaluation }: EvaluationsCardProps) {
   // If evaluations is null or undefined, show loading state
+  const router = useRouter();
   if (!adaptedEvaluations) {
     return (
       <Card>
@@ -54,16 +55,33 @@ export function EvaluationsCard({ adaptedEvaluations, onNewEvaluation }: Evaluat
           <div className="space-y-4">
             {adaptedEvaluations.map((e) => (
               <div key={e.id} className="border-b pb-4 last:border-0 last:pb-0">
-                <div className="font-medium">{e.evaluationName}</div>
+                <div className="font-medium">
+                  <Button
+                    outline
+                    className="p-0 h-auto font-medium"
+                    onClick={() => {
+                      console.log("Evaluation data:", e);
+                      // Check if patient_casefile_id exists and has the expected format
+                      if (e.patientCasefileId) {
+                        const patientId = e.patientCasefileId;
+                        console.log("Extracted patient ID:", patientId);
+                        router.push(`/protected/patients/${patientId}/evaluations/${e.id}`);
+                      } else {
+                        console.error("Missing patient_casefile_id for evaluation:", e);
+                      }
+                    }}
+                  >
+                    {e.name}
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {/* Use ISO format to avoid hydration errors */}
                   {e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : 'Unknown date'}
                 </p>
-                <p className="text-sm mt-1 line-clamp-2">{e.evaluationItems}</p>
               </div>
             ))}
             <Link
-              href={`/protected/patients/${adaptedEvaluations[0].patientId}/evaluations`}
+              href={`/protected/patients/${adaptedEvaluations[0].patientCasefileId}/evaluations`}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
               See All

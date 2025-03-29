@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     } 
 
     const response = await kipuGetPatientsCensus(kipuCredentials, 1, 20, );
+
     if (!response.success || !response.data) {
       return NextResponse.json(
         { error: response.error?.message || 'Failed to fetch patients from KIPU' },
@@ -45,19 +46,7 @@ export async function GET(request: NextRequest) {
     const patients = Array.isArray((response.data as any).patients)
       ? (response.data as any).patients.map((patient: any) => mapKipuPatientToPatientBasicInfo(patient))
       : [];
-      const facilityId = Number(request.nextUrl.searchParams.get('facilityId'));
-      if (facilityId) {
-        const filteredPatients = patients.filter((patient: any) =>
-          patient.facilityId === facilityId
-        );
-        return JSON.stringify({
-          success: true,
-          data: {
-            patients: filteredPatients,
-            total: filteredPatients.length
-          }
-        })
-      }
+   
     const result = JSON.stringify({
       success: true,
       data: {

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect, useRef } from 'react';
 import {
   PaperClipIcon,
@@ -11,10 +13,14 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { SendIcon, Loader2 } from 'lucide-react';
+
+import { useFacilityStore } from '@/store/facilityStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useChatStore } from '@/store/chatStore';
 import { useStreamStore } from '@/store/streamStore';
 import { usePatientStore } from '@/store/patientStore';
+import { useContextStore } from '@/store/contextStore';
+
 import { useRouter, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import * as Headless from '@headlessui/react';
@@ -24,8 +30,8 @@ import DropdownMenu from '@/components/ui/dropdown-menu2';
 import Image from 'next/image';
 import { Transition } from '@headlessui/react';
 import { DynamicPaginatedDocumentList } from '@/components/documents/DynamicPaginatedDocumentList';
-import { usePatient } from '@/lib/contexts/PatientProvider';
-import { useFacilityStore } from '@/store/facilityStore';
+
+
 import { PatientBasicInfo } from '@/types/kipu';
 import { Document } from '@/types/store/document';
 
@@ -79,9 +85,20 @@ export default function GlobalChatInput() {
     transientFileQueue: storeFileQueue,
     setCurrentAssistantId,
     createThread,
-    activeRunStatus
+    activeRunStatus,
+    setIsLoading
   } = useChatStore();
 
+
+  const { 
+    fetchPatientContextData,
+    preparePatientContext,
+    buildContextForPatient,
+    clearContextStore,
+    setPatientContext,
+    setContextCategories
+  } = useContextStore();
+  
   // Document store
   const {
     clearFileQueue,
@@ -96,28 +113,39 @@ export default function GlobalChatInput() {
   const { isStreamingActive, startStream, cancelStream } = useStreamStore();
 
   // Patient store
-  const { currentPatient, isPatientContextEnabled, patients } = usePatientStore();
+  const { 
+    currentPatient, 
+    isPatientContextEnabled, 
+    patients, 
+    isLoadingVitalSigns, 
+    isLoading,
+    setIsLoadingPatients
+  } = usePatientStore();
   const patientStore = usePatientStore.getState();
   const selectPatient = patientStore.setCurrentPatient;
-
-  // Kipu Evaluations store
+  
+  // Kipu Evaluations store – note we now use the store’s property name directly without aliasing
   const {
     evaluationTemplates,
     selectedEvaluationTemplate,
-    patientEvaluations: KipuPatientEvaluations,
+    patientEvaluations,
     selectedPatientEvaluation,
-    isLoading,
+    fetchPatientEvaluations,
     error
   } = useKipuEvaluationsStore();
 
-  const kipuEvaluationsStore = useKipuEvaluationsStore.getState();
-
   // For documents (if needed separately)
-  const { documents, isLoading: isDocumentsLoading } = useDocumentStore();
+  const { 
+    documents, 
+    isLoadingDocuments,
+    setIsLoadingDocuments 
+  } = useDocumentStore();
 
   // Facility store
-  const { getCurrentFacility, currentFacilityId } = useFacilityStore();
-  const currentFacility = getCurrentFacility();
+  const { 
+    getCurrentFacility, 
+    currentFacilityId 
+  } = useFacilityStore();
 
   // Sync submission state with streaming state
   useEffect(() => {
@@ -138,13 +166,16 @@ export default function GlobalChatInput() {
   // Fetch documents when facility changes
   useEffect(() => {
     (async () => {
+      setIsLoadingDocuments(true);
       try {
         await fetchDocumentsForCurrentFacility();
       } catch (error) {
         console.error('Failed to load documents:', error);
+      } finally {
+        setIsLoadingDocuments(false);
       }
     })();
-  }, [fetchDocumentsForCurrentFacility, currentFacilityId]);
+  }, [currentFacilityId]);
 
   useEffect(() => {
     setDocumentPage(0);
@@ -171,15 +202,19 @@ export default function GlobalChatInput() {
 
   const handlePatientToggle = () => {
     togglePatientPanel();
+    setIsLoadingPatients(true);
     if (isPatientContextEnabled) {
       setSelectedContextOptions([]);
     }
+    setIsLoading(false);
   };
-
+  
   const selectPatientHandler = async (patient: PatientBasicInfo) => {
     if (currentFacilityId && patient.patientId) {
+      setIsLoadingPatients(true);
       await selectPatient(patient);
       setShowPatientPanel(false);
+      setIsLoading(false);
     }
   };
 
@@ -190,6 +225,7 @@ export default function GlobalChatInput() {
   };
 
   const handleContextBuilderApply = (options: PatientContextOptions[]) => {
+    setIsLoadingPatients(true);
     setSelectedContextOptions(options);
     setIsPatientContextBuilderOpen(false);
   };
@@ -197,6 +233,7 @@ export default function GlobalChatInput() {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
+      setIsLoadingDocuments(true);
       try {
         const file = files[0];
         // Use the uploadAndProcessDocument function directly
@@ -210,6 +247,7 @@ export default function GlobalChatInput() {
       } catch (error) {
         console.error('File upload failed:', error);
       }
+      setIsLoadingDocuments(false);
     }
   };
 
@@ -257,10 +295,12 @@ export default function GlobalChatInput() {
 
   // Handle assistant change
   const handleAssistantChange = (key: string) => {
+    setIsLoading(true);
     setSelectedAssistantKey(key);
     const assistantId = getCurrentAssistantId(key);
     setCurrentAssistantId(assistantId);
     console.log(`Assistant changed to: ${key}`);
+    setIsLoading(false);
   };
 
   // Create dropdown items for the assistant selector
@@ -308,12 +348,9 @@ export default function GlobalChatInput() {
         if (selectedContextOptions.length > 0) {
           // Create a properly formatted patient context with all selected data
           const patientHeader = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
-
-        
           // Build context string with category headers
-          const contextSections: string[] = [patientHeader];
-
-          // Use basic patient info if no specific options were selected
+          additionalInstructions = patientHeader;
+        } else {
           additionalInstructions = `Patient Context: ${currentPatient.firstName} ${currentPatient.lastName} (ID: ${currentPatient.patientId})`;
         }
       }
@@ -356,12 +393,8 @@ export default function GlobalChatInput() {
     try {
       if (currentPatient?.patientId) {
         // Fetch evaluations for the current patient
-        await kipuEvaluationsStore.fetchPatientEvaluations(currentPatient.patientId);
-        console.log('Patient evaluations fetched:', KipuPatientEvaluations);
-
-        // Optionally fetch all evaluations
-        await useKipuEvaluationsStore.getState().fetchPatientEvaluations
-        console.log('All evaluations fetched:', useKipuEvaluationsStore.getState().fetchPatientEvaluations);
+        await fetchPatientEvaluations(currentPatient.patientId);
+        console.log('Patient evaluations fetched:', patientEvaluations);
       } else {
         console.warn('Cannot fetch evaluations: No facility or patient selected');
       }
@@ -445,7 +478,7 @@ export default function GlobalChatInput() {
                     </div>
                   </div>
                 </div>
-  
+
                 {/* Centered HIDE button */}
                 <button
                   onClick={() => setIsExpanded(false)}
@@ -453,7 +486,7 @@ export default function GlobalChatInput() {
                 >
                   HIDE
                 </button>
-  
+
                 {/* Right side with New conversation button in a tab */}
                 <div className="flex items-center">
                   {/* New conversation button */}
@@ -462,13 +495,9 @@ export default function GlobalChatInput() {
                       onClick={async () => {
                         if (selectedAssistantKey) {
                           try {
-                            // Get the actual OpenAI assistant ID using the getCurrentAssistantId function
                             const assistantId = getCurrentAssistantId(selectedAssistantKey);
-  
-                            // Create new thread with current assistant using the useChatStore
                             const threadId = await useChatStore.getState().createThread(assistantId);
                             console.log(`Created new thread: ${threadId}`);
-                            // Thread state is already updated by the createThread function
                           } catch (error) {
                             console.error('Error creating new thread:', error);
                           }
@@ -482,11 +511,10 @@ export default function GlobalChatInput() {
                   </div>
                 </div>
               </div>
-  
-              {/* Unified Context and Attachments Row - Only show when there's content */}
+
+              {/* Unified Context and Attachments Row */}
               {((isPatientContextEnabled && currentPatient) || storeFileQueue.length > 0) && (
                 <div className="flex flex-wrap gap-2 px-3 py-2 border-x-2 border-t-2 border-gray-300 bg-gray-50">
-                  {/* Patient Context Tag */}
                   {isPatientContextEnabled && currentPatient && (
                     <div className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs group">
                       <UserIcon className="h-3 w-3 mr-1" />
@@ -505,7 +533,6 @@ export default function GlobalChatInput() {
                       </button>
                     </div>
                   )}
-                  {/* Patient Context Options Tags */}
                   {isPatientContextEnabled && currentPatient && selectedContextOptions.length > 0 && (
                     <div className="flex items-center bg-blue-50 text-blue-700 rounded-full px-3 py-1 text-xs">
                       <AdjustmentsHorizontalIcon className="h-3 w-3 mr-1" />
@@ -517,8 +544,6 @@ export default function GlobalChatInput() {
                       </button>
                     </div>
                   )}
-  
-                  {/* Document Attachment Tags */}
                   {storeFileQueue.map((file, index) => (
                     <div
                       key={'document_id' in file ? file.document_id : index}
@@ -538,8 +563,8 @@ export default function GlobalChatInput() {
                   ))}
                 </div>
               )}
-  
-              {/* Main Input Area - Expanded to full width */}
+
+              {/* Main Input Area */}
               <div className="relative">
                 <div
                   className={cn(
@@ -548,9 +573,7 @@ export default function GlobalChatInput() {
                     isSubmitting && 'opacity-50'
                   )}
                 >
-                  {/* Action buttons - responsive implementation */}
                   <div className="flex-shrink-0 mr-2 pr-2 border-r flex items-center">
-                    {/* Mobile dropdown menu */}
                     <div className="md:hidden relative z-[100]">
                       <button
                         type="button"
@@ -558,9 +581,7 @@ export default function GlobalChatInput() {
                         className="inline-flex items-center justify-center px-2 py-1 rounded-md bg-gray-50 hover:bg-gray-100"
                       >
                         <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600" />
-  
                       </button>
-  
                       {showMobileMenu && (
                         <div className="absolute bottom-full left-0 mb-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none min-w-[180px] z-[100]">
                           <div className="py-1">
@@ -608,8 +629,6 @@ export default function GlobalChatInput() {
                         </div>
                       )}
                     </div>
-  
-                    {/* Desktop individual buttons */}
                     <div className="hidden md:flex items-center">
                       <div className="relative">
                         <button
@@ -621,7 +640,6 @@ export default function GlobalChatInput() {
                           <PaperClipIcon className="h-5 w-5" />
                         </button>
                       </div>
-  
                       <div className="relative z-[100]">
                         <button
                           type="button"
@@ -632,7 +650,6 @@ export default function GlobalChatInput() {
                           <UserPlusIcon className="h-5 w-5" />
                         </button>
                       </div>
-  
                       <div className="relative">
                         <button
                           type="button"
@@ -655,7 +672,7 @@ export default function GlobalChatInput() {
                       </div>
                     </div>
                   </div>
-  
+
                   <textarea
                     rows={1}
                     name="message"
@@ -663,16 +680,11 @@ export default function GlobalChatInput() {
                     disabled={isSubmitting}
                     value={message}
                     ref={textareaRef}
-                    onChange={(e) => {
-                      setMessage(e.target.value);
-                      // Height will be auto-adjusted by the effect hook
-                    }}
+                    onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     className="block flex-1 border-0 p-0 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6 resize-none bg-transparent min-h-[24px] overflow-hidden"
                     placeholder="Type your message..."
                   />
-  
-                  {/* Right side send button */}
                   <div className="flex-shrink-0 ml-2 pl-2 border-l">
                     <button
                       type="button"
@@ -702,13 +714,10 @@ export default function GlobalChatInput() {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              {/* Backdrop */}
               <div
                 className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={toggleAttachFilesPanel}
               />
-  
-              {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
                 enterFrom="transform scale-50 opacity-0"
@@ -718,7 +727,6 @@ export default function GlobalChatInput() {
                 leaveTo="transform scale-50 opacity-0"
               >
                 <div className="relative bg-white rounded-xl shadow-xl w-[80vw] max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-                  {/* Modal Header */}
                   <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Attach Files</h2>
                     <button
@@ -728,8 +736,6 @@ export default function GlobalChatInput() {
                       <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
-  
-                  {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
                     <div className="flex flex-col items-center justify-center space-y-4 py-8">
                       <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 w-full">
@@ -750,22 +756,14 @@ export default function GlobalChatInput() {
                           }}
                           className="hidden"
                         />
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="mt-2"
-                        >
+                        <Button onClick={() => fileInputRef.current?.click()} className="mt-2">
                           Choose File
                         </Button>
                       </div>
                     </div>
                   </div>
-  
-                  {/* Modal Footer */}
                   <div className="border-t p-4 flex justify-between">
-                    <Button
-                      plain
-                      onClick={toggleAttachFilesPanel}
-                    >
+                    <Button plain onClick={toggleAttachFilesPanel}>
                       Cancel
                     </Button>
                     <Button
@@ -782,7 +780,7 @@ export default function GlobalChatInput() {
               </Headless.Transition.Child>
             </div>
           </Headless.Transition>
-  
+
           {/* Document List Modal */}
           <Headless.Transition
             show={showDocumentListPanel}
@@ -794,13 +792,10 @@ export default function GlobalChatInput() {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              {/* Backdrop */}
               <div
                 className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={toggleDocumentListPanel}
               />
-  
-              {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
                 enterFrom="transform scale-50 opacity-0"
@@ -810,17 +805,13 @@ export default function GlobalChatInput() {
                 leaveTo="transform scale-50 opacity-0"
               >
                 <div className="relative bg-white rounded-xl shadow-xl w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
-                  {/* Modal Header */}
                   <div className="flex items-center p-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Document Library</h2>
                   </div>
-  
-                  {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
-                    {/* Use the new DynamicPaginatedDocumentList component */}
                     <DynamicPaginatedDocumentList
                       documents={documents}
-                      isLoading={isDocumentsLoading}
+                      isLoading={isLoadingDocuments}
                       onDocumentSelect={handleCheckboxChange}
                       selectedDocumentIds={storeFileQueue.map(file => 'document_id' in file ? file.document_id : '')}
                       className="h-full"
@@ -829,34 +820,23 @@ export default function GlobalChatInput() {
                       containerPadding={60}
                     />
                   </div>
-
-                  {/* Modal Footer */}
                   <div className="border-0.5 p-4 flex justify-end space-x-3">
-                    <>
-                      <Button
-                        plain
-                        onClick={() => {
-                          // Clear all selections and file queue before closing
-                          if (isThreadActive && currentThread) {
-                            // For active threads, we would need to clear the thread files
-                            // This would need implementation based on how thread files are managed
-                          } else {
-                            // For new chats, clear the file queue
-                            clearFileQueue();
-                          }
-                          toggleDocumentListPanel();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        plain
-
-                        onClick={toggleDocumentListPanel}
-                      >
-                        Save
-                      </Button>
-                    </>
+                    <Button
+                      plain
+                      onClick={() => {
+                        if (isThreadActive && currentThread) {
+                          // For active threads, clear thread files if needed
+                        } else {
+                          clearFileQueue();
+                        }
+                        toggleDocumentListPanel();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button plain onClick={toggleDocumentListPanel}>
+                      Save
+                    </Button>
                   </div>
                 </div>
               </Headless.Transition.Child>
@@ -874,13 +854,10 @@ export default function GlobalChatInput() {
             leaveTo="opacity-0"
           >
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              {/* Backdrop */}
               <div
                 className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm"
                 onClick={togglePatientPanel}
               />
-
-              {/* Modal Content */}
               <Headless.Transition.Child
                 enter="transition duration-300 ease-out"
                 enterFrom="transform scale-50 opacity-0"
@@ -890,7 +867,6 @@ export default function GlobalChatInput() {
                 leaveTo="transform scale-50 opacity-0"
               >
                 <div className="relative bg-white rounded-xl shadow-xl w-[80vw] max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-                  {/* Modal Header */}
                   <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Select Patient</h2>
                     <button
@@ -900,8 +876,6 @@ export default function GlobalChatInput() {
                       <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
-
-                  {/* Modal Body */}
                   <div className="p-4 overflow-y-auto flex-grow">
                     {patients.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
@@ -922,7 +896,9 @@ export default function GlobalChatInput() {
                               <UserIcon className="h-5 w-5 text-gray-600" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</p>
+                              <p className="font-medium text-gray-900">
+                                {patient.firstName} {patient.lastName}
+                              </p>
                               {patient.mrn && (
                                 <p className="text-sm text-gray-500">MR# {patient.mrn}</p>
                               )}
@@ -932,13 +908,8 @@ export default function GlobalChatInput() {
                       </div>
                     )}
                   </div>
-
-                  {/* Modal Footer */}
                   <div className="border-t p-4 flex justify-end">
-                    <Button
-                      plain
-                      onClick={togglePatientPanel}
-                    >
+                    <Button plain onClick={togglePatientPanel}>
                       Cancel
                     </Button>
                   </div>
@@ -948,13 +919,46 @@ export default function GlobalChatInput() {
           </Headless.Transition>
 
           {/* Patient Context Builder Dialog */}
-          <PatientContextBuilderDialog
-            isOpen={isPatientContextBuilderOpen}
-            onClose={() => setIsPatientContextBuilderOpen(false)}
-            onApply={handleContextBuilderApply}
-          />
+<div className="flex items-center space-x-2">
+  <button
+    type="button"
+    onClick={() => setIsPatientContextBuilderOpen(true)}
+    disabled={!currentPatient}
+    className={`p-2 rounded-md ${
+      currentPatient ? 'text-blue-500 hover:bg-blue-100' : 'text-gray-400 cursor-not-allowed'
+    }`}
+    title="Build Patient Context"
+  >
+    <UserIcon className="h-5 w-5" />
+  </button>
+  
+  <div className="flex items-center">
+    <input
+      type="checkbox"
+      id="contextToggle"
+    //  checked={isContextEnabled}
+  //    onChange={() => toggleContextEnabled()}
+      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+    />
+    <label htmlFor="contextToggle" className="ml-2 text-sm text-gray-700">
+      Use Context
+    </label>
+  </div>
+</div>
+
+{/* Add the PatientContextBuilderDialog */}
+{isPatientContextBuilderOpen && currentPatient && (
+  <PatientContextBuilderDialog
+    isOpen={isPatientContextBuilderOpen}
+    onClose={() => setIsPatientContextBuilderOpen(false)}
+    onApply={(options) => {
+      buildContextForPatient(currentPatient, options);
+      setIsPatientContextBuilderOpen(false);
+    }}
+  />
+)}
         </div>
       </div>
     </div>
-  )
+  );
 }

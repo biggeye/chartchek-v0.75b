@@ -35,11 +35,12 @@ export async function GET(request: NextRequest) {
 
 
     const searchParams = request.nextUrl.searchParams;
-    const startDate = searchParams.get('start_date');
-    const endDate = searchParams.get('end_date');
+    const start_date = searchParams.get('start_date');
+    const end_date = searchParams.get('end_date');
 
     const pageNumber = Number(searchParams.get('page')) || 1;
-    const response = await kipuGetPatientsAdmissions(kipuCredentials, pageNumber, 20, startDate || '01-01-1990', endDate || '12-31-2030');
+    const response = await kipuGetPatientsAdmissions(kipuCredentials, pageNumber, 20, start_date || '1990-01-01', end_date || '2030-12-31');
+    console.log('admissions API] response: ', response);
     if (!response.success || !response.data) {
       return NextResponse.json(
         { error: response.error?.message || 'Failed to fetch patients from KIPU' },
@@ -56,13 +57,16 @@ export async function GET(request: NextRequest) {
         const filteredPatients = patients.filter((patient: any) =>
           patient.facilityId === facilityId
         );
-        return JSON.stringify({
-          success: true,
-          data: {
-            patients: filteredPatients,
-            total: filteredPatients.length
-          }
-        })
+        return new NextResponse(
+          JSON.stringify({
+            success: true,
+            data: {
+              patients: filteredPatients,
+              total: filteredPatients.length
+            }
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        );
       }
     const result = JSON.stringify({
       success: true,

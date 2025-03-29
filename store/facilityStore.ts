@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Facility, FacilityStore, Pagination } from '@/types/store/facility';
 import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
 import { queryKeys } from '@/utils/react-query/config';
-import { useChatStore } from '@/store/chatStore';
+import { usePatientStore } from './patientStore';
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -36,19 +36,26 @@ export const useFacilityStore = create<FacilityStore>((set, get) => ({
     }
   },
 
-  // Change facility with context update
-  changeFacilityWithContext: (facilityId: number) => {
-    // First update the current facility ID
-    get().setCurrentFacilityId(facilityId);
+// In facilityStore.ts, update the changeFacilityWithContext function:
+changeFacilityWithContext: (facilityId: number) => {
+  const currentFacilityId = get().currentFacilityId;
+  
+  // Only proceed if facility actually changed
+  if (currentFacilityId !== facilityId) {
+    set({ currentFacilityId: facilityId });
     
-    // Update chat context with new facility ID
-    const chatState = useChatStore.getState();
-    if (chatState.updateChatContext) {
-      chatState.updateChatContext({
-        facilityId: facilityId
-      });
-    }
-  },
+    // Get the patient store and update it
+    const patientStore = usePatientStore.getState();
+    
+    // Reset patient data for the new facility
+    patientStore.setPatients([]);
+    patientStore.setIsLoadingPatients(true);
+    
+    // Fetch new patient data
+    patientStore.fetchPatientsCensusByFacility(facilityId)
+      .finally(() => patientStore.setIsLoadingPatients(false));
+  }
+},
 
   // Set pagination
   setPagination: (pagination: Pagination | null) => set({ pagination }),

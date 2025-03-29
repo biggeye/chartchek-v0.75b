@@ -9,7 +9,7 @@ import { useStreamStore } from '@/store/streamStore';
 
 import { X } from 'lucide-react';
 import useDocumentStore from '@/store/documentStore';
-import useContextStore from '@/store/contextStore';
+import { useContextStore } from '@/store/contextStore';
 import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
 
 interface DebugSectionProps {

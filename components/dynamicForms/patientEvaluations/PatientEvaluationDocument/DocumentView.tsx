@@ -21,7 +21,7 @@ const DocumentView = ({ items }: DocumentViewProps) => {
             </div>
           ) : null;
         } else {
-          const Component = evaluationFieldComponents[item.field_type] || evaluationFieldComponents.default;
+          const Component = evaluationFieldComponents[item.fieldType] || evaluationFieldComponents.default;
 
           return (
             <div key={item.id}>

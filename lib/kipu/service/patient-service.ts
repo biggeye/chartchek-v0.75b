@@ -59,8 +59,8 @@ export async function kipuGetPatientsAdmissions<T>(
   credentials: KipuCredentials,
   page = 1,
   limit = 20,
-  startDate: string,
-  endDate: string,
+  start_date: string,
+  end_date: string,
 ): Promise<KipuApiResponse<T>> {
   try {
     // Build the query string with required parameters
@@ -68,8 +68,8 @@ export async function kipuGetPatientsAdmissions<T>(
       app_id: credentials.appId,
       page: page.toString(),
       limit: limit.toString(),
-      start_date: startDate.toString() || '01-01-1990',
-      end_date: endDate.toString() || '12-31-2030',
+      start_date: start_date.toString() || '1990-01-01',
+      end_date: end_date.toString() || '2030-12-31',
       phi_level: 'high'
     }).toString();
     // Use kipuServerGet directly as in the API route

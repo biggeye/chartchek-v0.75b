@@ -177,7 +177,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
 
             const jsonStr = line.trim().slice(5).trim();
             if (jsonStr === '[DONE]') {
-              console.log('[streamStore] Received DONE signal');
+
               get().finalizeMessage();
               break;
             }
@@ -394,34 +394,28 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
 
         // ------------- Additional steps (thread.run.step.*) -------------
         case 'thread.run.step.created':
-          console.log('[streamStore] Step created:', event.data?.step_details?.type);
-          break;
+            break;
 
         case 'thread.run.step.in_progress':
-          console.log('[streamStore] Step in progress:', event.data?.step_details?.type);
-          break;
+           break;
 
         case 'thread.run.step.delta':
           // Example: handle partial text deltas
           if (event.data?.delta?.step_details?.message_creation?.delta?.content) {
             const content = event.data.delta.step_details.message_creation.delta.content;
-            console.log('[streamStore] Received content delta:', typeof content, Array.isArray(content) ? content.length : 'not array');
-            
+             
             if (Array.isArray(content)) {
               for (const item of content) {
                 if (item.text?.value) {
-                  console.log('[streamStore] Appending text value:', item.text.value);
-                  get().appendStreamContent(item.text.value);
+                   get().appendStreamContent(item.text.value);
                 } else if (item.type === 'text' && item.text) {
-                  console.log('[streamStore] Appending text from type:text:', item.text.value);
-                  get().appendStreamContent(item.text.value);
+                    get().appendStreamContent(item.text.value);
                 } else {
                   console.log('[streamStore] Unhandled content item type:', item.type);
                 }
               }
             } else if (typeof content === 'string') {
-              console.log('[streamStore] Appending string content:', content);
-              get().appendStreamContent(content);
+               get().appendStreamContent(content);
             } else {
               console.log('[streamStore] Unhandled content type:', typeof content);
             }
@@ -437,10 +431,8 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
               // Check if the text is just "tool_calls" or similar and ignore it
               const text = deltaContent.trim().toLowerCase();
               if (text === 'tool_calls' || text === 'tool calls' || text.includes('tool calls')) {
-                console.log('[streamStore] Ignoring tool calls text:', deltaContent);
-              } else {
-                console.log('[streamStore] Found text in delta object:', deltaContent);
-                get().appendStreamContent(deltaContent);
+                } else {
+                 get().appendStreamContent(deltaContent);
                 if (!get().isStreamingActive) {
                   set({ isStreamingActive: true });
                 }
@@ -675,8 +667,7 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
                       
                       // Process the chunks as they come in
                       const chunk = new TextDecoder().decode(value);
-                      console.log('[streamStore] Stream chunk after tool submission:', chunk);
-                      
+                       
                       // Parse and process events from the chunk
                       const lines = chunk.split('\n').filter(line => line.trim() !== '');
                       for (const line of lines) {

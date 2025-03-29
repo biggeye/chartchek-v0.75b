@@ -21,7 +21,7 @@ export default async function ProtectedLayout({
 
           <AppLayout user_id={user.id} >
             {children}
-
+    
           </AppLayout>
 
   );

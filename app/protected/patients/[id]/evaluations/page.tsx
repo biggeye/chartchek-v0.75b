@@ -65,7 +65,7 @@ export default function KipuPatientEvaluationsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {patientEvaluations.map((evaluation) => (
                     <tr key={evaluation.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{evaluation.evaluationName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{evaluation.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           evaluation.status === 'complete' ? 'bg-green-100 text-green-800' : 
@@ -76,10 +76,10 @@ export default function KipuPatientEvaluationsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(evaluation.createdAt).toLocaleDateString()}
+                        {new Date(evaluation.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {evaluation.updatedAt ? new Date(evaluation.updatedAt).toLocaleDateString() : 'N/A'}
+                        {evaluation.updated_at ? new Date(evaluation.updated_at).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}

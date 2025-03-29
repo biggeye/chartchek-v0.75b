@@ -15,11 +15,11 @@ interface EnhancedDocumentStoreState {
   documents: Document[];
   fileQueue: Document[];
   transientFileQueue: Document[];
-  isLoading: boolean;
+  isLoadingDocuments: boolean;
   error: string | null;
   // Methods
   setDocuments: (documents: Document[]) => void;
-  setLoading: (isLoading: boolean) => void;
+  setIsLoadingDocuments: (isLoadingDocuments: boolean) => void;
   setError: (error: string | null) => void;
   fetchDocuments: (facilityId?: number) => Promise<Document[]>;
   fetchDocumentsForCurrentFacility: () => Promise<Document[]>;
@@ -47,13 +47,13 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
     (set, get) => ({
       documents: [],
       fileQueue: [],
-      isLoading: false,
+      isLoadingDocuments: false,
       error: null,
       transientFileQueue: [],
 
       // Original methods
       setDocuments: (documents: Document[]) => set({ documents }),
-      setLoading: (isLoading: boolean) => set({ isLoading }),
+      setIsLoadingDocuments: (isLoadingDocuments: boolean) => set((state) => ({ ...state, isLoadingDocuments})),
       setError: (error: string | null) => set({ error }),
 
       fetchDocuments: async (facilityId?: number): Promise<Document[]> => {
@@ -62,7 +62,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           return get().documents;
         }
         
-        set({ isLoading: true, error: null });
+        set({ isLoadingDocuments: true, error: null });
         try {
           // Build query
           let query = supabase.from('documents').select('*');
@@ -72,14 +72,14 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           if (error) throw error;
           if (facilityId){
             const filteredData = data.filter(doc => doc.facility_id === facilityId);
-            set({ documents: filteredData as Document[], isLoading: false });
+            set({ documents: filteredData as Document[], isLoadingDocuments: false });
             return filteredData as Document[];
           }
-          set({ documents: data as Document[], isLoading: false });
+          set({ documents: data as Document[], isLoadingDocuments: false });
           return data as Document[];
         } catch (error) {
           console.error('Error fetching documents:', error);
-          set({ error: (error as Error).message, isLoading: false });
+          set({ error: (error as Error).message, isLoadingDocuments: false });
           return [];
         }
       },
@@ -90,14 +90,14 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           const currentFacilityId = facilityStore.currentFacilityId;
 
           if (currentFacilityId) {
-            console.log(`Fetching documents for facility: ${currentFacilityId}`);
+
             return get().fetchDocuments(currentFacilityId);
           }
-          console.log('No facility selected, returning empty document list');
+  
           return [];
         } catch (error) {
           console.error('Error fetching documents for current facility:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to fetch documents for facility', isLoading: false });
+          set({ error: error instanceof Error ? error.message : 'Failed to fetch documents for facility', isLoadingDocuments: false });
           return [];
         }
       },
@@ -121,7 +121,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
 
       // Document upload and processing methods
       uploadDocument: async (file: File, categorization?: DocumentCategorization): Promise<Document | null> => {
-        set({ isLoading: true, error: null });
+        set({ isLoadingDocuments: true, error: null });
         try {
           // Get current facility ID
           const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
@@ -133,7 +133,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           const timestamp = new Date().getTime();
           const file_name = `${timestamp}_${file.name}`;
           const filePath = `${userId}/${file_name}`;
-          console.log('Uploading file:', filePath)
+ 
 
           // Upload file to Supabase storage
           const { data: fileData, error: uploadError } = await supabase.storage
@@ -141,7 +141,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
             .upload(filePath, file);
 
           if (uploadError) throw uploadError;
-          console.log('File uploaded successfully, now indexing');
+
 
           // Create document record in database
           const { data: documentData, error: documentError } = await supabase
@@ -168,11 +168,11 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           // Refresh documents list
           await get().fetchDocuments(facilityId);
 
-          set({ isLoading: false });
+          set({ isLoadingDocuments: false });
           return documentData as Document;
         } catch (error) {
           console.error('Error uploading document:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to upload document', isLoading: false });
+          set({ error: error instanceof Error ? error.message : 'Failed to upload document', isLoadingDocuments: false });
           return null;
         }
       },
@@ -222,13 +222,13 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           return document;
         } catch (error) {
           console.error('Error in uploadAndProcessDocument:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to process document', isLoading: false });
+          set({ error: error instanceof Error ? error.message : 'Failed to process document', isLoadingDocuments: false });
           return null;
         }
       },
 
       updateDocumentCategorization: async (documentId: string, categorization: DocumentCategorization): Promise<boolean> => {
-        set({ isLoading: true, error: null });
+        set({ isLoadingDocuments: true, error: null });
         try {
           const { error } = await supabase
             .from('documents')
@@ -245,14 +245,15 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           // Refresh documents list
           await get().fetchDocumentsForCurrentFacility();
 
-          set({ isLoading: false });
+          set({ isLoadingDocuments: false });
           return true;
         } catch (error) {
           console.error('Error updating document categorization:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to update document', isLoading: false });
+          set({ error: error instanceof Error ? error.message : 'Failed to update document', isLoadingDocuments: false });
           return false;
         }
       },
+
 
       // NEW METHODS FOR CHAT FILE HANDLING
       addFileToQueue: (doc: Document) => set((state) => ({
@@ -292,6 +293,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
         }
       }
     }),
+
     {
       name: 'document-storage',
       partialize: (state) => ({ 

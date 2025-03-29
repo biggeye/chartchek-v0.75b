@@ -83,8 +83,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   // Set patient context enabled state - ADDED MISSING METHOD
   setPatientContextEnabled: (enabled: boolean) => set({ isPatientContextEnabled: enabled }),
 
-  // Update patient context options
-  updatePatientContextOptions: (options: PatientContextOptions) => {
+   // Update patient context options
+   updatePatientContextOptions: (options: PatientContextOptions) => {
     set({ contextOptions: options });
 
     // If patient context is enabled, update the chat context
@@ -103,6 +103,10 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       }
     }
   },
+
+  setIsLoadingPatients: (isLoadingPatients: boolean) => set({ isLoadingPatients }),
+
+  setIsLoadingVitalSigns: (isLoadingVitalSigns: boolean) => set({ isLoadingVitalSigns }),
 
   // Set loading state
   setLoading: (isLoading: boolean) => set({ isLoading }),
@@ -146,12 +150,13 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   _____________FETCH_________
   */
   // Fetch patients by admission
-  fetchPatientsAdmissionsByFacility: async (facilityId: number, page = 1, limit = 20, startDate = '01-01-1990', endDate = '12-30-2030') => {
+  fetchPatientsAdmissionsByFacility: async (facilityId: number, page = 1, limit = 20, startDate = '1990-01-01', endDate = '2030-01-01') => {
     set({ isLoadingPatients: true, error: null });
     try {
       const response = await fetch(`/api/kipu/patients/admissions?facilityId=${facilityId}`);
       const result = await response.json();
       const facilityPatients = result.data.patients;
+
       set({ patients: facilityPatients, isLoadingPatients: false });
       return facilityPatients;
     } catch (error: unknown) {
@@ -171,7 +176,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       const response = await fetch(`/api/kipu/patients/census?page=${page}&limit=${limit}`);
       const result = await response.json();
       const facilityPatients = result.data.patients;
-      console.log('[patientStore.ts] facilityPatients: ', facilityPatients);
+
       set({ patients: facilityPatients, isLoadingPatients: false });
       return facilityPatients;
     } catch (error: unknown) {
@@ -186,7 +191,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
   // Fetch all patients
   fetchPatients: async (facilityId: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingPatients: true, error: null });
     try {
       const response = await fetch(`/api/kipu/patients/census`);
 
@@ -278,8 +283,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         o2_saturation: vs.o2_saturation || null,
         user_name: vs.user_name || vs.recorded_by || ''
       })) || [];
-
-      console.log("Transformed vital signs:", transformedVitalSigns);
 
       set({
         currentPatientVitalSigns: transformedVitalSigns,

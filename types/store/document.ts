@@ -73,7 +73,7 @@ const filePathSchema = z.string().min(1);
 
   interface DocumentStore extends DocumentStoreState {
     setDocuments: (documents: Document[]) => void;
-    setLoading: (isLoading: boolean) => void;
+    setIsLoadingDocuments: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     fetchDocuments: (facilityId?: number) => Promise<Document[]>;
     fetchDocumentsForCurrentFacility: () => Promise<Document[]>;
@@ -164,7 +164,7 @@ export interface EnhancedDocumentStoreState extends DocumentStoreState {
   
   // Include all methods from DocumentStore
   setDocuments: (documents: Document[]) => void;
-  setLoading: (isLoading: boolean) => void;
+  setIsLoadingDocuments: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   fetchDocuments: (facilityId?: number) => Promise<Document[]>;
   fetchDocumentsForCurrentFacility: () => Promise<Document[]>;

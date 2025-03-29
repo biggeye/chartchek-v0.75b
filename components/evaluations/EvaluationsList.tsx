@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuEvaluationItem, PatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuEvaluationItem,KipuPatientEvaluation } from '@/types/kipu/evaluations';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -26,7 +26,7 @@ interface EvaluationItem {
 }
 
 interface EvaluationsListProps {
-  evaluations: PatientEvaluation[];
+  evaluations:KipuPatientEvaluation[];
   facilityId: number;
   patientId: string;
   onEdit: (evaluationId: string) => void;
@@ -36,7 +36,7 @@ interface EvaluationsListProps {
 export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, onNew }: EvaluationsListProps) {
   const router = useRouter();
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<PatientEvaluation | null>(null);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<KipuPatientEvaluation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
   // Add a toggle function
   const toggleEditMode = () => setIsEditMode(prev => !prev);
 
-  const handleViewDetails = (evaluation: PatientEvaluation) => {
+  const handleViewDetails = (evaluation:KipuPatientEvaluation) => {
     setSelectedEvaluation(evaluation);
     setIsDetailModalOpen(true);
   };

@@ -3,9 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { usePatient } from '@/lib/contexts/PatientProvider';
 import { PatientVitalSign } from '@/types/kipu';
-
+import { usePatientStore } from '@/store/patientStore';
 // Define a local interface for formatted vital signs
 interface VitalSign {
   id: string;
@@ -18,32 +17,20 @@ interface VitalSign {
 
 export default function PatientVitalsPage() {
   const { id: patientId } = useParams<{ id: string }>();
-  
+  const {
+    isLoadingVitalSigns,
+    currentPatientVitalSigns,
+  error } = usePatientStore();
+
   const [vitalSigns, setVitalSigns] = useState<VitalSign[]>([]);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  
-  const { 
-    currentPatientFile,
-    isLoading, 
-    error 
-  } = usePatient();
-  
-  // Process vital signs data from the context whenever it changes
+
   useEffect(() => {
-    const rawVitalSigns = currentPatientFile?.vitalSigns || [];
-    
-    // Ensure vitalSigns is an array before mapping over it
-    if (!rawVitalSigns || !Array.isArray(rawVitalSigns)) {
-      setVitalSigns([]);
-      return;
-    }
-    
-    // Map the KIPU API response to our VitalSign interface
-    const formattedVitalSigns = rawVitalSigns.map((vital: PatientVitalSign) => {
+    const formattedVitalSigns = currentPatientVitalSigns.map((vital: PatientVitalSign) => {
       // Determine the type based on available data
       let type: VitalSign['type'] = 'other';
-      
+  
       if (vital.type === 'temperature') type = 'temperature';
       else if (vital.type === 'blood_pressure') type = 'blood_pressure';
       else if (vital.type === 'heart_rate') type = 'heart_rate';
@@ -52,7 +39,7 @@ export default function PatientVitalsPage() {
       else if (vital.type === 'weight') type = 'weight';
       else if (vital.type === 'height') type = 'height';
       else if (vital.type === 'bmi') type = 'bmi';
-      
+  
       return {
         id: String(vital.id || ''),
         type,
@@ -62,15 +49,14 @@ export default function PatientVitalsPage() {
         patient_id: String(vital.patientId || '')
       };
     });
-    
     setVitalSigns(formattedVitalSigns);
-  }, [currentPatientFile]);
-  
+  }, [currentPatientVitalSigns]); // Add dependency on patientVitalSigns
+
   // Filter vital signs based on selected time range
   const filteredVitalSigns = vitalSigns.filter(vital => {
     const vitalDate = new Date(vital.timestamp);
     const now = new Date();
-    
+
     if (timeRange === 'week') {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return vitalDate >= oneWeekAgo;
@@ -81,31 +67,31 @@ export default function PatientVitalsPage() {
       const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       return vitalDate >= oneYearAgo;
     }
-    
+
     return true;
   });
-  
+
   // Further filter by selected type if one is selected
-  const displayedVitalSigns = selectedType 
+  const displayedVitalSigns = selectedType
     ? filteredVitalSigns.filter(vital => vital.type === selectedType)
     : filteredVitalSigns;
-  
+
   // Get unique vital sign types for the filter
   const vitalSignTypes = Array.from(new Set(vitalSigns.map(vital => vital.type)));
-  
-  if (isLoading) {
+
+  if (isLoadingVitalSigns) {
     return <div className="p-4">Loading vital signs...</div>;
   }
-  
+
   if (error) {
     return <div className="p-4 text-red-500">Error loading vital signs: {error}</div>;
   }
-  
+
   return (
     <div className="space-y-6 p-4">
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-xl font-semibold mb-4">Patient Vital Signs</h2>
-        
+
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-6">
           <div>
@@ -121,7 +107,7 @@ export default function PatientVitalsPage() {
               <option value="year">Last Year</option>
             </select>
           </div>
-          
+
           <div>
             <label htmlFor="vital-type" className="block text-sm font-medium text-gray-700 mb-1">Vital Sign Type</label>
             <select
@@ -137,7 +123,7 @@ export default function PatientVitalsPage() {
             </select>
           </div>
         </div>
-        
+
         {/* Vital Signs Table */}
         {displayedVitalSigns.length === 0 ? (
           <p className="text-gray-500">No vital signs available for the selected filters.</p>

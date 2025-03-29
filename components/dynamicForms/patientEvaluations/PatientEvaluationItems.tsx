@@ -228,6 +228,7 @@ export const evaluationFieldComponents: Record<string, React.ComponentType<any>>
   string: TextField
 };
 
+export const enumeratedFieldTypes = Object.keys(evaluationFieldComponents);
 
 // Utility function to fetch component by field type
 export const getFieldComponent = (fieldType: string) => {

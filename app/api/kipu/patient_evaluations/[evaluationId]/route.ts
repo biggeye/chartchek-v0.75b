@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { kipuGetPatientEvaluation } from '@/lib/kipu/service/patient-evaluation-service';
-import { KipuEvaluation, KipuPatientEvaluation, KipuPatientEvaluationItem } from '@/types/kipu';
+import { KipuEvaluation,KipuPatientEvaluation, KipuEvaluationItem} from '@/types/kipu/evaluations';
 import { redis, getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
-
+import { snakeToCamel } from '@/utils/case-converters';
 /**
  * GET handler for retrieving a specific patient evaluation by ID
  * 
@@ -63,51 +63,15 @@ export async function GET(
     
         // Transform the KIPU evaluation data to our KipuPatientEvaluation format
         const kipuData = response.data.patient_evaluation;
+        const camelCaseEvaluationData = snakeToCamel(kipuData);
+        console.log("Patient Evaluation Data: ", camelCaseEvaluationData);
         
-        // Map KIPU evaluation data to our KipuPatientEvaluation interface
-        const patientEvaluation: KipuPatientEvaluation = {
-          id: kipuData.id,
-          name: kipuData.name || 'Evaluation',
-          patientId: kipuData.patient_id,
-          status: kipuData.status,
-          evaluationType: kipuData.evaluation_type,
-          createdAt: kipuData.created_at,
-          updatedAt: kipuData.updated_at,
-          createdBy: kipuData.created_by || '',
-          evaluationContent: kipuData.evaluation_content || '',
-          evaluationItems: kipuData.patient_evaluation_items as KipuPatientEvaluationItem[],
-          patientCasefileId: kipuData.patient_casefile_id,
-          billable: kipuData.billable,
-          placeOfService: kipuData.place_of_service,
-          billingCodes: kipuData.billing_codes,
-          requireSignature: kipuData.require_signature,
-          requirePatientSignature: kipuData.require_patient_signature,
-          requireGuarantorSignature: kipuData.require_guarantor_signature,
-          requireGuardianSignature: kipuData.require_guardian_signature,
-          availableOnPortal: kipuData.available_on_portal,
-          isCrm: kipuData.is_crm,
-          masterTreatmentPlanCategory: kipuData.master_treatment_plan_category,
-          forceAllReviewUsersTitles: kipuData.force_all_review_users_titles,
-          forceAllStaffUsersTitles: kipuData.force_all_staff_users_titles,
-          reviewSignatureUserTitles: kipuData.review_signature_user_titles,
-          signatureUserTitles: kipuData.signature_user_titles,
-          locked: kipuData.locked,
-          isRequired: kipuData.is_required,
-          evaluationVersionId: kipuData.evaluation_version_id,
-          ancillary: kipuData.ancillary,
-          billableClaimFormat: kipuData.billable_claim_format,
-          rendering_provider: kipuData.rendering_provider,
-          evaluationId: kipuData.evaluation_id,
-          patientProcessId: kipuData.patient_process_id,
-          updatedBy: kipuData.updated_by,
-        };
-        
-        return patientEvaluation;
+        return camelCaseEvaluationData;
       },
       cacheTTL.MEDIUM // 5 minutes
     );
-    // Return the evaluation data
-    return NextResponse.json(evaluation);
+    const safeEvaluation = JSON.parse(JSON.stringify(evaluation));
+    return NextResponse.json(safeEvaluation);
   } catch (error) {
     console.error('Error fetching evaluation:', error);
     
