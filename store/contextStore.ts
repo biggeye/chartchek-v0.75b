@@ -29,11 +29,11 @@ export type PatientContext = {
   evaluations?: KipuPatientEvaluation[];
 };
 
-export interface ContextStoreState {
+interface ContextStoreState {
   contextCategories: ContextCategory[];
   contextItems: ContextItem[];
   selectedContextItems: ContextItem[];
-  patientContext: PatientContext[] | [];
+  patientContext: PatientContext | null; // Change from array to single object or null
   isLoading: boolean;
   error: string | null;
   
@@ -297,16 +297,16 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
       return options;
   },
 
-  buildContextForPatient: (patient, selectedContextItems) => {
-    if (!patient) return null;
+  buildContextForPatient: async (patient: any, selectedContextItems: ContextItem[]): Promise<PatientContext> => {
+    if (!patient) return Promise.resolve({ patientInfo: 'No patient selected' });
     
-    // Create a basic context with patient info
+    
     const context: PatientContext = {
       patientInfo: `Patient: ${patient.firstName} ${patient.lastName}, ${patient.age} years old, ${patient.gender || 'Gender not specified'}`
     };
     
     // Initialize empty sections for selected options
-    selectedOptions.forEach(option => {
+    selectedContextItems.forEach((option: ContextItem) => {
       switch (option.id) {
         case 'medicalHistory':
           context.medicalHistory = 'Loading medical history...';
@@ -326,7 +326,7 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
       }
     });
     
-    return context;
+    return Promise.resolve(context);
   },
   
   preparePatientContext: async (patient, selectedOptions) => {
@@ -396,7 +396,6 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
       set({ patientContext: context });
     }
   },
-  
   clearContextStore: () => {
     set({
       selectedContextItems: defaultContextCategories[0].items.filter(item => item.selected),
@@ -404,5 +403,5 @@ export const useContextStore = create<ContextStoreState>((set, get) => ({
       isLoading: false,
       error: null
     });
-  }
+  },
 }));

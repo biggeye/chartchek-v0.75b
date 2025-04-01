@@ -103,7 +103,7 @@ export const MessageList = React.memo(({
   }
 
   return (
-    <ScrollArea className="h-full w-full overflow-y-auto mb-20">
+    <ScrollArea className="h-full w-full overflow-y-auto mb-5">
       <div className="flex flex-col gap-4 p-4 pb-24">
         {messages.length === 0 && !isStreamingActive && !isAssistantLoading && (
           <div className="text-center text-muted-foreground py-8">No messages yet. Start the conversation!</div>

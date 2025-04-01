@@ -1,64 +1,183 @@
-***WHEN REFACTORING, ALWAYS PROVIDE THE ENTIRE FILE'S LOGICC UNLESS OTHERWISE SPECIFIED***
+currently we are refactoring the gemini endpoints following the spec:
 
-**ONLY WRITE CODE THAT IS TAILORED SPECIFICALLY TO THE APPLICATION, IT'S LOGIC AND DEPENDENCIES**
+# Gemini API Endpoints Specification
 
-*NO GENERALIZED SOLUTIONS*
+## Overview
+This specification defines the standard structure and behavior for all Gemini API endpoints in the ChartChek application.
 
-**IF YOU NEED MORE INFO IN ORDER TO BUILD A TAILORED SOLUTION, THEN ASK FOR IT**
+## Route Structure
+```
+/api/gemini/{resource}/{action}/route.ts
+```
 
-***DO NOT GUESS ABOUT REFERENCES TO COMPONENTS/LOGIC/FILE LOCATIONS/ANYTHING***
+## Authentication
+All endpoints require authentication via `Supabase auth.getSession()`.
 
-***ASK THE USER FOR WHAT YOU NEED TO DO YOUR JOB BEFORE WRITING ANY CODE***
+## Standard Route Template
+```typescript
+// app/api/gemini/{resource}/{action}/route.ts
+import { NextResponse } from 'next/server';
+import { geminiCorpusService } from '@/lib/gemini/corpus';
+import { createServer } from '@/utils/supabase/server';
 
-This system is built upon:
+export async function POST(request: Request) {
+  const supabase = await createServer();
+  const { data: { session } } = await supabase.auth.getSession();
 
-Next.js 15 (App Router Configuration) for routing and SSR.
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-Supabase for authentication and PostgreSQL database integration.
+  try {
+    const requestData = await request.json();
+    // Validation and business logic here
+    return NextResponse.json(responseData);
+  } catch (error: any) {
+    console.error(`Error in ${resource}/${action}:`, error);
+    return NextResponse.json(
+      { error: error.message || `Failed to ${action} ${resource}` },
+      { status: 500 }
+    );
+  }
+}
+```
 
-Zustand for application state management.
+## Endpoints
 
-OpenAI Assistant API (v2 Beta) for natural language processing tasks.
+### 1. Create Corpus
+- **Path:** `/api/gemini/corpus/create`
+- **Method:** `POST`
+- **Request Body:**
+```json
+{
+  "displayName": "string (required)",
+  "description": "string (optional)"
+}
+```
+- **Supabase Operations:**
+  - Table: `knowledge_corpus`
+  - Operation: `insert`
+  - Fields:
+    - `corpus_name`: corpus.name
+    - `display_name`: requestBody.displayName
+    - `description`: requestBody.description || null
+    - `created_by`: session.user.id
+- **Response:** Supabase response data
 
-KIPU EMR integration for managing behavioral health and substance abuse treatment records.
+### 2. Query Corpus
+- **Path:** `/api/gemini/corpus/query`
+- **Method:** `POST`
+- **Request Body:**
+```json
+{
+  "corpusName": "string (required)",
+  "query": "string (required)",
+  "metadataFilters": "MetadataFilter[] (optional)",
+  "resultsCount": "number (optional, default: 10)"
+}
+```
+- **Response:** Gemini API response
 
+### 3. Create Document
+- **Path:** `/api/gemini/document/create`
+- **Method:** `POST`
+- **Request Body:**
+```json
+{
+  "corpusName": "string (required)",
+  "document": {
+    "displayName": "string (required)",
+    "content": "string (required)",
+    "mimeType": "string (optional, default: text/plain)",
+    "metadata": "object (optional)"
+  }
+}
+```
+- **Supabase Operations:**
+  - Table: `knowledge_documents`
+  - Operation: `insert`
+  - Fields:
+    - `corpus_name`: requestBody.corpusName
+    - `document_name`: response.name
+    - `display_name`: requestBody.document.displayName
+    - `created_by`: session.user.id
+- **Response:** Supabase response data
 
-🔗 KIPU EMR Integration
-The KIPU auth logic is not to be modified (/lib/kipu/auth/*)
+### 4. Delete Document
+- **Path:** `/api/gemini/document/delete`
+- **Method:** `DELETE`
+- **Request Body:**
+```json
+{
+  "documentName": "string (required)"
+}
+```
+- **Supabase Operations:**
+  - Table: `knowledge_documents`
+  - Operation: `delete`
+  - Where: `document_name = requestBody.documentName`
+- **Response:** Success message
 
-when factoring new logic, adhere to the patterns established which include utilizing the server and auth functions for API headers, signatures, etc
+### 5. List Corpora
+- **Path:** `/api/gemini/corpus/list`
+- **Method:** `GET`
+- **Response:** Array of corpus objects
 
-Data Flow Protocol for KIPU:
-UI components fetch data exclusively from Zustand stores (/store/*).
+### 6. List Documents
+- **Path:** `/api/gemini/document/list`
+- **Method:** `GET`
+- **Query Parameters:**
+  - `corpusName`: string (required)
+- **Response:** Array of document objects
 
-Stores call API endpoints (/api/kipu/*), which in turn call service layers at (/lib/kipu/service/*).
+## Error Handling
+All endpoints should follow this error response format:
+```json
+{
+  "error": "Error message"
+}
+```
 
-Avoid direct KIPU API interactions from the frontend—always go through stores.
+## Example Implementation: Query Corpus Endpoint
+```typescript
+// app/api/gemini/corpus/query/route.ts
+import { NextResponse } from 'next/server';
+import { geminiCorpusService} from '@/lib/gemini/corpus';
+import { createServer } from '@/utils/supabase/server';
 
-🎨 UI/UX Component Development
-Reuse existing UI components found in:
+export async function POST(request: Request) {
+  const supabase = await createServer();
+  const { data: { session } } = await supabase.auth.getSession();
 
-/components/*
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-/components/ui/*
+  try {
+    const { corpusName, query, metadataFilters, resultsCount = 10 } = await request.json();
 
-Always search these directories thoroughly before creating new components.
+    if (!corpusName || !query) {
+      return NextResponse.json(
+        { error: 'corpusName and query are required' },
+        { status: 400 }
+      );
+    }
 
-🚩 General Development Guidelines
-Ask first:
-If unsure about a scope, functionality, existing logic, or infrastructure changes, ask the user for clarification. Do not assume or guess.
+    const results = await geminiCorpusService.queryCorpus(
+      corpusName,
+      query,
+      metadataFilters as MetadataFilter[],
+      resultsCount
+    );
 
-Code Refactoring:
-
-Start with the simplest solution.
-
-Confirm expansions or significant changes with the user first.
-
-Typescript Types and Interfaces:
-
-Primary type definitions reside in /types/* and specific store types in /types/store/*.
-
-Always check existing definitions thoroughly before creating new ones.
-
-If a new type or interface is required, define it inline at the top of the document using it, clearly commenting it for later migration.
+    return NextResponse.json(results);
+  } catch (error: any) {
+    console.error('Error querying corpus:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to query corpus' },
+      { status: 500 }
+    );
+  }
+}
+```
 

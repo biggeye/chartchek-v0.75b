@@ -56,7 +56,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="relative flex flex-col h-full max-h-[calc(100vh-1rem)] overflow-hidden">
+    <div className="fixed t-16 flex flex-col h-full max-h-[calc(100vh-3rem)] overflow-hidden">
       {/* Status indicators are now placed in a fixed position at the bottom of the screen */}
       <div className="fixed bottom-24 right-5 z-40 w-80">
         <RunStatusIndicator onCancel={handleCancelRun} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTemplateStore } from '@/store/templateStore';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,15 @@ import { KipuEvaluation } from '@/types/kipu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react'; // Add icon for delete button
 import { adaptKipuEvaluationToTemplate } from '@/lib/forms/kipuEvaluationAdapter';
-
+import { KipuPatientEvaluation } from '@/types/chartChek/evaluations';
 
 interface TemplateEditorProps {
   template?: ChartChekTemplate;
   isNew: boolean;
   onSave?: () => void;
+  document?: KipuPatientEvaluation; // Add the document prop
 }
+
 
 // Preview component for the template
 const TemplatePreview = ({ template }: { template: Partial<ChartChekTemplate> }) => {
@@ -105,7 +107,12 @@ const renderFieldPreview = (field: TemplateField) => {
   }
 };
 
-export default function TemplateEditor({ template, isNew, onSave }: TemplateEditorProps) {
+export default function TemplateEditor({
+  template,
+  isNew,
+  onSave,
+  document
+}: TemplateEditorProps) {
   const { saveTemplate, createTemplate } = useTemplateStore();
   const [currentTemplate, setCurrentTemplate] = useState<Partial<ChartChekTemplate>>(
     template || {
@@ -124,6 +131,47 @@ export default function TemplateEditor({ template, isNew, onSave }: TemplateEdit
   const [viewMode, setViewMode] = useState<'code' | 'preview'>('code');
   // State for saving status
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (document && currentTemplate.fields?.length) {
+      const populatedTemplate = {
+        ...currentTemplate,
+        fields: currentTemplate.fields.map(field => {
+          // Check if the field has a mapping to the KipuPatientEvaluation
+          const mappingKey = Object.keys(field.mappings || {})
+            .find(key => key.startsWith('KIPU.'));
+
+          if (mappingKey) {
+            // Extract the path from the mapping (e.g., 'KIPU.patient.name')
+            const path = mappingKey.split('.').slice(1);
+
+            // Get the value from the document using the path
+            // Get the value from the document using the path
+            let value: any = document;
+            for (const segment of path) {
+              if (value && typeof value === 'object' && segment in value) {
+                value = value[segment as keyof typeof value];
+              } else {
+                value = undefined;
+                break;
+              }
+            }
+
+            // Return the field with the value from the document
+            return {
+              ...field,
+              value: value !== undefined ? String(value) : undefined
+            };
+          }
+
+          return field;
+        })
+      };
+
+      setCurrentTemplate(populatedTemplate);
+    }
+  }, [document, currentTemplate.fields]);
+
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -245,7 +293,7 @@ export default function TemplateEditor({ template, isNew, onSave }: TemplateEdit
                   <div key={field.id} className="border p-4 rounded-md">
                     <div className="flex justify-between mb-2">
                       <h4 className="font-medium">Field #{index + 1}</h4>
-                      <Button 
+                      <Button
                         outline
                         onClick={() => handleRemoveField(index)}
                         className="text-red-500 hover:text-red-700"
@@ -253,7 +301,7 @@ export default function TemplateEditor({ template, isNew, onSave }: TemplateEdit
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4 mb-2">
                       <div>
                         <label className="block text-sm font-medium mb-1">Field Name</label>
@@ -332,7 +380,7 @@ export default function TemplateEditor({ template, isNew, onSave }: TemplateEdit
                     </div>
                   </div>
                 ))}
-                
+
                 {(!currentTemplate.fields || currentTemplate.fields.length === 0) && (
                   <div className="text-center py-8 text-gray-500 border rounded-md">
                     No fields have been added to this template yet.

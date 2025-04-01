@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/evaluations';
 import KipuPatientEvaluationDocument from '@/components/dynamicForms/patientEvaluations/PatientEvaluationDocument';
+import { DocumentView } from '@/lib/DocumentView';
 export default function EvaluationDetailPage() {
   // Hooks must be inside the component
   const params = useParams();
@@ -115,7 +116,7 @@ useEffect(() => {
 
   // Render evaluation details
   return (
-    <div className="space-y-6">
+  
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -132,7 +133,7 @@ useEffect(() => {
               </div>
             <div className="flex gap-2">
               <Button
-                outline
+                variant="outline"
                 onClick={() => router.back()}
               >
                 Back
@@ -144,9 +145,9 @@ useEffect(() => {
         {evaluation && evaluation.patientEvaluationItems && (
             <div className="space-y-6">
  
-                 <KipuPatientEvaluationDocument
+                 <DocumentView
                  items={evaluation.patientEvaluationItems}
-                 title={evaluation.name} />
+                 />
       
               
             </div>
@@ -154,6 +155,6 @@ useEffect(() => {
         </CardContent>
       </Card>
 
-    </div>
+
   );
 }

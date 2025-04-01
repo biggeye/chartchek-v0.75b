@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
+import * as Headless from '@headlessui/react';
+import { Button } from '@/components/ui/button';
 import {
   PaperClipIcon,
   UserPlusIcon,
@@ -14,31 +17,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { SendIcon, Loader2 } from 'lucide-react';
 
-import { useFacilityStore } from '@/store/facilityStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { useChatStore } from '@/store/chatStore';
-import { useStreamStore } from '@/store/streamStore';
-import { usePatientStore } from '@/store/patientStore';
-import { useContextStore } from '@/store/contextStore';
 
-import { useRouter, usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import * as Headless from '@headlessui/react';
-import { Button } from '@/components/ui/button';
-import { assistantRoster } from '@/lib/assistant/roster';
 import DropdownMenu from '@/components/ui/dropdown-menu2';
-import Image from 'next/image';
-import { Transition } from '@headlessui/react';
 import { DynamicPaginatedDocumentList } from '@/components/documents/DynamicPaginatedDocumentList';
 
+import { assistantRoster } from '@/lib/assistant/roster';
 
-import { PatientBasicInfo } from '@/types/kipu';
-import { Document } from '@/types/store/document';
-
-import { PatientContextOption, PatientContextOptions } from '@/types/store/patient'
-import { PatientContextBuilderDialog } from '@/components/patient/PatientContextBuilderDialog';
-import { useSidebarStore } from '@/store/sidebarStore';
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
 
 export default function GlobalChatInput() {
   // State management
@@ -50,19 +34,12 @@ export default function GlobalChatInput() {
   const [documentPage, setDocumentPage] = useState(0);
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedAssistantKey, setSelectedAssistantKey] = useState<string>(assistantRoster[0].key);
-  const [isPatientContextBuilderOpen, setIsPatientContextBuilderOpen] = useState(false);
-  const [selectedContextOptions, setSelectedContextOptions] = useState<PatientContextOptions[]>([]);
+
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showEvaluationsPanel, setShowEvaluationsPanel] = useState(false);
-  const [isLoadingEvaluations, setIsLoadingEvaluations] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Get sidebar state
-  const { sidebarCollapsed } = useSidebarStore();
 
   // Auto-resize textarea
   const autoResizeTextarea = () => {
@@ -76,120 +53,10 @@ export default function GlobalChatInput() {
     autoResizeTextarea();
   }, [message]);
 
-  // Destructure store functions directly from the refactored hooks
-
-  // Chat store
-  const {
-    currentThread,
-    sendMessage,
-    transientFileQueue: storeFileQueue,
-    setCurrentAssistantId,
-    createThread,
-    activeRunStatus,
-    setIsLoading
-  } = useChatStore();
-
-
-  const { 
-    fetchPatientContextData,
-    preparePatientContext,
-    buildContextForPatient,
-    patientContext,
-    clearContextStore,
-    setPatientContext,
-    setContextCategories
-  } = useContextStore();
-  
-  // Document store
-  const {
-    clearFileQueue,
-    sendMessageWithFiles,
-    addFileToQueue,
-    removeFileFromQueue,
-    fetchDocumentsForCurrentFacility,
-    uploadAndProcessDocument
-  } = useDocumentStore();
-
-  // Stream store
-  const { isStreamingActive, startStream, cancelStream } = useStreamStore();
-
-  // Patient store
-  const { 
-    currentPatient, 
-    isPatientContextEnabled, 
-    patients, 
-    isLoadingVitalSigns, 
-    isLoading,
-    setIsLoadingPatients
-  } = usePatientStore();
-  const patientStore = usePatientStore.getState();
-  const selectPatient = patientStore.setCurrentPatient;
-  
-  // Kipu Evaluations store – note we now use the store’s property name directly without aliasing
-  const {
-    patientEvaluations,
-    selectedPatientEvaluation,
-    fetchPatientEvaluations,
-    error
-  } = useKipuEvaluationsStore();
-
-  // For documents (if needed separately)
-  const { 
-    documents, 
-    isLoadingDocuments,
-    setIsLoadingDocuments 
-  } = useDocumentStore();
-
-  // Facility store
-  const { 
-    getCurrentFacility, 
-    currentFacilityId 
-  } = useFacilityStore();
-
-  // Sync submission state with streaming state
-  useEffect(() => {
-    if (!isStreamingActive && isSubmitting) {
-      setIsSubmitting(false);
-    }
-  }, [isStreamingActive, isSubmitting]);
-
-  // Sync isSubmitting state with activeRunStatus
-  useEffect(() => {
-    if (activeRunStatus?.isActive) {
-      setIsSubmitting(true);
-    } else if (!isStreamingActive && !activeRunStatus?.isActive && isSubmitting) {
-      setIsSubmitting(false);
-    }
-  }, [activeRunStatus, isStreamingActive, isSubmitting]);
-
-  // Fetch documents when facility changes
-  useEffect(() => {
-    (async () => {
-      setIsLoadingDocuments(true);
-      try {
-        await fetchDocumentsForCurrentFacility();
-      } catch (error) {
-        console.error('Failed to load documents:', error);
-      } finally {
-        setIsLoadingDocuments(false);
-      }
-    })();
-  }, [currentFacilityId]);
-
-  useEffect(() => {
-    setDocumentPage(0);
-  }, [documents.length]);
-
   // Event handlers remain largely the same
   const toggleAttachFilesPanel = () => {
     setShowAttachFilesPanel(!showAttachFilesPanel);
     setShowPatientPanel(false);
-    setShowDocumentListPanel(false);
-  };
-
-  const togglePatientPanel = () => {
-    setShowPatientPanel(!showPatientPanel);
-    setShowAttachFilesPanel(false);
     setShowDocumentListPanel(false);
   };
 
@@ -199,35 +66,12 @@ export default function GlobalChatInput() {
     setShowPatientPanel(false);
   };
 
-  const handlePatientToggle = () => {
-    togglePatientPanel();
-    setIsLoadingPatients(true);
-    if (isPatientContextEnabled) {
-      setSelectedContextOptions([]);
-    }
-    setIsLoading(false);
-  };
-  
-  const selectPatientHandler = async (patient: PatientBasicInfo) => {
-    if (currentFacilityId && patient.patientId) {
-      setIsLoadingPatients(true);
-      await selectPatient(patient);
-      setShowPatientPanel(false);
-      setIsLoading(false);
-    }
+  const togglePatientPanel = () => {
+    setShowPatientPanel(!showPatientPanel);
+    setShowAttachFilesPanel(false);
+    setShowDocumentListPanel(false);
   };
 
-  const openPatientContextBuilder = () => {
-    if (currentPatient && isPatientContextEnabled) {
-      setIsPatientContextBuilderOpen(true);
-    }
-  };
-
-  const handleContextBuilderApply = (options: PatientContextOptions[]) => {
-    setIsLoadingPatients(true);
-    setSelectedContextOptions(options);
-    setIsPatientContextBuilderOpen(false);
-  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -255,13 +99,6 @@ export default function GlobalChatInput() {
     removeFileFromQueue(fileToRemove);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   const handleCheckboxChange = (doc: Document) => {
     if (!doc.openai_file_id) {
       console.warn(`Document ${doc.file_name} has no OpenAI file id yet.`);
@@ -275,12 +112,14 @@ export default function GlobalChatInput() {
     }
   };
 
-  // Determine if the current thread is active
-  const isThreadActive =
-    currentThread &&
-    currentThread.tool_resources?.file_search?.vector_store_ids &&
-    currentThread.tool_resources.file_search.vector_store_ids[0] !== 'temp-vector-store';
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
+// _______ASSISSTANT SELECTOR_________
   // Get the current assistant ID based on the selected key
   const getCurrentAssistantId = (key: string): string => {
     const assistant = assistantRoster.find(a => a.key === key);
@@ -324,6 +163,11 @@ export default function GlobalChatInput() {
   };
 
   const assistantLogoPath = getAssistantLogoPath(selectedAssistantKey);
+
+
+
+
+
 
   const handleSubmit = async () => {
     if (isSubmitting || (!message.trim() && storeFileQueue.length === 0)) return;
@@ -384,23 +228,6 @@ export default function GlobalChatInput() {
       console.error('Error submitting message:', error);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const fetchEvaluationsDemo = async () => {
-    setIsLoadingEvaluations(true);
-    try {
-      if (currentPatient?.patientId) {
-        // Fetch evaluations for the current patient
-        await fetchPatientEvaluations(currentPatient.patientId);
-        console.log('Patient evaluations fetched:', patientEvaluations);
-      } else {
-        console.warn('Cannot fetch evaluations: No facility or patient selected');
-      }
-    } catch (error) {
-      console.error('Error fetching evaluations:', error);
-    } finally {
-      setIsLoadingEvaluations(false);
     }
   };
 
@@ -888,6 +715,7 @@ export default function GlobalChatInput() {
                             onClick={() => {
                               selectPatientHandler(patient);
                               togglePatientPanel();
+                              setIsPatientContextBuilderOpen(true);
                             }}
                             className="flex items-center w-full p-3 text-left rounded-md hover:bg-gray-100 transition-colors"
                           >
@@ -917,33 +745,6 @@ export default function GlobalChatInput() {
             </div>
           </Headless.Transition>
 
-          {/* Patient Context Builder Dialog */}
-<div className="flex items-center space-x-2">
-  <button
-    type="button"
-    onClick={() => setIsPatientContextBuilderOpen(true)}
-    disabled={!currentPatient}
-    className={`p-2 rounded-md ${
-      currentPatient ? 'text-blue-500 hover:bg-blue-100' : 'text-gray-400 cursor-not-allowed'
-    }`}
-    title="Build Patient Context"
-  >
-    <UserIcon className="h-5 w-5" />
-  </button>
-  
-  <div className="flex items-center">
-    <input
-      type="checkbox"
-      id="contextToggle"
-    //  checked={isContextEnabled}
-  //    onChange={() => toggleContextEnabled()}
-      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-    />
-    <label htmlFor="contextToggle" className="ml-2 text-sm text-gray-700">
-      Use Context
-    </label>
-  </div>
-</div>
 
 {/* Add the PatientContextBuilderDialog */}
 {isPatientContextBuilderOpen && currentPatient && (

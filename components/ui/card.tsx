@@ -21,7 +21,10 @@ export const CardHeader = forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-transparent via-card-foreground/5 to-transparent rounded-t-lg", className)}
+    className={cn(
+      "flex flex-col space-y-1.5 p-6 bg-gradient-to-r from-transparent via-card-foreground/5 to-transparent rounded-t-lg",
+      className
+    )}
     {...props}
   />
 ));
@@ -34,3 +37,15 @@ export const CardContent = forwardRef<
   <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
 ));
 CardContent.displayName = "CardContent";
+
+export const CardTitle = forwardRef<
+  HTMLParagraphElement,
+  HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";

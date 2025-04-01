@@ -114,13 +114,26 @@ export function PatientContextBuilderDialog({
       }
     });
   };
-
-  // Apply selected options
   const handleApply = () => {
-    setSelectedContextItems(selectedContextItems);
-    onApply(selectedOptions);
+    setSelectedContextItems(selectedOptions); // <-- This should save the user's selected options
+    onApply(selectedOptions);                 // <-- Pass selected options back to parent
     onClose();
   };
+
+  useEffect(() => {
+    if (patient) {
+      generateContextItems(patient, patientEvaluations, patientVitalSigns);
+      
+      // Wait briefly or ensure generateContextItems is synchronous:
+      const storeItems = useContextStore.getState().contextItems;
+      setAllOptions(storeItems);
+      setSelectedOptions(selectedContextItems.length > 0 
+        ? selectedContextItems 
+        : storeItems.filter(opt => opt.category === 'basic'));
+    }
+  }, [patient, patientEvaluations, patientVitalSigns]);
+  
+  
 
   return (
     <Transition appear show={isOpen} as={Fragment}>

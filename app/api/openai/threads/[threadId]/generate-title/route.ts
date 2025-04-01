@@ -12,7 +12,7 @@ export async function POST(
   { params }: { params: { threadId: string } }
 ) {
   try {
-    const { threadId } = requestSchema.parse(params);
+    const threadId = await params.threadId;
     
     const openai = getOpenAIClient();
     

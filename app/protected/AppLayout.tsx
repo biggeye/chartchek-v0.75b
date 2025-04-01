@@ -49,7 +49,8 @@ import { LoadingBar } from '@/components/ui/loading-bar';
 import Image from 'next/image';
 import { DebugPanel } from '@/components/dev/DebugPanel';
 import Footer from '@/components/ui/modules/Footer';
-import GlobalChatInput from '@/components/chat/GlobalChatInput';
+import GlobalChat from '@/components/GlobalChat';
+import { BookIcon, BuildingIcon, ChartAreaIcon } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -72,7 +73,10 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
     { name: 'Home', href: '/protected', icon: BuildingOffice2Icon },
     { name: 'Chat', href: '/protected/chat', icon: ChatBubbleBottomCenterIcon },
     { name: 'Documents', href: '/protected/documents', icon: DocumentDuplicateIcon },
+    { name: 'Facilities', href: '/protected/facilities', icon: BuildingIcon },
     { name: 'Patients', href: '/protected/patients', icon: UserCircleIcon },
+    { name: 'Template Editor', href: '/protected/admin/templates', icon: ChartAreaIcon },
+    { name: 'Knowledge Management', href: '/protected/admin/knowledge', icon: BookIcon } ,
   ].map(item => ({
     ...item,
     current: pathname === item.href
@@ -140,7 +144,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen max-h-screen bg-background">
       <LoadingBar />
       <div className="sticky top-0 z-40 flex sm:h-10 md:h-12 7xl:h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
         <div className="flex flex-1 gap-x-2 self-stretch lg:gap-x-4">
@@ -261,7 +265,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
       </div>
       <main className="flex-1 maxw-screen">
         {children}
-        <GlobalChatInput />
+        <GlobalChat />
       </main>
       <PDFGeneratorListener />
       <DebugPanel />

@@ -239,11 +239,12 @@ export interface KipuEvaluationItemObject {
     matrixDefaultRecords: number;
     cssStyle: string;
     image?: string;
-    skipValidations?: boolean;
-    question?: string;
-    answer?: string;
+    skipValidations?: boolean;  
+    records: any[]; // this is where the actual data from the evaluation lies (the answers so to speak)
   }
   
+
+
   export interface KipuEvaluation {
     id: number;
     name: string;
@@ -283,3 +284,8 @@ export interface KipuEvaluationItemObject {
     patientId?: string;
     items?: Array<KipuEvaluationItemObject>;
   }
+
+  
+  /* evaluation.data.evaluationitems.records.description[0] = "something something"
+     evaluation.data.evaluationitems.type = "textarea" | title | etc
+*/
