@@ -25,7 +25,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
     fetchOpenAIMessages, 
     activeRunStatus,
     checkActiveRun
-  } = useGlobalChatStore()
+  } = useLegacyChatStore()
   
   const {
     currentStreamContent,

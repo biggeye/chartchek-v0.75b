@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
 import { DocumentView } from '@/lib/DocumentView';
+
 export default function EvaluationDetailPage() {
   // Hooks must be inside the component
   const params = useParams();
@@ -145,11 +146,12 @@ export default function EvaluationDetailPage() {
           <div className="space-y-6">
             {evaluation && evaluation.patientEvaluationItems && (
               <div className="space-y-6">
-                {evaluation.patientEvaluationItems.map(item => (
-                  <DocumentView
-                    key={item.id}
-                    items={item}
-                  />
+                // Replace line 152 with this properly formatted arrow function
+                {evaluation.patientEvaluationItems?.map((item: KipuPatientEvaluationItem) => (
+                  <div key={item.id} className="border-b py-3">
+                    <h3 className="font-medium">{item.label}</h3>
+                    <p>{item.label || "Not answered"}</p>
+                  </div>
                 ))}
               </div>
             )}

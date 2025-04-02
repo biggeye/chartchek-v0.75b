@@ -55,9 +55,6 @@ export interface PatientStore {
   vitalSigns: PatientVitalSign[];
   currentPatientVitalSigns: PatientVitalSign[];
   selectedPatientVitalSigns: PatientVitalSign[];  // Added
-  isPatientContextEnabled: boolean;
-  selectedContextOptions: PatientContextOptions;
-  contextOptions: PatientContextOptions;
   isLoading: boolean;
   isLoadingPatients: boolean; // Added
   isLoadingVitalSigns: boolean;  // Added
@@ -77,12 +74,8 @@ export interface PatientStore {
 
   fetchPatientVitalSigns: (patientId: string, options?: { skipLoadingState?: boolean }) => Promise<PatientVitalSign[]>;
 
-  setPatientContextEnabled: (enabled: boolean) => void;
-  setPatientContextOptions: (options: Partial<PatientContextOptions>) => void;
-  updatePatientContextOptions: (options: PatientContextOptions) => void;
   setIsLoadingPatients: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   
   clearPatientStore: () => void;
-  clearPatientContext: () => void;
 }

@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
 import { Document, DocumentStore, DocumentCategorization } from '@/types/store/document';
-import { useGlobalChatStore } from './legacyChatStore';
+import { useLegacyChatStore as useChatStore } from './legacyChatStore';
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -270,7 +270,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
 
       sendMessageWithFiles: async (assistantId: string, threadId: string, content: string, files?: Document[]) => {
         try {
-          const chatStore = useGlobalChatStore.getState();
+          const chatStore = useChatStore.getState();
           const threadId = chatStore.currentThread?.thread_id;
 
           if (!threadId) {

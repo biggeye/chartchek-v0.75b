@@ -18,7 +18,7 @@ export async function GET(
 ) {
   try {
     // Await the params object before destructuring
-    const params = await Promise.resolve(context.params);
+    const params = await (context.params);
     const { evaluationId } = params;
     
     if (!evaluationId || isNaN(Number(evaluationId))) {

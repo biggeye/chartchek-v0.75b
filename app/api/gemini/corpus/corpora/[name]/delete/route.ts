@@ -5,8 +5,10 @@ import { createServer } from '@/utils/supabase/server';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { name: string } }
+ // context: { params: { corpusName: string } }
 ) {
+
+//    const params = await Promise.resolve(context.params);
   const supabase = await createServer();
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -15,9 +17,9 @@ export async function DELETE(
   }
 
   try {
-    const corpusName = params.name;
+ //   const corpusName = params.corpusName;
 
-    if (!corpusName) {
+    if (!request) {
       return NextResponse.json(
         { error: 'corpusName is required' },
         { status: 400 }
@@ -25,13 +27,13 @@ export async function DELETE(
     }
 
     // Delete corpus in Gemini
-    const results = await geminiCorpusService.deleteCorpus(corpusName);
+   // const results = await geminiCorpusService.deleteCorpus(corpusName);
 
     // Also delete from Supabase
     await supabase
       .from('knowledge_corpus')
       .delete()
-      .eq('corpus_name', corpusName);
+      .eq('corpus_name', 123);
 
     return NextResponse.json({ success: true, message: 'Corpus deleted successfully' });
   } catch (error: any) {

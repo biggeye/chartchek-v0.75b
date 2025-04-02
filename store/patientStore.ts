@@ -37,9 +37,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   vitalSigns: [],
   currentPatientVitalSigns: [],
   selectedPatientVitalSigns: [],
-  isPatientContextEnabled: false,
-  selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
-  contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
   isLoading: false,
   isLoadingPatients: false,
   isLoadingVitalSigns: false,
@@ -72,38 +69,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
   // Set vital signs
   setVitalSigns: (vitalSigns: PatientVitalSign[]) => set({ vitalSigns }),
 
-  // Set context options
-  setPatientContextOptions: (options: Partial<PatientContextOptions>) => set({
-    contextOptions: {
-      ...get().contextOptions,
-      ...options
-    }
-  }),
-
-  // Set patient context enabled state - ADDED MISSING METHOD
-  setPatientContextEnabled: (enabled: boolean) => set({ isPatientContextEnabled: enabled }),
-
-   // Update patient context options
-   updatePatientContextOptions: (options: PatientContextOptions) => {
-    set({ contextOptions: options });
-
-    // If patient context is enabled, update the chat context
-    if (get().isPatientContextEnabled && get().currentPatient) {
-      const patient = get().currentPatient;
-      if (patient) {
-        // Check if the method exists before calling it
-        const chatState = useGlobalChatStore.getState();
-         
-          chatState.chatContext = {
-            patientId: patient.patientId,
-            patientName: `${patient.firstName} ${patient.lastName}`,
-            facilityId: patient.facilityId || null // Add facilityId
-          
-        }
-      }
-    }
-  },
-
   setIsLoadingPatients: (isLoadingPatients: boolean) => set({ isLoadingPatients }),
 
   setIsLoadingVitalSigns: (isLoadingVitalSigns: boolean) => set({ isLoadingVitalSigns }),
@@ -113,18 +78,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
   // Set error state
   setError: (error: string | null) => set({ error }),
-
-  clearPatientContext: () => {
-    set({ isPatientContextEnabled: false });
-    
-    // Clear the chat context
-    const chatState = useGlobalChatStore.getState();
-    chatState.chatContext = {
-      patientId: null,
-      patientName: null,
-      facilityId: null
-    };
-  },
 
   // Clear patient store - ADDED MISSING METHOD
   clearPatientStore: () => {
@@ -136,9 +89,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       vitalSigns: [],
       currentPatientVitalSigns: [],
       selectedPatientVitalSigns: [],
-      isPatientContextEnabled: false,
-      selectedContextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
-      contextOptions: DEFAULT_PATIENT_CONTEXT_OPTIONS,
       isLoading: false,
       isLoadingPatients: false,
       isLoadingVitalSigns: false,
@@ -363,39 +313,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       currentPatientId: null,
       currentPatient: null,
       currentPatientVitalSigns: [],
-      isPatientContextEnabled: false
-    });
-
-    const chatState = useGlobalChatStore.getState();
-    chatState.chatContext = {
-      patientId: null,
-      patientName: null,
-      facilityId: null, 
-    };
-
-  // Toggle patient context
-  togglePatientContext: (enabled: boolean) => {
-    set({ isPatientContextEnabled: enabled });
-
-    // If enabling context and we have a current patient, update the chat context
-    if (enabled && get().currentPatient) {
-      const patient = get().currentPatient;
-      if (patient) {
-        const chatState = useGlobalChatStore.getState();
-        chatState.chatContext = {
-          patientId: patient.patientId,
-          patientName: `${patient.firstName} ${patient.lastName}`,
-          facilityId: patient.facilityId || null // Add facilityId
-        };
-      }
-    } else if (!enabled) {
-      // If disabling context, clear the chat context
-      const chatState = useGlobalChatStore.getState();
-      chatState.chatContext = {
-        patientId: null,
-        patientName: null,
-        facilityId: null,
-      };
+     }); 
     }
   }
-}}))
+))

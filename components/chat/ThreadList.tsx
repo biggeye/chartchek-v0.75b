@@ -28,7 +28,7 @@ export function ThreadList({ assistantId }: { assistantId?: string }) {
     updateThreadTitle,
     fetchOpenAIMessages,
     checkActiveRun
-  } = useGlobalChatStore()
+  } = useLegacyChatStore()
 
   const [isEditing, setIsEditing] = useState<boolean>(false)
   const [isThreadLoading, setIsThreadLoading] = useState<string | null>(null)

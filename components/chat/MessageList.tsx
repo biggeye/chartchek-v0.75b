@@ -132,7 +132,7 @@ export const MessageList = React.memo(({
               </div>
               <div className="text-sm opacity-90">
                 {Array.isArray(message.content)
-                  ? message.content.map((content: any, i:) => (
+                  ? message.content.map((content: any, i: any) => (
                       <React.Fragment key={`${message.id || id}-content-${i}`}>
                         {content.type === 'text' && content.text && (
                           <div>{renderFormattedContent(content.text.value, content.text.annotations || [])}</div>
