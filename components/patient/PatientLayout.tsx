@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Breadcrumb from '@/components/ui/breadcrumb';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb';
 import { usePatientStore } from '@/store/patientStore';
 
 interface PatientBreadcrumbProps {
@@ -46,11 +53,26 @@ export function PatientBreadcrumb({
 
   return (
     <div className="container">
-      <Breadcrumb pages={breadcrumbPages} />
-      
-      <div className="flex flex-col gap-4 py-4">
-        {children}
-      </div>
+    <Breadcrumb>
+      <BreadcrumbList>
+        {breadcrumbPages.map((page, index) => (
+          <React.Fragment key={page.href}>
+            {index > 0 && <BreadcrumbSeparator />}
+            <BreadcrumbItem>
+              {page.current ? (
+                <BreadcrumbPage>{page.name}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink href={page.href}>{page.name}</BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
+    
+    <div className="flex flex-col gap-4 py-4">
+      {children}
     </div>
+  </div>
   );
 }

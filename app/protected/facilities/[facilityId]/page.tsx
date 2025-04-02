@@ -52,7 +52,7 @@ export default function FacilityDetailPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-xl font-bold">{facility.name}</h1>
           <Link href="/protected/facilities">
-            <Button outline>Back to Facilities</Button>
+            <Button variant="outline">Back to Facilities</Button>
           </Link>
         </div>
         

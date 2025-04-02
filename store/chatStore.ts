@@ -1,419 +1,393 @@
-// store/chatStore.ts
-'use client';
+import { create } from "zustand"
+import { devtools } from "zustand/middleware"
+import { KipuPatientEvaluation } from "@/types/chartChek/kipuEvaluations"
+import type { Patient, Document, UploadFile, QueueItem, PatientRecord } from "@/types/store/globalChat"
+import { type TrainingDataset, TRAINING_DATASETS } from "@/types/training-datasets"
+import { LLMOption, LLM_OPTIONS } from "@/lib/llm-service"
+import { v4 as uuidv4 } from 'uuid'
+import { useEvaluationsStore } from "./evaluationsStore"
+import { usePatientStore } from "./patientStore"
+import { KipuPatientEvaluationItem } from "@/types/chartChek/kipuAdapter"
+import { GlobalChatState } from "@/types/store/globalChat"
 
-import { create } from 'zustand';
-import { createClient } from '@/utils/supabase/client';
-import { ChatStoreState, SendMessageResult, Thread, ChatContext, PatientContext } from '@/types/store/chat';
-import { Run, ThreadMessage } from '@/types/api/openai';
-import { RunStatusResponse } from '@/types/store/chat';
-import { OPENAI_ASSISTANT_ID } from '@/utils/openai/server';
-import { assistantRoster } from '@/lib/assistant/roster';
+export const useGlobalChatStore = create<GlobalChatState>()(
+  devtools(
+    (set, get) => ({
+      // Initial state
+      patients: [],
+      selectedPatient: null,
+      patientRecords: [],
+      selectedRecords: [],
+      isLoadingPatients: false,
+      isLoadingRecords: false,
+      aggregatedContext: [],
 
-// Utility functions outside the store to prevent recreation on each call
-const getSupabaseClient = (() => {
-  let client: ReturnType<typeof createClient> | null = null;
-  return () => {
-    if (!client) client = createClient();
-    return client;
-  };
-})();
+      documents: [],
+      selectedDocuments: [],
+      isLoadingDocuments: false,
 
-const getUserId = async () => {
-  const supabase = getSupabaseClient();
-  const { data } = await supabase.auth.getUser();
-  return data?.user?.id || 'anonymous';
-};
+      uploadFiles: [],
+      isUploading: false,
 
-// Helper function to merge messages while preserving order
-const mergeMessages = (existing: ThreadMessage[], incoming: ThreadMessage[]): ThreadMessage[] => {
-  const messageMap = new Map<string, ThreadMessage>();
+      queueItems: [],
 
-  // Add existing messages to map
-  existing.forEach(msg => messageMap.set(msg.id, msg));
+      messages: [],
+      isGenerating: false,
+      currentMessage: "",
+      isFullScreen: false,
 
-  // Add or update with incoming messages
-  incoming.forEach(msg => messageMap.set(msg.id, msg));
+      availableModels: LLM_OPTIONS,
+      selectedModel: LLM_OPTIONS[0], // Default to GPT-4o
 
-  // Convert back to array and sort by created_at
-  return Array.from(messageMap.values())
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-};
+      availableTrainingDatasets: TRAINING_DATASETS,
+      selectedTrainingDataset: TRAINING_DATASETS[0], // Default to The Joint Commission
 
-// Check if a run status is terminal (completed, failed, cancelled)
-const isTerminalState = (status?: string): boolean => {
-  return ['completed', 'failed', 'cancelled', 'expired'].includes(status || '');
-};
+      // Patient actions
+      fetchPatients: async () => {
+        set({ isLoadingPatients: true })
+        try {
+          const response = await fetch(`/api/kipu/patients/census`)
 
-// Create Zustand store for chat state
-const useChatStore = create<ChatStoreState>((set, get) => ({
-  // --- CORE STATE ---
-  currentAssistantId: OPENAI_ASSISTANT_ID || null,
-  currentThread: null,
-  historicalThreads: [],
-  transientFileQueue: [],
-  patientContext: null,
-  chatContext: null,
-  activeRunStatus: null,
-  isLoading: false,
-  error: null,
+          if (!response.ok) throw new Error('Failed to fetch patients')
+          const data = await response.json()
+          console.log('[use-chat-store] data: ', data)
+          const patients = data.data.patients
+          console.log('[use-chat-store] patients: ', patients)
+          set({ patients: patients })
+        } catch (error) {
+          console.error('Error fetching patients:', error)
+        } finally {
+          set({ isLoadingPatients: false })
+        }
+      },
 
-  // --- ASSISTANT MANAGEMENT ---
-  setCurrentAssistantId: (assistantId: string) => {
-    try {
-      if (!assistantId) {
-        throw new Error('Assistant ID is required');
-      }
+      selectPatient: (patient: Patient) => {
+        set({ selectedPatient: patient })
+        if (patient) {
+          get().fetchPatientRecords(patient.patientId)
+        }
+      },
 
-      const { currentThread } = get();
-      set({
-        currentAssistantId: assistantId,
-        currentThread: currentThread
-          ? { ...currentThread, assistant_id: assistantId }
-          : null
-      });
-    } catch (error: any) {
-      console.error('[chatStore:setCurrentAssistantId] Error:', error);
-      set({ error: error.message });
-    }
-  },
+      fetchPatientRecords: async (patientId: string) => {
+        set({ isLoadingRecords: true });
+        try {
+          // 1. Fetch patient details
+          const patientStore = usePatientStore.getState();
+          const patient = await patientStore.fetchPatientById(patientId);
 
-  // --- THREAD MANAGEMENT ---
-  createThread: async (assistantId: string): Promise<string> => {
-    try {
-      set({ isLoading: true, error: null });
+          const evaluationsStore = useEvaluationsStore.getState();
+          await evaluationsStore.fetchPatientEvaluations(patient?.patientId);
+          const { patientEvaluations } = evaluationsStore;
 
-      // Validate assistant ID
-      if (!assistantId) {
-        throw new Error('Assistant ID is required');
-      }
+          const patientRecords: PatientRecord[] = Array.isArray(patientEvaluations) && patientEvaluations.length > 0
+            ? patientEvaluations.map(evaluation => ({
+              id: String(evaluation.id),
+              patientId: patientId,
+              status: evaluation.status,
+              type: evaluation.evaluationType,
+              date: evaluation.createdAt || new Date().toISOString(),
+              title: evaluation.name || `Evaluation ${evaluation.id}`,
+              provider: evaluation.createdBy || undefined,
+              summary: evaluation.evaluationContent || undefined,
+              details: evaluation.patientEvaluationItems  // Store the original evaluation data
+            })) : [];
 
-      // Get user ID - await it properly
-      const userId = await getUserId();
+          // 4. Set the records in our chat store
+          set({ patientRecords });
+        } catch (error) {
+          console.error('Error fetching patient records:', error);
+          set({ patientRecords: [] });
+        } finally {
+          set({ isLoadingRecords: false });
+        }
+      },
+      // Fix for the selectRecord function
+      selectRecord: (record: any) => {
+        const { selectedRecords } = get()
+        if (!selectedRecords.some((r) => r.id === record.id)) {
+          set({ selectedRecords: [...selectedRecords, record] })
 
-      // Create thread in OpenAI
-      const response = await fetch('/api/openai/threads', { method: 'POST' });
+          // Add record to queue - fix the type issue
+          get().addToQueue({
+            type: "patient",
+            name: `${record.title}`,
+            // Ensure we never pass undefined by defaulting to empty array
+            data: record.patientEvaluation?.patientEvaluationItems || []
+          })
+        }
+      },
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to create thread: ${response.status}`);
-      }
-
-      const { threadId } = await response.json();
-
-      if (!threadId) {
-        throw new Error('No thread ID returned from API');
-      }
-
-      // Update OpenAI Thread Metadata - fixed HTTP method
-      const metadataResponse = await fetch(`/api/openai/threads/${threadId}/metadata`, {
-        method: 'PATCH', // Fixed from 'UPSERT' to standard HTTP method
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          metadata: {
-            user_id: userId,
-            assistant_id: assistantId,
-            created_at: new Date().toISOString()
-          }
+      // Fix for the deselectRecord function
+      deselectRecord: (recordId) => {
+        const { selectedRecords, queueItems } = get()
+        set({
+          selectedRecords: selectedRecords.filter((r) => String(r.id) !== String(recordId)),
         })
-      });
 
-      if (!metadataResponse.ok) {
-        const errorData = await metadataResponse.json();
-        console.error('[chatStore:createThread] Failed to update metadata:', errorData);
-      }
+        // Remove from queue - fix the string/number comparison
+        const queueItemId = queueItems.find(
+          (item) =>
+            item.type === "patient" &&
+            "id" in item.data &&
+            String(item.data.id) === String(recordId)
+        )?.id
 
-      // Set as current thread and assistant ID
-      set({
-        currentThread: {
-          thread_id: threadId,
-          messages: [],
-          tool_resources: null,
-          assistant_id: assistantId
-        },
-        currentAssistantId: assistantId,
-        isLoading: false
-      });
-
-      return threadId;
-    } catch (error: any) {
-      console.error('[chatStore:createThread] Error:', error);
-      set({ error: error.message || 'Failed to create thread', isLoading: false });
-      throw error;
-    }
-  },
-
-  setCurrentThread: (thread: Thread | null) => {
-    try {
-      // Get assistant ID from thread, environment variable, or use the default from roster
-      const assistantId = thread?.assistant_id || OPENAI_ASSISTANT_ID ||
-        // Fallback to the default assistant from the roster if available
-        (assistantRoster &&
-          assistantRoster.length > 0 &&
-          assistantRoster.find((a) => a.key === 'default')?.assistant_id);
-
-      if (!assistantId) {
-        throw new Error('No assistant ID available');
-      }
-
-      set({
-        currentThread: thread,
-        currentAssistantId: assistantId
-      });
-    } catch (error: any) {
-      console.error('[chatStore:setCurrentThread] Error:', error);
-      set({ error: error.message });
-    }
-  },
-
-  // --- HISTORICAL THREADS ---
-  fetchHistoricalThreads: async () => {
-    try {
-      set({ isLoading: true, error: null });
-
-      const userId = await getUserId();
-      const supabase = getSupabaseClient();
-
-      const { data: threads, error } = await supabase
-        .from('chat_threads')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const historicalThreads: Thread[] = threads.map((thread: any) => ({
-        thread_id: thread.thread_id,
-        assistant_id: thread.assistant_id,
-        title: thread.title || 'New Chat',
-        metadata: thread.metadata,
-        messages: [],
-        tool_resources: thread.tool_resources
-      }));
-
-      set(state => ({
-        ...state,
-        historicalThreads,
-        isLoading: false
-      }));
-
-      return historicalThreads;
-    } catch (error: any) {
-      console.error('[chatStore:fetchHistoricalThreads] Error:', error);
-      set(state => ({
-        ...state,
-        error: error.message || 'Failed to fetch threads',
-        isLoading: false
-      }));
-      throw error;
-    }
-  },
-
-  updateThreadTitle: async (threadId: string) => {
-    try {
-      const data = await fetch(`/api/openai/threads/${threadId}/generate-title`);
-      const { title } = await data.json();
-      return title;
-    } catch (error: any) {
-      console.error('[chatStore:updateThreadTitle] Error:', error);
-      set(state => ({
-        ...state,
-        error: error.message || 'Failed to update thread title'
-      }));
-      throw error;
-    }
-  },
-
-  deleteThread: async (threadId: string) => {
-    try {
-      set(state => ({ ...state, isLoading: true, error: null }))
-      
-      const response = await fetch(`/api/openai/threads/${threadId}/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to delete thread: ${response.status}`);
-      }
-  
-      // Remove the deleted thread from historical threads
-      set(state => ({
-        ...state,
-        historicalThreads: state.historicalThreads.filter(t => t.thread_id !== threadId),
-        // If the current thread was deleted, clear it
-        currentThread: state.currentThread?.thread_id === threadId ? null : state.currentThread,
-        isLoading: false
-      }));
-  
-    } catch (error: any) {
-      console.error('[chatStore:deleteThread] Error:', error);
-      set(state => ({
-        ...state,
-        error: error.message || 'Failed to delete thread',
-        isLoading: false
-      }));
-      throw error;
-    }
-  },
-
-  // --- MESSAGE MANAGEMENT ---
-  sendMessage: async (
-    assistantId: string,
-    threadId: string,
-    content: string,
-    attachments = []
-  ): Promise<SendMessageResult> => {
-    try {
-      // Validate required parameters
-      if (!assistantId) throw new Error('Assistant ID is required');
-      if (!threadId) throw new Error('Thread ID is required');
-      if (!content.trim() && attachments.length === 0) {
-        throw new Error('Message content or attachments are required');
-      }
-
-      // Check if there's an active run for this thread
-      const runStatus = await get().checkActiveRun(threadId);
-      if (runStatus.isActive) {
-        throw new Error(
-          `Cannot send message while a run ${runStatus.runId} is active. Current status: ${runStatus.status}`
-        );
-      }
-
-      const payload = {
-        role: 'user',
-        content,
-        assistant_id: assistantId,
-        ...(attachments.length > 0 && { attachments })
-      };
-
-      const response = await fetch(`/api/openai/threads/${threadId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to send message: ${response.status}`);
-      }
-
-      const messageData = await response.json();
-
-      // Fetch updated messages to ensure state is current
-      await get().fetchOpenAIMessages(threadId);
-
-      return {
-        success: true,
-        messageId: messageData.id
-      };
-    } catch (error: any) {
-      console.error('[chatStore:sendMessage] Error:', error);
-      set(state => ({ ...state, error: error.message || 'Failed to send message' }));
-      return {
-        success: false,
-        error: error.message || 'Failed to send message'
-      };
-    }
-  },
-  // --- MESSAGE FETCHING ---
-  fetchOpenAIMessages: async (threadId: string): Promise<ThreadMessage[] | undefined> => {
-    if (!threadId) {
-      console.error('[fetchOpenAIMessages] No threadId provided');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/openai/threads/${threadId}/messages`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
+        if (queueItemId) {
+          get().removeFromQueue(queueItemId)
         }
-      });
+      },
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to fetch messages: ${response.status}`);
-      }
+      clearSelectedRecords: () => {
+        set({ selectedRecords: [] })
+      },
 
-      const messagesResponse = await response.json();
-      const messages = messagesResponse.data || [];
+      // Document actions
+      fetchDocuments: async () => {
+        set({ isLoadingDocuments: true })
+        try {
+          const response = await fetch('/api/kipu/documents/list')
+          if (!response.ok) throw new Error('Failed to fetch documents')
+          const data = await response.json()
+          set({ documents: data })
+        } catch (error) {
+          console.error('Error fetching documents:', error)
+        } finally {
+          set({ isLoadingDocuments: false })
+        }
+      },
 
-      set(state => {
-        const currentThreadId = state.currentThread?.thread_id;
-        if (currentThreadId !== threadId) return state;
+      fetchDocumentsByCategory: async (category) => {
+        set({ isLoadingDocuments: true })
+        try {
+          const response = await fetch(`/api/kipu/documents/list?category=${category}`)
+          if (!response.ok) throw new Error(`Failed to fetch ${category} documents`)
+          const data = await response.json()
+          set({ documents: data })
+        } catch (error) {
+          console.error(`Error fetching ${category} documents:`, error)
+        } finally {
+          set({ isLoadingDocuments: false })
+        }
+      },
 
-        return {
-          ...state,
-          error: null,
-          currentThread: state.currentThread
-            ? {
-              ...state.currentThread,
-              messages: mergeMessages(state.currentThread.messages || [], messages),
-              has_more: messagesResponse.has_more || false,
-              next_page: messagesResponse.next_page
+      selectDocument: (document) => {
+        set((state) => ({
+          selectedDocuments: [...state.selectedDocuments, document]
+        }))
+      },
+
+      deselectDocument: (documentId) => {
+        set((state) => ({
+          selectedDocuments: state.selectedDocuments.filter(d => d.id !== documentId)
+        }))
+      },
+
+      clearSelectedDocuments: () => {
+        set({ selectedDocuments: [] })
+      },
+
+
+      // File upload actions
+      addFilesToUpload: (files) => {
+        const uploadFiles: UploadFile[] = Array.from(files).map(file => ({
+          id: uuidv4(),
+          file,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          progress: 0,
+          status: 'pending'
+        }))
+
+        set((state) => ({
+          uploadFiles: [...state.uploadFiles, ...uploadFiles]
+        }))
+      },
+
+      processUploadFiles: async () => {
+        const { uploadFiles } = get()
+        if (uploadFiles.length === 0) return
+
+        set({ isUploading: true })
+
+        try {
+          // Update each file status to uploading
+          set((state) => ({
+            uploadFiles: state.uploadFiles.map(file => ({
+              ...file,
+              status: 'uploading'
+            }))
+          }))
+
+          // Process each file upload
+          for (const file of uploadFiles) {
+            const formData = new FormData()
+            formData.append('file', file.file)
+
+            try {
+              const response = await fetch('/api/openai/files', {
+                method: 'POST',
+                body: formData
+              })
+
+              if (!response.ok) throw new Error(`Failed to upload ${file.name}`)
+
+              // Update file status to success
+              set((state) => ({
+                uploadFiles: state.uploadFiles.map(f =>
+                  f.id === file.id ? { ...f, status: 'success', progress: 100 } : f
+                )
+              }))
+            } catch (error) {
+              console.error(`Error uploading ${file.name}:`, error)
+
+              // Update file status to error
+              set((state) => ({
+                uploadFiles: state.uploadFiles.map(f =>
+                  f.id === file.id ? { ...f, status: 'error' } : f
+                )
+              }))
             }
-            : null
-        };
-      });
-
-      return messages;
-    } catch (error: any) {
-      console.error('[fetchOpenAIMessages] Error fetching messages:', error);
-      set(state => ({
-        ...state,
-        error: error.message || 'Failed to fetch messages'
-      }));
-      return undefined;
-    }
-  },
-  // --- RUN MANAGEMENT ---
-  checkActiveRun: async (threadId: string): Promise<RunStatusResponse> => {
-    if (!threadId) {
-      console.log('[chatStore:checkActiveRun] No thread ID provided');
-      return { isActive: false };
-    }
-
-    try {
-      const response = await fetch(`/api/openai/threads/${threadId}/run/check`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // No active run found - this is a valid state
-          set({ activeRunStatus: null });
-          return { isActive: false };
+          }
+        } finally {
+          set({ isUploading: false })
         }
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to check run status: ${response.status}`);
-      }
+      },
 
-      const runStatus = await response.json();
-      const statusResponse: RunStatusResponse = {
-        isActive: !isTerminalState(runStatus.status),
-        status: runStatus.status,
-        runId: runStatus.run_id,
-        requiresAction: !!runStatus.required_action,
-        requiredAction: runStatus.required_action
-      };
+      removeUploadFile: (fileId) => {
+        set((state) => ({
+          uploadFiles: state.uploadFiles.filter(f => f.id !== fileId)
+        }))
+      },
 
-      set({ activeRunStatus: statusResponse });
+      clearUploadFiles: () => {
+        set({ uploadFiles: [] })
+      },
+      // Queue actions
+      addToQueue: (item) => {
+        const newItem: QueueItem = {
+          id: uuidv4(),
+          ...item
+        }
 
-      // If run is in a terminal state, fetch messages to get final response
-      if (isTerminalState(runStatus.status)) {
-        await get().fetchOpenAIMessages(threadId);
-      }
+        set((state) => ({
+          queueItems: [...state.queueItems, newItem]
+        }))
+      },
 
-      return statusResponse;
-    } catch (error: any) {
-      console.error('[chatStore:checkActiveRun] Error checking run status:', error.message);
-      return { isActive: false };
-    }
-  },
-  setIsLoading: (isLoading: boolean) => set({ isLoading }),
-  // --- ERROR HANDLING ---
-  setError: (error: string | null) => set({ error }),
-  clearError: () => set({ error: null }),
-}));
+      removeFromQueue: (itemId) => {
+        set((state) => ({
+          queueItems: state.queueItems.filter(item => item.id !== itemId)
+        }))
+      },
 
-export default useChatStore;
-export { useChatStore };
+      clearQueue: () => {
+        set({ queueItems: [] })
+      },
+
+      // Chat actions
+      setCurrentMessage: (message) => {
+        set({ currentMessage: message })
+      },
+
+      sendMessage: async () => {
+        const { currentMessage, messages, selectedModel, selectedTrainingDataset, queueItems } = get()
+
+        if (!currentMessage.trim()) return
+
+        const userMessage = {
+          id: uuidv4(),
+          role: 'user' as const,
+          content: currentMessage
+        }
+
+        // Add user message to chat
+        set((state) => ({
+          messages: [...state.messages, userMessage],
+          currentMessage: '',
+          isGenerating: true
+        }))
+
+        try {
+          // Prepare context from queue items
+          const context = queueItems.length > 0
+            ? { items: queueItems }
+            : undefined
+
+          // Call API endpoint for chat completion
+          const response = await fetch('/api/chat/completion', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [...messages, userMessage],
+              model: selectedModel.id,
+              trainingDataset: selectedTrainingDataset.id,
+              context
+            }),
+          })
+
+          if (!response.ok) throw new Error('Failed to get chat completion')
+
+          const data = await response.json()
+
+          // Add assistant response to chat
+          set((state) => ({
+            messages: [...state.messages, {
+              id: uuidv4(),
+              role: 'assistant',
+              content: data.content
+            }]
+          }))
+        } catch (error) {
+          console.error('Error in chat completion:', error)
+
+          // Add error message
+          set((state) => ({
+            messages: [...state.messages, {
+              id: uuidv4(),
+              role: 'assistant',
+              content: 'Sorry, I encountered an error processing your request. Please try again.'
+            }]
+          }))
+        } finally {
+          set({ isGenerating: false })
+        }
+      },
+
+      toggleFullScreen: () => {
+        set((state) => ({
+          isFullScreen: !state.isFullScreen
+        }))
+      },
+
+      // LLM actions
+      setSelectedModel: (model) => {
+        set({ selectedModel: model })
+      },
+
+      // Training dataset actions
+      setSelectedTrainingDataset: (dataset) => {
+        set({ selectedTrainingDataset: dataset })
+      },
+
+    // Fix for the setAggregatedContext function
+setAggregatedContext: (
+  selectedRecords: PatientRecord[], 
+  selectedTrainingDataset: TrainingDataset
+) => {
+  set({ 
+    aggregatedContext: {
+      recordId: selectedRecords[0]?.id || '',
+      recordType: selectedRecords[0]?.type || '',
+      recordName: selectedRecords[0]?.title || '',
+      recordData: selectedRecords,
+      recordMetadata: []
+    } 
+  });
+},
+    })),)
+{
+  name: 'globalChatStore'
+}

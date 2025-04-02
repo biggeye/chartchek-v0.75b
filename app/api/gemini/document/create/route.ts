@@ -1,6 +1,6 @@
 // app/api/gemini/document/create/route.ts
 import { NextResponse } from 'next/server';
-import { geminiCorpusService } from '@/lib/gemini/corpus';
+import { geminiCorpusService } from '@/lib/gemini/corpusService/';
 import { createServer } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
@@ -12,15 +12,31 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { corpusName, document } = await request.json();
+    // Add debugging to see what's being received
+    const requestText = await request.text();
+    console.log('Received request body:', requestText);
     
+    let requestData;
+    try {
+      requestData = JSON.parse(requestText);
+    } catch (error: unknown) {
+      const parseError = error as Error; // Proper type casting
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json({ 
+        error: `Invalid JSON in request body: ${parseError.message || 'Unknown parsing error'}`,
+        receivedData: requestText.substring(0, 100)
+      }, { status: 400 });
+    }
+    
+    const { corpusName, document } = requestData;
+
     if (!corpusName) {
       return NextResponse.json(
         { error: 'corpusName is required' },
         { status: 400 }
       );
     }
-    
+
     if (!document || !document.displayName || !document.content) {
       return NextResponse.json(
         { error: 'document with displayName and content is required' },

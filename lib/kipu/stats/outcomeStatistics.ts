@@ -1,5 +1,5 @@
 // lib/kipu/stats/outcomeStatistics.ts
-import { KipuCredentials } from '@/types/kipu';
+import { KipuCredentials } from '@/types/chartChek/kipuAdapter';
 import { OutcomeStatistics } from './types';
 import { kipuServerGet } from '../auth/server';
 

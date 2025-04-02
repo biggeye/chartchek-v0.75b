@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens, getUserInfo } from '@/lib/google/auth';
 import { createServerService } from '@/utils/supabase/serverService';
 
-// app/api/auth/google/callback/route.ts
-// app/api/auth/google/callback/route.ts - modified GET function
 export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const supabase = await createServerService();
@@ -23,7 +21,8 @@ export async function GET(request: NextRequest) {
   
   // Verify the state parameter
   const { data: userData } = await supabase.auth.admin.getUserById(session.user.id);
-  console.log('[google callback api]: userData.user_metadata.oauth_state:', userData?.user_metadata?.oauth_state);
+  // Fix 1: Add proper type checking for userData
+  console.log('[google callback api]: oauth_state:', userData?.user?.user_metadata?.oauth_state);
   
   // TEMPORARY FIX: Skip state validation for debugging
   // if (!userData || userData.user_metadata?.oauth_state !== state) {
@@ -43,9 +42,10 @@ export async function GET(request: NextRequest) {
     const userInfo = await getUserInfo(tokens.access_token);
     
     // Store tokens in user metadata
+    // Fix 2: Add proper type checking for userData
     await supabase.auth.admin.updateUserById(session.user.id, {
       user_metadata: {
-        ...userData?.user_metadata,
+        ...(userData?.user?.user_metadata || {}),
         google_access_token: tokens.access_token,
         google_refresh_token: tokens.refresh_token,
         google_token_expiry: Date.now() + (tokens.expires_in * 1000),
@@ -56,8 +56,10 @@ export async function GET(request: NextRequest) {
     
     // Redirect to the admin dashboard
     return NextResponse.redirect(`${baseUrl}/protected/admin/knowledge`);
-  } catch (error) {
+  } catch (error: unknown) {
+    // Fix 3: Add type annotation for error and handle it properly
     console.error('Error in Google OAuth callback:', error);
-    return NextResponse.redirect(`${baseUrl}/sign-in?error=${encodeURIComponent(error.message)}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return NextResponse.redirect(`${baseUrl}/sign-in?error=${encodeURIComponent(errorMessage)}`);
   }
 }

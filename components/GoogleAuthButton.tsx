@@ -21,7 +21,7 @@ export function GoogleAuthButton() {
     <Button 
       onClick={handleAuth} 
       disabled={isLoading}
-      outline
+     variant="outline"
     >
       {isLoading ? 'Connecting...' : 'Connect Google Account'}
     </Button>

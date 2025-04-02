@@ -96,7 +96,7 @@ export default function MetadataEditor() {
         </h2>
         <div className="flex gap-2">
           <Button 
-            outline 
+            variant="outline" 
             onClick={handleAddField}
           >
             <Plus className="mr-1 h-4 w-4" />
@@ -136,10 +136,8 @@ export default function MetadataEditor() {
                 <div className="col-span-2">
                   <Label htmlFor={`type-${index}`}>Type</Label>
                   <Select
-                    id={`type-${index}`}
                     value={valueType}
-                    onChange={(e) => {
-                      const newType = e.target.value;
+                    onValueChange={(newType: string) => {
                       let newValue = value;
                       
                       if (newType === 'string') {
@@ -163,9 +161,8 @@ export default function MetadataEditor() {
                   <Label htmlFor={`value-${index}`}>Value</Label>
                   {valueType === 'boolean' ? (
                     <Select
-                      id={`value-${index}`}
                       value={value ? 'true' : 'false'}
-                      onChange={(e) => handleChangeValue(key, e.target.value, 'boolean')}
+                      onValueChange={(newValue: string) => handleChangeValue(key, newValue, 'boolean')}
                     >
                       <option value="true">True</option>
                       <option value="false">False</option>
@@ -186,7 +183,7 @@ export default function MetadataEditor() {
                 
                 <div className="col-span-2">
                   <Button
-                    outline
+                    variant="outline"
                     onClick={() => handleRemoveField(key)}
                   >
                     <Trash className="h-4 w-4" />

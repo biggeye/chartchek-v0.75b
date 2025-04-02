@@ -51,7 +51,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
           </div>
         </CardContent>
         <CardFooter>
-          <Button outline className="w-full">
+          <Button variant="outline" className="w-full">
             <span>View Details</span>
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

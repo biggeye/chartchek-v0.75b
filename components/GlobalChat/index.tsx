@@ -1,35 +1,97 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useRef } from "react"
-import { FileUp, User, FileText, Send, ChevronDown, ChevronUp, Plus, X, MessageSquare, ChevronRight, Upload } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import {
+  FileUp,
+  User,
+  FileText,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  X,
+  MessageSquare,
+  Maximize2,
+  Minimize2,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import GlobalChatScreen from "./GlobalChatScreen"
-import { Avatar } from "../ui/avatar"
+import PatientModal from "./patient-modal"
+import DocumentModal from "./document-modal"
+import FileUploadModal from "./file-upload-modal"
+import ChatMessage from "./chat-message"
+import ChatMessages from "./chat-messages"
+import ModelSelector from "./model-selector"
+import TrainingSelector from "./training-selector"
+import { useGlobalChatStore } from "@/store/chatStore"
+import { useFacilityStore } from "@/store/facilityStore"
+import { assistantAdditionalStream } from "@/lib/openai/assistantService"
+// Import the hook and types from the original GlobalChat component
+import { useOpenAIResponse } from '@/hooks/useOpenAIResponse';
+import { OutputTextContent, ReasoningOutput } from '@/types/openai/responses';
+// Add keyframes for slide-up animation
+const slideUpKeyframes = `
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0.7;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`
+
 type ModalType = "upload" | "patient" | "documents" | null
-type QueueItem = {
-  id: string
-  type: "file" | "patient" | "document"
-  name: string
+
+// Define the ChatMessage interface
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
-export default function GlobalChat() {
-  const [message, setMessage] = useState("")
+export default function MasterGlobalChat() { // Renamed to avoid conflicts
   const [activeModal, setActiveModal] = useState<ModalType>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
-  const [queueItems, setQueueItems] = useState<QueueItem[]>([])
-  const [showQueue, setShowQueue] = useState(false)
+
+  const { currentFacilityId } = useFacilityStore();
+  
+  const {
+    currentAssistantId,
+    queueItems,
+    removeFromQueue,
+    currentMessage,
+    setCurrentMessage,
+    sendMessage,
+    isGenerating,
+    isFullScreen,
+    toggleFullScreen,
+  } = useGlobalChatStore()
+
   const queueRef = useRef<HTMLDivElement>(null)
+  const showQueue = queueItems.length > 0
+
+  // Add this useEffect to inject the keyframes
+  useEffect(() => {
+    // Add keyframes to the document
+    const styleElement = document.createElement("style")
+    styleElement.textContent = slideUpKeyframes
+    document.head.appendChild(styleElement)
+
+    return () => {
+      document.head.removeChild(styleElement)
+    }
+  }, [])
 
   const handleSend = () => {
-    if (message.trim()) {
-      console.log("Sending message:", message)
-      setMessage("")
+    if (currentMessage.trim()) {
+      sendMessage()
+      assistantAdditionalStream(assistantId, currentMessage)
     }
   }
 
@@ -40,34 +102,118 @@ export default function GlobalChat() {
     }
   }
 
-  const addToQueue = (type: "file" | "patient" | "document", name: string) => {
-    const newItem = {
-      id: Math.random().toString(36).substring(2, 9),
-      type,
-      name,
-    }
-    setQueueItems((prev) => [...prev, newItem])
-    setShowQueue(true)
-  }
-
-  const removeFromQueue = (id: string) => {
-    setQueueItems((prev) => prev.filter((item) => item.id !== id))
-    if (queueItems.length <= 1) {
-      setShowQueue(false)
+  const getModalContent = () => {
+    switch (activeModal) {
+      case "upload":
+        return <FileUploadModal onClose={() => setActiveModal(null)} />
+      case "patient":
+        return <PatientModal onClose={() => setActiveModal(null)} />
+      case "documents":
+        return <DocumentModal onClose={() => setActiveModal(null)} />
+      default:
+        return null
     }
   }
 
-  // Handle modal actions
-  const handleModalAction = (type: ModalType, itemName: string) => {
-    setActiveModal(null)
-    if (type === "upload") {
-      addToQueue("file", itemName)
-    } else if (type === "patient") {
-      addToQueue("patient", itemName)
-    } else if (type === "documents") {
-      addToQueue("document", itemName)
+  const getQueueItemIcon = (type: string) => {
+    switch (type) {
+      case "file":
+        return <FileUp className="h-3 w-3" />
+      case "patient":
+        return <User className="h-3 w-3" />
+      case "document":
+        return <FileText className="h-3 w-3" />
+      default:
+        return null
     }
   }
+
+  // --- INTEGRATED GLOBAL CHAT LOGIC ---
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    response,
+    error,
+    loading,
+    streaming,
+    createResponse,
+    streamResponse,
+    stopStreaming
+  } = useOpenAIResponse({
+    initialOptions: {
+      model: 'gpt-4o',
+      temperature: 0.7,
+    }
+  });
+
+  // Extract text from response
+  useEffect(() => {
+    if (response && response.status === 'completed') {
+      // Find text content in the response
+      const textContents = response.output
+        .filter(item => item.type === 'message')
+        .flatMap(message =>
+          'content' in message
+            ? message.content.filter(c => c.type === 'output_text') as OutputTextContent[]
+            : []
+        );
+
+      if (textContents.length > 0) {
+        const assistantMessage = textContents.map(content => content.text).join('\n');
+
+        setMessages(prev => {
+          // Check if we already added this response
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant') {
+            // Update the last message
+            return [...prev.slice(0, -1), { role: 'assistant', content: assistantMessage }];
+          } else {
+            // Add a new message
+            return [...prev, { role: 'assistant', content: assistantMessage }];
+          }
+        });
+      }
+    }
+  }, [response]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleOpenAIChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentMessage.trim()) return;
+
+    // Add user message
+    const userMessage = { role: 'user' as const, content: currentMessage };
+    setMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+
+    // Get conversation history
+    const conversationHistory = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    const sentToAssistant = assistantAdditionalStream(assistantId, currentMessage);
+    // Stream the response
+    streamResponse({
+      model: 'gpt-4o',
+      input: [
+        ...conversationHistory.map(msg => ({
+          type: msg.role,
+          text: msg.content
+        })),
+        {
+          type: 'user',
+          text: userMessage.content
+        }
+      ],
+    });
+  };
+  // --- END INTEGRATED GLOBAL CHAT LOGIC ---
 
   return (
     <>
@@ -84,24 +230,86 @@ export default function GlobalChat() {
 
       {/* Main Chat Component */}
       {isVisible && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[80%] md:w-4/5 max-w-6xl z-50">
-          <div className="relative bg-background rounded-xl shadow-lg border border-border/50 backdrop-blur-sm overflow-hidden">
-            {/* Expand/Collapse Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="absolute top-0 left-1/2 -translate-x-1/2 z-10 h-6 w-10 rounded-t-none rounded-b-lg bg-muted/50"
-            >
-              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
+        <div
+          className={cn(
+            "fixed z-50 transition-all duration-500 ease-in-out",
+            isFullScreen ? "inset-0 p-0" : "bottom-4 left-1/2 -translate-x-1/2 w-[80%] md:w-4/5 max-w-6xl",
+          )}
+        >
+          <div
+            className={cn(
+              "relative bg-background/95 rounded-xl shadow-lg border border-border/50 backdrop-blur-sm overflow-hidden",
+              isFullScreen ? "h-full rounded-none" : "",
+            )}
+            style={{
+              boxShadow: "0 0 15px rgba(120, 120, 255, 0.1), 0 0 30px rgba(70, 70, 120, 0.05)",
+            }}
+          >
+            {/* Expand/Collapse Button (only when not fullscreen) */}
+            {!isFullScreen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="absolute top-0 left-1/2 -translate-x-1/2 z-10 h-6 w-10 rounded-t-none rounded-b-lg bg-muted/50"
+              >
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            )}
 
-            {/* Chat Messages Area (hidden by default) */}
-            {isExpanded && (
-              <div className="h-64 p-4 overflow-y-auto">
-                <div className="text-muted-foreground text-center">
-                  <GlobalChatScreen />
+            {/* Chat Messages Area */}
+            {(isExpanded || isFullScreen) && (
+              <div
+                className={cn("overflow-hidden flex flex-col", isFullScreen ? "h-[calc(100%-110px)]" : "h-64")}
+                style={{
+                  backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.03) 50%, transparent 50%)",
+                  backgroundSize: "100% 4px",
+                  backgroundColor: "#f5f5f5",
+                }}
+              >
+                <div className="p-2 border-b border-border/50 bg-muted/20">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <ModelSelector />
+                        <TrainingSelector />
+                      </div>
+                      <Button variant="outline" size="icon" onClick={toggleFullScreen} className="h-9 w-9 shrink-0">
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+                {/* <ChatMessages /> */}
+                {/* INTEGRATED CHAT MESSAGES */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg ${message.role === 'user'
+                        ? 'bg-blue-100 ml-auto max-w-[80%]'
+                        : 'bg-gray-100 mr-auto max-w-[80%]'
+                        }`}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                  ))}
+
+                  {loading && !streaming && (
+                    <div className="bg-gray-100 p-3 rounded-lg mr-auto max-w-[80%]">
+                      <p>Thinking...</p>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-100 p-3 rounded-lg mr-auto max-w-[80%]">
+                      <p>Error: {error.message}</p>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+                {/* END INTEGRATED CHAT MESSAGES */}
               </div>
             )}
 
@@ -114,11 +322,9 @@ export default function GlobalChat() {
               )}
             >
               <div className="flex items-center gap-2 overflow-x-auto">
-                {queueItems.map((item) => (
+                {queueItems.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full text-xs">
-                    {item.type === "file" && <FileUp className="h-3 w-3" />}
-                    {item.type === "patient" && <User className="h-3 w-3" />}
-                    {item.type === "document" && <FileText className="h-3 w-3" />}
+                    {getQueueItemIcon(item.type)}
                     <span className="truncate max-w-[100px]">{item.name}</span>
                     <Button
                       variant="ghost"
@@ -134,7 +340,7 @@ export default function GlobalChat() {
             </div>
 
             {/* Left Tab */}
-            <div className="absolute left-6 bottom-full">
+            <div className={cn("absolute left-6 bottom-full", isFullScreen && "hidden")}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -155,7 +361,7 @@ export default function GlobalChat() {
             </div>
 
             {/* Right Tab */}
-            <div className="absolute right-6 bottom-full">
+            <div className={cn("absolute right-6 bottom-full", isFullScreen && "hidden")}>
               <Button
                 variant="ghost"
                 className="h-10 rounded-t-lg rounded-b-none border border-b-0 border-border/50 bg-background/95 backdrop-blur-sm px-4"
@@ -198,23 +404,34 @@ export default function GlobalChat() {
                 {/* Input Field */}
                 <div className="flex-1 relative">
                   <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Type your message..."
                     className="w-full resize-none border-0 bg-transparent px-3 py-2 text-sm ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[40px] max-h-[80px]"
                     rows={1}
+                    disabled={isGenerating}
                   />
                 </div>
 
                 {/* Send Button - directly attached to input */}
                 <Button
-                  onClick={handleSend}
+                  onClick={handleOpenAIChatSubmit} // Changed to the new handler
                   size="icon"
                   className="rounded-full h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 mr-2"
+                  disabled={isGenerating || !currentMessage.trim()}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
+                {streaming && (
+                  <Button
+                    type="button"
+                    onClick={stopStreaming}
+                    className="bg-red-500 text-white px-4 py-2 rounded-md"
+                  >
+                    Stop
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -222,7 +439,7 @@ export default function GlobalChat() {
       )}
 
       {/* Modals */}
-      <Dialog open={activeModal !== null} onOpenChange={() => setActiveModal(null)}>
+      <Dialog open={activeModal !== null} onOpenChange={(open) => !open && setActiveModal(null)}>
         <DialogOverlay className="backdrop-blur-sm" />
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -233,115 +450,9 @@ export default function GlobalChat() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="py-4">
-            <ul role="list" className="divide-y divide-gray-100">
-              {activeModal === "patient" && (
-                // Patient list items
-                {patients.map((_, i) => (
-                  <li
-                    key={i}
-                    className="relative flex justify-between gap-x-4 py-4 px-3 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleModalAction(activeModal, `Patient ${i + 1}`)}
-                  >
-                    <div className="flex min-w-0 gap-x-3">
-                      <Avatar className="h-10 w-10">
-                        <Image src={`/logo`} />
-                      </Avatar>
-                      <div className="min-w-0 flex-auto">
-                        <p className="text-sm font-medium text-foreground">
-                          <span className="absolute inset-x-0 -top-px bottom-0" />
-                          Patient {i + 1}
-                        </p>
-                        <p className="mt-1 flex text-xs text-muted-foreground">
-                          MRN-{100000 + i}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-x-2">
-                      <div className="hidden sm:flex sm:flex-col sm:items-end">
-                        <p className="text-sm text-foreground">Last Visit</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {new Date(Date.now() - i * 86400000).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </li>
-                )}
-}
-
-              {activeModal === "documents" && (
-                // Document list items
-                Array.from({ length: 6 }).map((_, i) => (
-                  <li
-                    key={i}
-                    className="relative flex justify-between gap-x-4 py-4 px-3 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleModalAction(activeModal, `Document ${i + 1}`)}
-                  >
-                    <div className="flex min-w-0 gap-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-auto">
-                        <p className="text-sm font-medium text-foreground">
-                          <span className="absolute inset-x-0 -top-px bottom-0" />
-                          Document {i + 1}
-                        </p>
-                        <p className="mt-1 flex text-xs text-muted-foreground">
-                          Added {new Date(Date.now() - i * 86400000).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-x-2">
-                      <div className="hidden sm:flex sm:flex-col sm:items-end">
-                        <p className="text-sm text-foreground">Type</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {["PDF", "DOCX", "TXT", "CSV", "XLSX", "JSON"][i % 6]}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </li>
-                ))
-              )}
-
-              {activeModal === "upload" && (
-                // Upload file options
-                Array.from({ length: 6 }).map((_, i) => (
-                  <li
-                    key={i}
-                    className="relative flex justify-between gap-x-4 py-4 px-3 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleModalAction(activeModal, `File ${i + 1}`)}
-                  >
-                    <div className="flex min-w-0 gap-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-auto">
-                        <p className="text-sm font-medium text-foreground">
-                          <span className="absolute inset-x-0 -top-px bottom-0" />
-                          File Option {i + 1}
-                        </p>
-                        <p className="mt-1 flex text-xs text-muted-foreground">
-                          {["Patient Records", "Lab Results", "Imaging", "Assessments", "Treatment Plans", "Notes"][i % 6]}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center">
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-
-          <Button variant="ghost" size="icon" className="absolute right-4 top-4" onClick={() => setActiveModal(null)}>
-            <X className="h-4 w-4" />
-          </Button>
+          {getModalContent()}
         </DialogContent>
       </Dialog>
     </>
   )
 }
-

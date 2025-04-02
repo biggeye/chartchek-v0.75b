@@ -1,5 +1,5 @@
 // types/kipu/evaluations.ts
-import { Casefile } from './index';
+import { Casefile } from '../chartChek/kipuAdapter';
 
 export const KipuFieldTypes = [
   "auto_complete",

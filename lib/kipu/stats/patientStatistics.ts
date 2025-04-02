@@ -1,6 +1,6 @@
 // lib/kipu/stats/patientStatistics.ts
 
-import { KipuCredentials } from '@/types/kipu';
+import { KipuCredentials } from '@/types/chartChek/kipuAdapter';
 import { PatientStatistics, DateRange } from './types';
 import { kipuServerGet } from '../auth/server';
 

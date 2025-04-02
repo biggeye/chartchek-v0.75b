@@ -11,16 +11,26 @@ export interface ChartChekTemplate {
     validationRules: ValidationRule[];
   }
   
-  export interface TemplateField {
-    id: string;
-    name: string;
-    type: string;
-    required: boolean;
-    defaultValue?: any;
-    mappings: {
-      [systemName: string]: string; // Maps to field names in other systems
-    };
-  }
+// Update the TemplateField interface
+export interface TemplateField {
+  id: string;
+  name: string;
+  type: string;
+  required: boolean;
+  description?: string;
+  defaultValue?: any;
+  order?: number;
+  options?: string | string[] | Array<{label: string, value: string}>;
+  conditionalLogic?: string | {
+    dependsOn: string;
+    condition: string;
+    value: any;
+    original: any;
+  };
+  mappings: {
+    [systemName: string]: any; // Maps to field names in other systems
+  };
+}
   
   export interface TemplateTransformation {
     id: string;

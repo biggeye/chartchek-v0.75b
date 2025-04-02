@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { serverSaveKipuCredentialsToSupabase, serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
-import { KipuCredentials } from '@/types/kipu';
+import { KipuCredentials } from '@/types/chartChek/kipuAdapter';
 
 /**
  * GET handler to retrieve KIPU API credentials (masked)

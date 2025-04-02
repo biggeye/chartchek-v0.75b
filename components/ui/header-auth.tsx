@@ -26,7 +26,7 @@ export default async function AuthButton() {
           </div>
           <div className="flex gap-2">
             <Button
-              outline
+              variant="outline"
               className="opacity-75 cursor-none pointer-events-none"
               disabled
             >
@@ -48,7 +48,7 @@ export default async function AuthButton() {
       Hey, {user.email}!
       <form action={signOutAction}>
         <Button
-          outline
+          variant="outline"
         >
           Sign out
         </Button>
@@ -56,7 +56,7 @@ export default async function AuthButton() {
     </div>
   ) : (
     <div className="flex gap-2">
-      <Button outline>
+      <Button variant="outline">
         <Link href="/sign-in">Sign in</Link>
       </Button>
       <Button>

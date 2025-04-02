@@ -7,7 +7,7 @@ import {
   PaginatedFacilitiesResponse
 } from '@/lib/kipu/service/facility-service';
 import { queryKeys } from '@/utils/react-query/config';
-import { Facility } from '@/types/kipu';
+import { Facility } from '@/types/chartChek/kipuAdapter';
 import { useFacilityStore } from '@/store/facilityStore';
 
 /**

@@ -13,9 +13,10 @@ import { AlertCircle, CheckCircle2, Info, Key, Globe, User, Lock } from 'lucide-
 import { cn } from '@/lib/utils';
 import UserProfile from '@/components/profile/UserProfile';
 
-const supabase = createClient();
-const user = await supabase.auth.getUser();
-const userId = user.data?.user?.id;
+const getSupabaseClient = () => {
+  const supabase = createClient();
+  return supabase;
+};
 // Custom card components to extend the existing ones
 const CardTitle = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <h3 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props}>
@@ -70,9 +71,18 @@ const AlertDescription = ({ className, children, ...props }: React.HTMLAttribute
 );
 
 export default function SettingsPage() {
+
+  const [userId, setUserId] = useState<string>('');
   const { facilities, currentFacilityId, getCurrentFacility, isLoading } = useFacilityStore();
-  const currentFacility = getCurrentFacility();
-  
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase.auth.getUser();
+      setUserId(data.user?.id || '');
+    };
+    
+    fetchUserId();
+  }, []);
   // Add client-side only rendering state
   const [isClient, setIsClient] = useState(false);
   
@@ -90,13 +100,10 @@ export default function SettingsPage() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [testConnectionResult, setTestConnectionResult] = useState<{success: boolean; message: string} | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
-  // Set isClient to true when component mounts on client
-  useEffect(() => {
+   useEffect(() => {
     setIsClient(true);
   }, []);
   
-  // Load API settings when the page loads
   useEffect(() => {
     loadApiSettings();
   }, []);
@@ -153,9 +160,6 @@ export default function SettingsPage() {
     }
   };
   
-  /**
-   * Handles saving API settings
-   */
   const handleSaveSettings = async () => {
     setIsSaving(true);
     setSaveError('');
@@ -412,7 +416,7 @@ export default function SettingsPage() {
                 
                 <CardFooter className="flex justify-between">
                   <Button 
-                    outline
+                    variant="outline"
                     onClick={handleTestConnection}
                     disabled={testingConnection || !apiSettings.has_api_key_configured || !currentFacilityId}
                   >
@@ -458,7 +462,7 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                <UserProfile userId={userId || ''} />
+                <UserProfile userId={userId} />
                 </CardContent>
               </Card>
             </TabsContent>

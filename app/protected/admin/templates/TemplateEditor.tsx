@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { ChartChekTemplate, TemplateField } from '@/types/store/templates';
-import { KipuEvaluation } from '@/types/kipu';
+import { KipuEvaluation } from '@/types/chartChek/kipuAdapter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react'; // Add icon for delete button
-import { adaptKipuEvaluationToTemplate } from '@/lib/forms/kipuEvaluationAdapter';
-import { KipuPatientEvaluation } from '@/types/chartChek/evaluations';
+import { adaptKipuEvaluationToTemplate } from '@/lib/kipu/mapping/kipuEvaluationAdapter';
+import { KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
 
 interface TemplateEditorProps {
   template?: ChartChekTemplate;
@@ -232,7 +232,7 @@ export default function TemplateEditor({
             <span className={viewMode === 'code' ? 'font-medium' : 'text-gray-500'}>Code</span>
             <Switch
               checked={viewMode === 'preview'}
-              onChange={(checked: boolean) => setViewMode(checked ? 'preview' : 'code')}
+              onCheckedChange={(checked: boolean) => setViewMode(checked ? 'preview' : 'code')}
             />
             <span className={viewMode === 'preview' ? 'font-medium' : 'text-gray-500'}>Preview</span>
           </div>
@@ -285,7 +285,7 @@ export default function TemplateEditor({
             <TabsContent value="fields" className="py-4">
               <div className="mb-4 flex justify-between">
                 <h3 className="text-lg font-medium">Template Fields</h3>
-                <Button outline onClick={handleAddField}>Add Field</Button>
+                <Button variant="outline" onClick={handleAddField}>Add Field</Button>
               </div>
 
               <div className="space-y-4">
@@ -294,7 +294,7 @@ export default function TemplateEditor({
                     <div className="flex justify-between mb-2">
                       <h4 className="font-medium">Field #{index + 1}</h4>
                       <Button
-                        outline
+                        variant="outline"
                         onClick={() => handleRemoveField(index)}
                         className="text-red-500 hover:text-red-700"
                       >
@@ -365,7 +365,7 @@ export default function TemplateEditor({
                           </div>
                         ))}
                         <Button
-                          outline
+                          variant="outline"
                           onClick={() => {
                             const systemName = `system_${Object.keys(field.mappings || {}).length + 1}`;
                             const updatedMappings = { ...field.mappings, [systemName]: '' };
@@ -385,7 +385,7 @@ export default function TemplateEditor({
                   <div className="text-center py-8 text-gray-500 border rounded-md">
                     No fields have been added to this template yet.
                     <div className="mt-4">
-                      <Button outline onClick={handleAddField}>Add Your First Field</Button>
+                      <Button variant="outline" onClick={handleAddField}>Add Your First Field</Button>
                     </div>
                   </div>
                 )}

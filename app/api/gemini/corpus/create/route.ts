@@ -1,8 +1,9 @@
 // app/api/gemini/corpus/create/route.ts (updated)
 import { NextResponse } from 'next/server';
-import { geminiCorpusService } from '@/lib/gemini/corpus';
+import { geminiCorpusService } from '@/lib/gemini/corpusService/';
 import { createServer } from '@/utils/supabase/server';
 
+// app/api/gemini/corpus/create/route.ts
 export async function POST(request: Request) {
   const supabase = await createServer();
   const { data: { session } } = await supabase.auth.getSession();
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { displayName, description } = await request.json();
+    const { name, displayName, description } = await request.json();
 
     if (!displayName) {
       return NextResponse.json(
@@ -22,25 +23,20 @@ export async function POST(request: Request) {
     }
 
     // Create corpus in Gemini (no need to pass accessToken anymore)
-    const corpus = await geminiCorpusService.createCorpus(displayName);
-
-    // Store in Supabase
-    const { data, error } = await supabase
+    const corpus = await geminiCorpusService.createCorpus(name, displayName);
+    console.log('[API] corpus: ', corpus);
+    // Store in Supabase but don't return that data
+    const corpusSupabase = await supabase
       .from('knowledge_corpus')
       .insert({
-        corpus_name: corpus.name,
+        corpus_name: name,
         display_name: displayName,
         description: description || null,
         created_by: session.user.id
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return NextResponse.json(data);
+      });
+     console.log('[API] corpus supabase: ', corpusSupabase)
+    // Return the Gemini corpus data as the source of truth
+    return NextResponse.json(corpus);
   } catch (error: any) {
     console.error('Error creating corpus:', error);
     return NextResponse.json(

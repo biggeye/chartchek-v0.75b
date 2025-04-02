@@ -1,4 +1,4 @@
-import { KipuCredentials, KipuApiResponse, PatientVitalSign } from '@/types/kipu';
+import { KipuCredentials, KipuApiResponse, PatientVitalSign } from '@/types/chartChek/kipuAdapter';
 import { kipuServerGet } from '../auth/server';
 import { parsePatientId } from '../auth/config';
 

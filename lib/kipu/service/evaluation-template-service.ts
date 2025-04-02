@@ -1,5 +1,5 @@
 // lib/kipu/service/evaluation-template-service.ts
-import { KipuCredentials, KipuApiResponse } from '@/types/kipu';
+import { KipuCredentials, KipuApiResponse } from '@/types/chartChek/kipuAdapter';
 import { KipuEvaluation, KipuEvaluationResponse } from '@/types/kipu/evaluations';
 import { kipuServerGet } from '../auth/server';
 

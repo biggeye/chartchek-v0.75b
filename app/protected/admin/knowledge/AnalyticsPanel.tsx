@@ -50,7 +50,7 @@ export default function AnalyticsPanel() {
         </h3>
       </div>
       
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">All Queries</TabsTrigger>
           <TabsTrigger 

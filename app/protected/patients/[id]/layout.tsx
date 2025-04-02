@@ -9,9 +9,9 @@ import { EvaluationsCard } from '@/components/patient/EvaluationsCard';
 import { VitalSignsCard } from '@/components/patient/VitalSignsCard';
 import { useFacilityStore } from '@/store/facilityStore';
 import { usePatientStore } from '@/store/patientStore';
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
+import { useEvaluationsStore } from '@/store/evaluationsStore';
 
-import { PatientVitalSign } from '@/types/kipu';
+import { PatientVitalSign } from '@/types/chartChek/kipuAdapter';
 import { KipuPatientEvaluation, KipuEvaluationItem } from '@/types/kipu/evaluations';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -72,7 +72,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
         patientEvaluations,
         fetchPatientEvaluations,
         isLoadingEvaluations
-    } = useKipuEvaluationsStore();
+    } = useEvaluationsStore();
 
     const params = useParams();
     const patientId = params.id as string;

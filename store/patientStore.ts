@@ -2,11 +2,11 @@
 
 import { create } from 'zustand';
 import { PatientStore, PatientContextOptions, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
-import { PatientBasicInfo, PatientVitalSign, KipuPatientEvaluation } from '@/types/kipu';
+import { PatientBasicInfo, PatientVitalSign, KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 import { createClient } from '@/utils/supabase/client';
-import { useChatStore } from '@/store/chatStore';
+import { useGlobalChatStore } from './chatStore';
 import { parsePatientId } from '@/lib/kipu/auth/config';
-import { useKipuEvaluationsStore } from './kipuEvaluationsStore';
+import { useEvaluationsStore } from './evaluationsStore';
 // Import the evaluation type for conversion
 import { KipuPatientEvaluation as KipuPatientEvaluationDetailed } from '@/types/kipu/evaluations';
 
@@ -92,7 +92,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       const patient = get().currentPatient;
       if (patient) {
         // Check if the method exists before calling it
-        const chatState = useChatStore.getState();
+        const chatState = useGlobalChatStore.getState();
          
           chatState.chatContext = {
             patientId: patient.patientId,
@@ -118,7 +118,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     set({ isPatientContextEnabled: false });
     
     // Clear the chat context
-    const chatState = useChatStore.getState();
+    const chatState = useGlobalChatStore.getState();
     chatState.chatContext = {
       patientId: null,
       patientName: null,
@@ -235,10 +235,12 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
       const result = await response.json();
       const patient = result.success && result.data ? result.data : null;
-
+    
       if (patient) {
+        console.log('patientStore] fetch patient successful', patient);
         set({ selectedPatient: patient, currentPatient: patient, isLoading: false });
       } else {
+        console.log('patientStore] fetch patient NOT successful');
         set({ isLoading: false });
       }
 
@@ -364,7 +366,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       isPatientContextEnabled: false
     });
 
-    const chatState = useChatStore.getState();
+    const chatState = useGlobalChatStore.getState();
     chatState.chatContext = {
       patientId: null,
       patientName: null,
@@ -379,7 +381,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     if (enabled && get().currentPatient) {
       const patient = get().currentPatient;
       if (patient) {
-        const chatState = useChatStore.getState();
+        const chatState = useGlobalChatStore.getState();
         chatState.chatContext = {
           patientId: patient.patientId,
           patientName: `${patient.firstName} ${patient.lastName}`,
@@ -388,7 +390,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       }
     } else if (!enabled) {
       // If disabling context, clear the chat context
-      const chatState = useChatStore.getState();
+      const chatState = useGlobalChatStore.getState();
       chatState.chatContext = {
         patientId: null,
         patientName: null,

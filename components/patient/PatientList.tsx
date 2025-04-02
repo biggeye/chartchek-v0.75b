@@ -2,7 +2,7 @@
 
 import { Menu } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
-import { PatientBasicInfo } from '@/types/kipu';
+import { PatientBasicInfo } from '@/types/chartChek/kipuAdapter';
 import Link from 'next/link';
 
 interface PatientListProps {

@@ -1,7 +1,7 @@
 // app/api/openai/dalle3/create/route.ts
 import { createServer } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { Dalle3Params } from "@/types/dalle";
+import { Dalle3Params } from "@/types/openai/dalle";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as Dalle3Params;

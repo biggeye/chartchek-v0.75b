@@ -1,5 +1,5 @@
 // types/store/context.ts
-import { PatientContext, ChatContext } from './chat';
+import { PatientContext, ChatContext } from './legacyChat';
 import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
 
 // Define inline for migration to /types/kipu/index.ts

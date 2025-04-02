@@ -208,7 +208,7 @@ export interface TreatmentStatistics {
 export interface FacilityStatistics {
   patient: PatientStatistics;
   operational: OperationalStatistics;
-  staff: StaffStatistics;
+
   treatment: TreatmentStatistics;
   outcomes: OutcomeStatistics;
   last_updated: string;

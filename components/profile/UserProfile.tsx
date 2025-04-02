@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { ChatThread } from '@/types/database'
 import { ThreadRun } from '@/types/store/stream'
-import { Tabs, TabsList, TabsTrigger, TabsPanel } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -253,14 +253,14 @@ export default function UserProfile({ userId }: UserProfileProps) {
         </div>
       )}
       
-      <Tabs value={activeTab} onChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-8">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="history">Chat History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
-        <TabsPanel value="profile" className="space-y-8">
+        <TabsContent value="profile" className="space-y-8">
           <div className="space-y-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -360,9 +360,9 @@ export default function UserProfile({ userId }: UserProfileProps) {
               </Button>
             </form>
           </div>
-        </TabsPanel>
+        </TabsContent>
         
-        <TabsPanel value="history" className="space-y-8">
+        <TabsContent value="history" className="space-y-8">
           <div className="space-y-8">
             <div>
               <div className="flex justify-between items-center mb-4">
@@ -504,9 +504,9 @@ export default function UserProfile({ userId }: UserProfileProps) {
               )}
             </div>
           </div>
-        </TabsPanel>
+        </TabsContent>
         
-        <TabsPanel value="settings" className="space-y-8">
+        <TabsContent value="settings" className="space-y-8">
           <div className="space-y-8">
             <h2 className="text-xl font-semibold">Settings</h2>
             <div className="space-y-4">
@@ -572,7 +572,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
               </Button>
             </div>
           </div>
-        </TabsPanel>
+        </TabsContent>
       </Tabs>
     </div>
   )

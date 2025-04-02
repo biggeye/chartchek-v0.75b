@@ -1,7 +1,7 @@
 // store/templateStore.ts
 import { create } from 'zustand';
 import { ChartChekTemplate } from '@/types/store/templates';
-import { KipuEvaluation, KipuEvaluationItemObject } from '@/types/kipu';
+import { KipuEvaluation, KipuEvaluationItemObject } from '@/types/chartChek/kipuAdapter';
 
 interface TemplateState {
   templates: ChartChekTemplate[];
@@ -174,7 +174,7 @@ clearSelectedTemplate: () => set({ selectedTemplate: null}),
     set({ isLoadingTemplates: true, error: null });
     try {
 
-      const { adaptKipuEvaluationToTemplate } = await import('@/lib/forms/kipuEvaluationAdapter');
+      const { adaptKipuEvaluationToTemplate } = await import('@/lib/kipu/mapping/kipuEvaluationAdapter');
       const convertedTemplate = await adaptKipuEvaluationToTemplate(kipuTemplate);
 
       // Update state with the new template

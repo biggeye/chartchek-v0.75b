@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dalle3Params, Dalle3Response } from "@/types/dalle";
+import { Dalle3Params, Dalle3Response } from "@/types/openai/dalle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import TextArea from "@/components/ui/text-area"; // Note: default export

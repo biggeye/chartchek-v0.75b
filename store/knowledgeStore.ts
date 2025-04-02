@@ -2,8 +2,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
-import { geminiApi } from '@/lib/gemini/api';
-import { Corpus, KnowledgeDocument, KnowledgeDocumentMetadata, KnowledgeState, } from '@/types/chartChek/knowledgeBase';
+
+import { Corpus, KnowledgeDocument, KnowledgeDocumentMetadata, KnowledgeState, } from '@/types/store/knowledgeBase';
 // Utility functions outside the store to prevent recreation on each call
 const getSupabaseClient = (() => {
     let client: ReturnType<typeof createClient> | null = null;
@@ -27,7 +27,7 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => {
 
     return {
         corpora: [],
-        selectedCorpusId: null,
+        selectedCorpusId: '',
         documents: [],
         selectedDocumentId: null,
         metadata: [],
@@ -38,52 +38,142 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => {
         fetchCorpora: async () => {
             set({ isLoading: true, error: null });
             try {
-                const { data, error } = await supabase
-                    .from('knowledge_corpus')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw new Error(error.message);
-                set({ corpora: data });
+                const response = await fetch('/api/gemini/corpus');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch corpora: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('[knowledgeStore: ', data);
+                set({ corpora: data.corpora });
             } catch (error: any) {
                 set({ error: error.message });
             } finally {
                 set({ isLoading: false });
             }
         },
-
-        createCorpus: async (displayName, description) => {
+        setSelectedCorpusId: (id: string | null) => {
+            // Convert null to undefined if needed
+            set({ selectedCorpusId: id === null ? undefined : id });
+        },
+        createCorpus: async (name, displayName, description) => {
             set({ isLoading: true, error: null });
             try {
-                // Use the API function instead of inline fetch
-                const data = await geminiApi.createCorpus(displayName, description);
+                // This API call would handle both Gemini API and Supabase updates
+                const response = await fetch('/api/gemini/corpus/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, displayName, description })
+                });
 
-                // Update state
-                const { corpora } = get();
-                set({ corpora: [data, ...corpora] });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to create corpus');
+                }
+
+                const data = await response.json();
+                // Update local state with the new corpus
+                set(state => ({
+                    corpora: [data, ...state.corpora]
+                }));
+                return data;
             } catch (error: any) {
                 set({ error: error.message });
+                throw error;
             } finally {
                 set({ isLoading: false });
             }
         },
+        deleteCorpus: async (corpusName: string) => {
+            set({ isLoading: true, error: null });
+            try {
+                const response = await fetch(`/api/gemini/corpus/${corpusName}/delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        setSelectedCorpusId: (id) => {
-            set({ selectedCorpusId: id });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete corpus');
+                }
+
+                // After successful deletion, refresh the corpora list
+                const state = get();
+                await state.fetchCorpora();
+
+                return await response.json();
+            } catch (error: any) {
+                set({ error: error.message, isLoading: false });
+                console.error('Error deleting corpus:', error);
+                throw error;
+            } finally {
+                set({ isLoading: false });
+            }
+        },
+        queryCorpus: async (corpusName: string, query: string, metadataFilters?: any[], resultsCount: number = 10) => {
+            set({ isLoading: true, error: null });
+            try {
+                const response = await fetch(`/api/gemini/corpus/${corpusName}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query,
+                        metadataFilters,
+                        resultsCount
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to query corpus');
+                }
+
+                const results = await response.json();
+                set({ isLoading: false });
+                return results;
+            } catch (error: any) {
+                set({ error: error.message, isLoading: false });
+                console.error('Error querying corpus:', error);
+                throw error;
+            }
+        },
+        getCorpus: async (corpusName: string) => {
+            set({ isLoading: true, error: null });
+            try {
+                const response = await fetch(`/api/gemini/corpus/${corpusName}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to get corpus details for ${corpusName}`);
+                }
+
+                const data = await response.json();
+                set({ isLoading: false });
+                return data.corpus;
+            } catch (error: any) {
+                set({ error: error.message, isLoading: false });
+                console.error('Error getting corpus details:', error);
+                return null;
+            }
         },
 
         // Document actions
         fetchDocuments: async (corpusId) => {
             set({ isLoading: true, error: null });
             try {
+                // Clean the corpus ID for database operations
+                const cleanCorpusId = corpusId?.includes('/') ? corpusId.split('/').pop() : corpusId;
+
                 const { data, error } = await supabase
                     .from('knowledge_documents')
                     .select('*')
-                    .eq('corpus_id', corpusId)
-                    .order('created_at', { ascending: false });
+                    .eq('corpus_name', cleanCorpusId); // Use the clean ID here
 
                 if (error) throw new Error(error.message);
-                set({ documents: data });
+                set({ documents: data || [] });
             } catch (error: any) {
                 set({ error: error.message });
             } finally {
@@ -96,19 +186,43 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => {
             try {
                 const userId = await getUserId();
 
-                // Create form data
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('corpusId', corpusId);
-                formData.append('userId', userId);
-
-                // Add metadata if provided
-                if (Object.keys(metadata).length > 0) {
-                    formData.append('metadata', JSON.stringify(metadata));
+                // Get file content as text or base64 depending on file type
+                let content = '';
+                if (file.type.startsWith('text/')) {
+                    content = await file.text();
+                } else {
+                    // For binary files, convert to base64
+                    const buffer = await file.arrayBuffer();
+                    const bytes = new Uint8Array(buffer);
+                    content = btoa(String.fromCharCode(...bytes));
                 }
 
-                // Use the API function instead of inline fetch
-                const geminiData = await geminiApi.uploadDocument(formData);
+                // Create the JSON payload for Gemini API
+                const payload = {
+                    corpusName: corpusId,
+                    document: {
+                        displayName: file.name,
+                        content,
+                        mimeType: file.type,
+                        metadata
+                    }
+                };
+
+                // Make direct API call to our Next.js API route
+                const response = await fetch('/api/gemini/document/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to upload document');
+                }
+
+                const geminiData = await response.json();
 
                 // Create record in Supabase
                 const { data, error } = await supabase
@@ -174,7 +288,16 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => {
                 if (!document) throw new Error('Document not found');
 
                 // Delete from Gemini via API
-                await geminiApi.deleteDocument(document.document_name);
+                await fetch('/api/gemini/document/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        documentName: document.document_name
+                    })
+                });
+
 
                 // Delete from Supabase
                 const { error } = await supabase

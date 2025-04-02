@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { CheckCircleIcon, CalendarDaysIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { usePatientStore } from '@/store/patientStore';
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
+import { useEvaluationsStore } from '@/store/evaluationsStore';
 
 // Define a type for timeline activities
 interface TimelineActivity {
@@ -41,7 +41,7 @@ export default function PatientTreatmentPlan() {
     if (!currentPatient) return;
     
     const activities: TimelineActivity[] = [];
-    const evaluations = useKipuEvaluationsStore.getState().patientEvaluations;
+    const evaluations = useEvaluationsStore.getState().patientEvaluations;
     // Add evaluations to timeline
     if (evaluations) {
       evaluations.forEach(evaluation => {

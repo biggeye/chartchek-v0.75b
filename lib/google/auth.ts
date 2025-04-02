@@ -1,5 +1,3 @@
-// lib/google/auth.ts
-import { NextResponse } from 'next/server';
 
 // Google OAuth credentials
 export const GOOGLE_CREDENTIALS = {

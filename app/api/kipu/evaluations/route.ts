@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
-import { KipuApiResponse } from '@/types/kipu';
+import { KipuApiResponse } from '@/types/chartChek/kipuAdapter';
 import { kipuServerGet } from '@/lib/kipu/auth/server';
 import { createServer } from '@/utils/supabase/server';
 /**

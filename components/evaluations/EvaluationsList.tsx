@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/evaluations';
+import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
 import { formatDate } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter, DialogClose, DialogBody
+  DialogDescription, DialogFooter, DialogClose
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -217,7 +217,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                 </DialogDescription>
               </DialogHeader>
 
-              <DialogBody>
+              <DialogContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-gray-500">Last Updated</h4>
@@ -298,7 +298,7 @@ export function EvaluationsList({ evaluations, facilityId, patientId, onEdit, on
                     </div>
                   </div>
                 )}
-              </DialogBody>
+              </DialogContent>
 
               <DialogFooter className="mt-6">
                 <Button

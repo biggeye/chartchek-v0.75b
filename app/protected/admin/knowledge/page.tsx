@@ -27,7 +27,7 @@ export default function KnowledgeAdminDashboard() {
 
   useEffect(() => {
     fetchCorpora();
-  }, [fetchCorpora]);
+  }, []);
 
   useEffect(() => {
     if (selectedCorpusId) {
@@ -93,7 +93,7 @@ export default function KnowledgeAdminDashboard() {
                   <CardTitle>Document Viewer</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DocumentViewer />
+                  under construction...
                 </CardContent>
               </Card>
             </TabsContent>

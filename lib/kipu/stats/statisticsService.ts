@@ -1,6 +1,6 @@
 // lib/kipu/stats/statisticsService.ts
 
-import { KipuCredentials } from '@/types/kipu';
+import { KipuCredentials } from '@/types/chartChek/kipuAdapter';
 import { calculatePatientStatistics } from './patientStatistics';
 import { calculateOperationalStatistics } from './operationalStatistics';
 // import { calculateStaffStatistics } from './staffStatistics';
@@ -58,7 +58,6 @@ export class KipuStatisticsService {
       return {
         patient: patientStats,
         operational: operationalStats,
-        staff: staffStats || null,
         treatment: treatmentStats,
         outcomes: outcomeStats,
         last_updated: new Date().toISOString()

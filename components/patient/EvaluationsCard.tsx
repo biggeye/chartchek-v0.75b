@@ -57,7 +57,7 @@ export function EvaluationsCard({ adaptedEvaluations, onNewEvaluation }: Evaluat
               <div key={e.id} className="border-b pb-4 last:border-0 last:pb-0">
                 <div className="font-medium">
                   <Button
-                    outline
+                    variant="outline"
                     className="p-0 h-auto font-medium"
                     onClick={() => {
                       console.log("Evaluation data:", e);

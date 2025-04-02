@@ -10,7 +10,7 @@ export interface FormData {
   data: Record<string, any>;
 }
 
-export const generatePDF = async (formData: FormData): Promise<{ blob: Blob; url: string }> => {
+export const GeneratePDF = async (formData: FormData): Promise<{ blob: Blob; url: string }> => {
   try {
     console.log(`[pdfGenerator] Generating PDF for form type: ${formData.type}`, formData);
 

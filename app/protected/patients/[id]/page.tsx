@@ -4,12 +4,12 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { usePatientStore } from '@/store/patientStore';
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
+import { useEvaluationsStore } from '@/store/evaluationsStore';
 
 export default function PatientPage() {
   const { id: patientId } = useParams();
   const { currentPatient, isLoading, error } = usePatientStore();
-  const { isLoadingEvaluations } = useKipuEvaluationsStore();
+  const { isLoadingEvaluations } = useEvaluationsStore();
 
 
   if (isLoading) {

@@ -3,7 +3,7 @@ import {
   PatientBasicInfo,
   KipuPatientEvaluation,
   PatientVitalSign,
-} from '@/types/kipu';
+} from '@/types/chartChek/kipuAdapter';
 
 // types/store/chat.ts
 

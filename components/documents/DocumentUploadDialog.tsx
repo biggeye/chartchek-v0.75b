@@ -150,7 +150,7 @@ export default function DocumentUploadDialog({
               <Button 
                 onClick={onClose} 
                 disabled={isLoading}
-                plain
+                variant="destructive"
               >
                 Cancel
               </Button>

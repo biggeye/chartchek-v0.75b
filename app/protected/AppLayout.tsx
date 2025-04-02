@@ -151,7 +151,7 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
           <div className="flex flex-1 items-center">
             {/* Logo/Brand */}
             <Link href="/protected" className="flex items-center gap-0.5">
-              <Image src="/logos/logo.png" width="30" height="30" alt="chartChek" />
+              <Image src="/logos/logo.png" width="50" height="50" alt="chartChek" />
 
             </Link>
           </div>

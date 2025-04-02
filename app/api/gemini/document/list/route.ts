@@ -1,6 +1,6 @@
 // app/api/gemini/document/list/route.ts
 import { NextResponse } from 'next/server';
-import { geminiCorpusService } from '@/lib/gemini/corpus';
+import { geminiCorpusService } from '@/lib/gemini/corpusService/';
 import { createServer } from '@/utils/supabase/server';
 
 export async function GET(request: Request) {

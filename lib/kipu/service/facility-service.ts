@@ -6,7 +6,7 @@
  * It provides functions for listing facilities, getting facility details, and updating facilities.
  */
 
-import { Facility, KipuCredentials, KipuApiResponse } from '@/types/kipu';
+import { Facility, KipuCredentials, KipuApiResponse } from '@/types/chartChek/kipuAdapter';
 import { createKipuRequestConfig } from '@/lib/kipu/auth/signature';
 import { getKipuCredentials } from '@/lib/kipu/service/user-settings';
 import { createServer } from '@/utils/supabase/server';

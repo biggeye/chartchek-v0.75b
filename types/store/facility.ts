@@ -1,5 +1,5 @@
 // Extend the existing facility types to include API key management
-import { Facility as KipuFacility, FacilityApiSettings as KipuFacilityApiSettings, FacilityApiSettingsDisplay } from '@/types/kipu';
+import { Facility as KipuFacility, FacilityApiSettings as KipuFacilityApiSettings, FacilityApiSettingsDisplay } from '@/types/chartChek/kipuAdapter';
 
 // Re-export the Facility and FacilityApiSettings interfaces from KIPU types to maintain backward compatibility
 export type Facility = KipuFacility;

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Tooltip from './Tooltip';
 import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 
 interface DetailFieldProps {
@@ -56,7 +55,7 @@ export default function DetailField({
       <div className="text-sm font-medium text-gray-500">{label}</div>
       <div className="mt-1 group relative">
         {rows > 1 ? (
-          <Tooltip content={displayValue}>
+       
             <div className="relative">
               <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-2 rounded-md font-mono overflow-auto max-h-[200px]">
                 {truncatedValue}
@@ -73,9 +72,7 @@ export default function DetailField({
                 )}
               </button>
             </div>
-          </Tooltip>
         ) : (
-          <Tooltip content={displayValue}>
             <div className="relative flex items-center">
               <div className="text-sm font-mono bg-gray-50 p-2 rounded-md min-h-[28px] w-full overflow-x-auto">
                 {truncatedValue}
@@ -92,7 +89,6 @@ export default function DetailField({
                 )}
               </button>
             </div>
-          </Tooltip>
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
-import { useChatStore } from './chatStore';
+import { useLegacyChatStore } from './legacyChatStore';
 import { StreamingState } from '../types/store/stream';
 import { OpenAIStreamingEvent } from '@/types/api/openai';
 import { useDocumentStore } from './documentStore';
@@ -498,10 +498,10 @@ export const useStreamStore = create<StreamingState>((set, get) => ({
 
   finalizeMessage: () => {
     try {
-      const threadId = useChatStore.getState().currentThread?.thread_id;
+      const threadId = useLegacyChatStore.getState().currentThread?.thread_id;
       if (threadId) {
         console.log('[streamStore] Finalizing message for thread:', threadId);
-        useChatStore
+        useLegacyChatStore
           .getState()
           .fetchOpenAIMessages(threadId)
           .catch((error) => {

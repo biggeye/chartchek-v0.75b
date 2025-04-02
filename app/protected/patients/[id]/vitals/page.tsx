@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { PatientVitalSign } from '@/types/kipu';
+import { PatientVitalSign } from '@/types/chartChek/kipuAdapter';
 import { usePatientStore } from '@/store/patientStore';
 // Define a local interface for formatted vital signs
 interface VitalSign {

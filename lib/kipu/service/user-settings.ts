@@ -10,7 +10,7 @@
  */
 
 import { createClient } from '@/utils/supabase/client';
-import { KipuCredentials } from '@/types/kipu';
+import { KipuCredentials } from '@/types/chartChek/kipuAdapter';
 
 /**
  * Interface for user API settings

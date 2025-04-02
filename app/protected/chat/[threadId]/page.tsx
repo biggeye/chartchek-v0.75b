@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import React from 'react'
 import { MessageList } from '@/components/chat/MessageList'
-import { useChatStore } from '@/store/chatStore'
+import { useLegacyChatStore } from '@/store/legacyChatStore'
 import { useStreamStore } from '@/store/streamStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import RunStatusIndicator from '@/components/chat/RunStatusIndicator'
 import { ClockIcon, UserCircleIcon, FileTextIcon, InfoIcon } from 'lucide-react'
 import { XCircleIcon } from '@heroicons/react/24/outline'
-import { Skeleton, SkeletonText } from '@/components/ui/skeleton'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 
@@ -25,7 +25,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
     fetchOpenAIMessages, 
     activeRunStatus,
     checkActiveRun
-  } = useChatStore()
+  } = useGlobalChatStore()
   
   const {
     currentStreamContent,
@@ -150,10 +150,10 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
               
               {isLoading ? (
                 <div className="p-6 space-y-6">
-                  <SkeletonText lines={2} className="w-3/4" animation="shimmer" />
-                  <SkeletonText lines={4} className="w-full ml-auto bg-primary/10" animation="shimmer" />
-                  <SkeletonText lines={3} className="w-4/5" animation="shimmer" />
-                  <SkeletonText lines={2} className="w-2/3 ml-auto bg-primary/10" animation="shimmer" />
+                  <Skeleton className="w-3/4" />
+                  <Skeleton className="w-full ml-auto bg-primary/10"  />
+                  <Skeleton className="w-4/5"  />
+                  <Skeleton className="w-2/3 ml-auto bg-primary/10" />
                 </div>
               ) : (
                 <MessageList
@@ -181,7 +181,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
                 </h3>
                 
                 {isLoading ? (
-                  <SkeletonText lines={3} animation="shimmer" />
+                  <Skeleton />
                 ) : (
                   <div className="text-sm space-y-1">
                     <p className="text-muted-foreground flex justify-between">
@@ -205,7 +205,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
                 </h3>
                 
                 {isLoading ? (
-                  <SkeletonText lines={2} animation="shimmer" />
+                  <Skeleton />
                 ) : (
                   <div className="text-sm space-y-1">
                     <p className="text-muted-foreground flex justify-between">
@@ -236,7 +236,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
                 </h3>
                 
                 {isLoading ? (
-                  <SkeletonText lines={2} animation="shimmer" /> 
+                  <Skeleton /> 
                 ) : (
                   <div className="text-sm">
                     {currentThread?.current_files && currentThread.current_files.length > 0 ? (
@@ -263,7 +263,7 @@ export default function ChatPage({ params }: { params: Promise<{ threadId: strin
                   </h3>
                   
                   {isLoading ? (
-                    <Skeleton height={60} className="rounded-md bg-blue-50" animation="shimmer" />
+                    <Skeleton className="rounded-md bg-blue-50" />
                   ) : hasPatientContext && patientInfo ? (
                     <div className="text-sm bg-blue-50 p-3 rounded-md">
                       <p className="font-medium text-blue-800">

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CardTitle } from './CardComponents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PatientBasicInfo } from '@/types/kipu';
+import { PatientBasicInfo } from '@/types/chartChek/kipuAdapter';
 
 
 export function PatientInfoCard({ patient }: { patient: PatientBasicInfo }) {

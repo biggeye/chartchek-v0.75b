@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { kipuServerGet } from '@/lib/kipu/auth/server';
+import { kipuServerGet, serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { KipuPatientEvaluationsResponse } from '@/types/kipu/evaluations';
 import { snakeToCamel } from '@/utils/case-converters';
+import { kipuListPatientEvaluations } from '@/lib/kipu/service/patient-evaluation-service';
 /**
  * GET handler for retrieving patient evaluations
  * 
@@ -13,31 +14,32 @@ export async function GET(req: NextRequest) {
   try {
     // Get query parameters
     const searchParams = req.nextUrl.searchParams;
-    
+
     // Optional query parameters
-    const evaluationId = searchParams.get('evaluation_id');
-    const completedOnly = searchParams.get('completed_only') === 'true';
-    const currentCensusOnly = searchParams.get('current_census_only') === 'true';
-    const startDate = searchParams.get('start_date');
-    const endDate = searchParams.get('end_date');
-    const includeStranded = searchParams.get('include_stranded') === 'true';
+    const evaluationId = searchParams.get('evaluationId');
+    const completedOnly = searchParams.get('completedOnly') === 'true';
+    const currentCensusOnly = searchParams.get('currentCensusOnly') === 'true';
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const includeStranded = searchParams.get('includeStranded') === 'true';
     const page = searchParams.get('page') || '1';
     const per = searchParams.get('per') || '20';
-    const patientProcessId = searchParams.get('patient_process_id');
-    const evaluationContent = searchParams.get('evaluation_content');
+    const patientProcessId = searchParams.get('patientProcessId');
+    const evaluationContent = searchParams.get('evaluationContent');
 
-    // Create Supabase client
     const supabase = await createServer();
-    
-    // Get the current user session
+
+    // Get the user session to ensure they're authenticated
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    // Get user ID for cache key
+    const userId = session.user.id;
 
     // Build query parameters
     const queryParams = new URLSearchParams();
@@ -51,11 +53,19 @@ export async function GET(req: NextRequest) {
     queryParams.append('per', per);
     if (patientProcessId) queryParams.append('patient_process_id', patientProcessId);
     if (evaluationContent) queryParams.append('evaluation_content', evaluationContent);
-
+    const kipuCredentials = await serverLoadKipuCredentialsFromSupabase(userId);
+    if (!kipuCredentials) {
+      throw new Error('KIPU API credentials not found');
+    }
     // Call KIPU API using the standard utility
     const endpoint = `/api/patient_evaluations?${queryParams.toString()}`;
-    const response = await kipuServerGet<KipuPatientEvaluationsResponse>(endpoint);
-    
+    const response = await kipuListPatientEvaluations<KipuPatientEvaluationsResponse>(kipuCredentials, {
+      evaluationId: Number(evaluationId),
+      page: Number(page),
+      per: Number(per),
+      patientProcessId: Number(patientProcessId),
+    });
+
     if (!response.success || !response.data) {
       console.error('Failed to fetch patient evaluations from KIPU:', response.error);
       return NextResponse.json(
@@ -63,7 +73,7 @@ export async function GET(req: NextRequest) {
         { status: response.error?.code ? parseInt(response.error.code) : 500 }
       );
     }
-    
+
     // Map KIPU evaluations to our format if needed
     const evaluations = response.data.patient_evaluations || [];
     const camelCaseEvaluationsData = snakeToCamel(evaluations);

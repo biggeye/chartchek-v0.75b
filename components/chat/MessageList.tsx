@@ -4,7 +4,7 @@ import { DocumentTextIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/2
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useChatStore } from '@/store/chatStore';
+import { useLegacyChatStore } from '@/store/legacyChatStore';
 import Image from 'next/image';
 import { assistantRoster } from '@/lib/assistant/roster';
 import { useStreamStore } from '@/store/streamStore';
@@ -22,7 +22,8 @@ export const MessageList = React.memo(({
   isStreamingActive,
   streamingContent
 }: MessageListProps) => {
-  const { currentThread, fetchOpenAIMessages, error, setError } = useChatStore();
+  const { currentThread, fetchOpenAIMessages, error, setError } = useLegacyChatStore();
+  
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showStreamingMessage, setShowStreamingMessage] = useState(false);
@@ -131,7 +132,7 @@ export const MessageList = React.memo(({
               </div>
               <div className="text-sm opacity-90">
                 {Array.isArray(message.content)
-                  ? message.content.map((content, i) => (
+                  ? message.content.map((content: any, i:) => (
                       <React.Fragment key={`${message.id || id}-content-${i}`}>
                         {content.type === 'text' && content.text && (
                           <div>{renderFormattedContent(content.text.value, content.text.annotations || [])}</div>

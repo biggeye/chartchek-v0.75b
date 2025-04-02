@@ -32,8 +32,7 @@ export async function GET(request: NextRequest) {
   
   // Verify the state was saved
   const { data: userData } = await supabase.auth.admin.getUserById(session.user.id);
-  console.log('[google auth api]: Saved state:', userData?.user_metadata?.oauth_state);
-  
+console.log('[google auth api]: Saved state:', userData?.user?.user_metadata?.oauth_state);
   // Generate the authorization URL
   const authUrl = getAuthUrl(redirectUri, state);
   

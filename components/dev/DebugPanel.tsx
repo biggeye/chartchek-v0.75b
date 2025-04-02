@@ -4,13 +4,12 @@
 import { useState, useEffect } from 'react';
 import { usePatientStore } from '@/store/patientStore';
 import { useFacilityStore } from '@/store/facilityStore';
-import { useChatStore } from '@/store/chatStore';
 import { useStreamStore } from '@/store/streamStore';
 
 import { X } from 'lucide-react';
 import useDocumentStore from '@/store/documentStore';
-import { useContextStore } from '@/store/contextStore';
-import { useKipuEvaluationsStore } from '@/store/kipuEvaluationsStore';
+import { useEvaluationsStore } from '@/store/evaluationsStore';
+import { useGlobalChatStore } from '@/store/chatStore';
 
 interface DebugSectionProps {
   title: string;
@@ -295,9 +294,8 @@ export const DebugPanel = () => {
   const facilityStore = useFacilityStore();
   const patientStore = usePatientStore();
   const documentStore = useDocumentStore();
-  const contextStore = useContextStore();
-  const kipuEvaluationsStore = useKipuEvaluationsStore();
-  const chatStore = useChatStore();
+  const evaluationsStore = useEvaluationsStore();
+  const chatStore = useGlobalChatStore();
   const streamStore = useStreamStore();
 
 
@@ -391,9 +389,9 @@ export const DebugPanel = () => {
             />
             <DebugSection
               title="Evaluations Store"
-              data={kipuEvaluationsStore}
-              isExpanded={expandedSections['kipuEvaluationsStore']}
-              onToggle={() => toggleSection('kipuEvaluationsStore')}
+              data={evaluationsStore}
+              isExpanded={expandedSections['evaluationsStore']}
+              onToggle={() => toggleSection('evaluationsStore')}
             />
           </div>
 
