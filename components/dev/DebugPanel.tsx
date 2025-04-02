@@ -358,12 +358,7 @@ export const DebugPanel = () => {
       <div className="overflow-y-auto p-2 flex-1">
         {activeTab === 'context' && (
           <div className="space-y-2">
-            <DebugSection
-              title="Context Store"
-              data={contextStore}
-              isExpanded={expandedSections['contextStore']}
-              onToggle={() => toggleSection('contextStore')}
-            />
+         
             <DebugSection
             title="Document Store"
             data={documentStore}

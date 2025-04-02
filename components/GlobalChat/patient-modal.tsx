@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useChatStore } from "@/store/chatStore"
-import type { Patient, PatientRecord } from "@/types"
+import { useGlobalChatStore } from "@/store/chatStore"
+import type { Patient, PatientRecord } from "@/types/store/globalChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, User, FileText } from "lucide-react"
@@ -20,31 +20,35 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
     selectPatient,
     selectRecord,
     deselectRecord,
-  } = useChatStore()
+  } = useGlobalChatStore()
 
   useEffect(() => {
-    fetchPatients()
-  }, [fetchPatients])
+    if (isLoadingPatients) fetchPatients()
+    if (selectedPatient && isLoadingRecords) {
+      fetchPatients();
+    } },
+[fetchPatients, isLoadingPatients, isLoadingRecords, selectedPatient])
 
   return (
-    <div className="w-full max-w-md mx-auto">
-     <Tabs defaultValue="patients" onValueChange={(value) => setActiveTab(value as "patients" | "records")}>     <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="patients">Patients</TabsTrigger>
-          <TabsTrigger value="records" disabled={!selectedPatient}>
+    <div className="w-full max-w-3xl mx-auto">
+      <Tabs defaultValue="patients" onValueChange={(value) => setActiveTab(value as "patients" | "records")}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="patients" className="text-xs py-1">Patients</TabsTrigger>
+          <TabsTrigger value="records" disabled={!selectedPatient} className="text-xs py-1">
             Records
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="patients" className="mt-4">
-          <h3 className="text-sm font-medium mb-2">Select a patient</h3>
+        <TabsContent value="patients" className="mt-2">
+          <h3 className="text-xs font-medium mb-1">Select a patient</h3>
 
           {isLoadingPatients ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ScrollArea className="h-[300px] rounded-md border">
-              <div className="p-4 space-y-2">
+            <ScrollArea className="h-[250px] rounded-md border">
+              <div className="p-2 space-y-1">
                 {patients.map((patient) => (
                   <PatientItem
                     key={patient.patientId}
@@ -58,18 +62,20 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
           )}
         </TabsContent>
 
-        <TabsContent value="records" className="mt-4">
+        <TabsContent value="records" className="mt-2">
           {selectedPatient && (
             <>
-              <h3 className="text-sm font-medium mb-2">Patient Evaluations for {selectedPatient.firstName} {selectedPatient.lastName}</h3>
+              <h3 className="text-xs font-medium mb-1">
+                Patient Evaluations for {selectedPatient.firstName} {selectedPatient.lastName}
+              </h3>
 
               {isLoadingRecords ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : patientRecords.length > 0 ? (
-                <ScrollArea className="h-[300px] rounded-md border">
-                  <div className="p-4 space-y-3">
+                <ScrollArea className="h-[250px] rounded-md border">
+                  <div className="p-2 space-y-2">
                     {patientRecords.map((record) => (
                       <RecordItem
                         key={record.id}
@@ -82,7 +88,7 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
                   </div>
                 </ScrollArea>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">No records found for this patient</div>
+                <div className="text-center py-4 text-xs text-muted-foreground">No records found for this patient</div>
               )}
             </>
           )}
@@ -103,23 +109,23 @@ function PatientItem({
 }) {
   return (
     <div
-      className={`p-3 rounded-md cursor-pointer transition-colors flex items-center gap-3 ${
+      className={`p-2 rounded-md cursor-pointer transition-colors flex items-center gap-2 ${
         isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
       }`}
       onClick={onSelect}
     >
-      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-        <User className="h-5 w-5 text-muted-foreground" />
+      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+        <User className="h-3 w-3 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium">{patient.firstName} {patient.lastName}</div>
-        <div className="text-xs text-muted-foreground flex items-center gap-2">
+        <div className="font-medium text-xs">{patient.firstName} {patient.lastName}</div>
+        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
           <span>DOB: {patient.dateOfBirth}</span>
           <span>•</span>
           <span>MRN: {patient.mrn}</span>
         </div>
       </div>
-      {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+      {isSelected && <CheckCircle2 className="h-3 w-3 text-primary" />}
     </div>
   )
 }
@@ -145,25 +151,24 @@ function RecordItem({
 
   return (
     <div
-      className={`p-3 rounded-md cursor-pointer transition-colors ${
+      className={`p-2 rounded-md cursor-pointer transition-colors ${
         isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
       }`}
       onClick={handleClick}
     >
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-          <FileText className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+          <FileText className="h-3 w-3 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium">{record.title}</div>
-          <div className="text-xs text-muted-foreground">
+          <div className="font-medium text-xs">{record.title}</div>
+          <div className="text-[10px] text-muted-foreground">
             {record.date} • {record.type} • {record.provider}
           </div>
         </div>
-        {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+        {isSelected && <CheckCircle2 className="h-3 w-3 text-primary" />}
       </div>
-      <div className="mt-2 text-sm">{record.summary}</div>
+      <div className="mt-1 text-[11px]">{record.summary}</div>
     </div>
   )
 }
-
