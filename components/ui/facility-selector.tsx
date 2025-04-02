@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFacilityStore } from '@/store/facilityStore';
-import { usePatientStore } from '@/store/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 import { Facility } from '@/types/chartChek/kipuAdapter';
 import { Dialog, Transition } from '@headlessui/react';
 import { BuildingOffice2Icon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';

@@ -5,9 +5,9 @@ import { createServer } from "@/utils/supabase/server";
 import { getOpenAIClient } from "@/utils/openai/server";
 import { ChatMessageAttachment } from "@/types/database";
 
-import { useLegacyChatStore } from "@/store/legacyChatStore";
-import { useStreamStore } from "@/store/streamStore";
-import { useGlobalChatStore } from "@/store/chatStore";
+import { useLegacyChatStore } from "@/store/chat/legacyChatStore";
+import { useStreamStore } from "@/store/chat/streamStore";
+import { useGlobalChatStore } from "@/store/chat/chatStore";
 
 const supabase = await createServer();
 

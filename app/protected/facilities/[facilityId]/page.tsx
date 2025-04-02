@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useFacilityStore } from '@/store/facilityStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';

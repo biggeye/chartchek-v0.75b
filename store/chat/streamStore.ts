@@ -5,9 +5,9 @@
 import { create } from 'zustand';
 import { createClient } from '@/utils/supabase/client';
 import { useLegacyChatStore } from './legacyChatStore';
-import { StreamingState } from '../types/store/stream';
+import { StreamingState } from '../../types/store/stream';
 import { OpenAIStreamingEvent } from '@/types/api/openai';
-import { useDocumentStore } from './documentStore';
+import { useDocumentStore } from '../doc/documentStore';
 import { formDefinitions } from '@/lib/forms/formDefinitions';
 // If you need form definitions, import them, but let's keep it minimal for clarity
 // import { formDefinitions } from '@/components/dynamicForms/formDefinitions';

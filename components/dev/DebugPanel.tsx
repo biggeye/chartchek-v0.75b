@@ -2,14 +2,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePatientStore } from '@/store/patientStore';
-import { useFacilityStore } from '@/store/facilityStore';
-import { useStreamStore } from '@/store/streamStore';
-
-import { X } from 'lucide-react';
-import useDocumentStore from '@/store/documentStore';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
-import { useGlobalChatStore } from '@/store/chatStore';
+import { usePatientStore } from '@/store/patient/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { useStreamStore } from '@/store/chat/streamStore';
+import { useKnowledgeStore } from '@/store/doc/knowledgeStore';
+import { X, Maximize, Minimize } from 'lucide-react';
+import useDocumentStore from '@/store/doc/documentStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
+import { useGlobalChatStore } from '@/store/chat/chatStore';
+import useLegacyChatStore from '@/store/chat/legacyChatStore';
+import useTemplatesStore from '@/store/doc/templateStore';
 
 interface DebugSectionProps {
   title: string;
@@ -24,17 +26,29 @@ interface FunctionInspectorProps {
 
 const FunctionInspector = ({ func }: FunctionInspectorProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showExecutor, setShowExecutor] = useState(false);
 
   const funcName = func.name || 'anonymous';
   const funcString = func.toString();
 
   return (
     <div className="my-1">
-      <div
-        className="cursor-pointer text-blue-400 hover:text-blue-300"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        {isExpanded ? '▼' : '▶'} [Function: {funcName}]
+      <div className="flex items-center justify-between">
+        <div
+          className="cursor-pointer text-blue-400 hover:text-blue-300"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? '▼' : '▶'} [Function: {funcName}]
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowExecutor(true);
+          }}
+          className="text-green-400 hover:text-green-300"
+        >
+          Run
+        </button>
       </div>
 
       {isExpanded && (
@@ -42,11 +56,11 @@ const FunctionInspector = ({ func }: FunctionInspectorProps) => {
           <pre>{funcString}</pre>
         </div>
       )}
+
+      {showExecutor && <FunctionExecutor func={func} onClose={() => setShowExecutor(false)} />}
     </div>
   );
 };
-
-// Add this to your DebugPanel.tsx file
 
 interface FunctionExecutorProps {
   func: Function;
@@ -60,13 +74,13 @@ const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [resultExpanded, setResultExpanded] = useState(true);
 
-  // Parse function signature to get parameter names
+  // Extract parameter names from the function signature
   const funcString = func.toString();
   const paramMatch = funcString.match(/\(([^)]*)\)/);
   const paramString = paramMatch ? paramMatch[1] : '';
   const paramNames = paramString.split(',').map(p => p.trim()).filter(p => p);
 
-  // Initialize args with empty strings for each parameter
+  // Initialize args based on parameter names
   useEffect(() => {
     setArgs(paramNames.map(() => ''));
   }, [paramNames.join()]);
@@ -80,32 +94,26 @@ const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
   const executeFunction = async () => {
     setIsLoading(true);
     setError(null);
-
+    setResult(null);
     try {
-      // Parse JSON for each argument
+      // Attempt to parse each argument as JSON or convert to a primitive type
       const parsedArgs = args.map(arg => {
         try {
-          // Try to parse as JSON if it looks like an object/array
-          if ((arg.startsWith('{') && arg.endsWith('}')) ||
-            (arg.startsWith('[') && arg.endsWith(']'))) {
+          if ((arg.startsWith('{') && arg.endsWith('}')) || (arg.startsWith('[') && arg.endsWith(']'))) {
             return JSON.parse(arg);
           }
-          // Try to convert to appropriate primitive type
           if (arg === 'true') return true;
           if (arg === 'false') return false;
           if (arg === 'null') return null;
           if (arg === 'undefined') return undefined;
           if (!isNaN(Number(arg))) return Number(arg);
-          // Otherwise keep as string
           return arg;
         } catch {
-          return arg; // If parsing fails, use the raw string
+          return arg;
         }
       });
-
-      // Execute the function with the parsed arguments
-      const result = await Promise.resolve(func(...parsedArgs));
-      setResult(result);
+      const execResult = await Promise.resolve(func(...parsedArgs));
+      setResult(execResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -120,83 +128,72 @@ const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
           <h3 className="text-lg font-medium">
             Execute: <span className="text-blue-400">{func.name || 'anonymous'}</span>
           </h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-700 rounded"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
             <X size={16} />
           </button>
         </div>
 
         <div className="p-4 overflow-y-auto flex-1">
-          <div className="space-y-4">
-            {paramNames.length > 0 ? (
-              paramNames.map((param, index) => (
-                <div key={index} className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-400">
-                    {param}
-                  </label>
-                  <textarea
-                    value={args[index] || ''}
-                    onChange={(e) => updateArg(index, e.target.value)}
-                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded text-sm font-mono"
-                    rows={3}
-                    placeholder={`Enter value for ${param}`}
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-400">This function takes no arguments</p>
-            )}
-
-            <button
-              onClick={executeFunction}
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-medium disabled:opacity-50"
-            >
-              {isLoading ? 'Executing...' : 'Execute Function'}
-            </button>
-
-            {error && (
-              <div className="p-3 bg-red-900 bg-opacity-30 border border-red-700 rounded">
-                <p className="text-red-400 font-medium">Error</p>
-                <pre className="text-xs mt-1 text-red-300 overflow-x-auto">{error}</pre>
+          {paramNames.length > 0 ? (
+            paramNames.map((param, index) => (
+              <div key={index} className="space-y-1 mb-2">
+                <label className="block text-sm font-medium text-gray-400">{param}</label>
+                <textarea
+                  value={args[index] || ''}
+                  onChange={(e) => updateArg(index, e.target.value)}
+                  className="w-full p-2 bg-gray-800 border border-gray-700 rounded text-sm font-mono"
+                  rows={3}
+                  placeholder={`Enter value for ${param}`}
+                />
               </div>
-            )}
+            ))
+          ) : (
+            <p className="text-gray-400 mb-2">This function takes no arguments</p>
+          )}
 
-            {result !== null && (
-              <div className="space-y-1">
-                <div
-                  className="flex items-center cursor-pointer text-gray-400 hover:text-white"
-                  onClick={() => setResultExpanded(!resultExpanded)}
-                >
-                  <span className="mr-1">{resultExpanded ? '▼' : '▶'}</span>
-                  <span className="font-medium">Result</span>
-                </div>
+          <button
+            onClick={executeFunction}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-medium disabled:opacity-50 mb-2"
+          >
+            {isLoading ? 'Executing...' : 'Execute Function'}
+          </button>
 
-                {resultExpanded && (
-                  <div className="p-2 bg-gray-800 rounded">
-                    <ObjectInspector data={result} />
-                  </div>
-                )}
+          {error && (
+            <div className="p-3 bg-red-900 bg-opacity-30 border border-red-700 rounded mb-2">
+              <p className="text-red-400 font-medium">Error</p>
+              <pre className="text-xs mt-1 text-red-300 overflow-x-auto">{error}</pre>
+            </div>
+          )}
+
+          {result !== null && (
+            <div>
+              <div
+                className="flex items-center cursor-pointer text-gray-400 hover:text-white"
+                onClick={() => setResultExpanded(!resultExpanded)}
+              >
+                <span className="mr-1">{resultExpanded ? '▼' : '▶'}</span>
+                <span className="font-medium">Result</span>
               </div>
-            )}
-          </div>
+
+              {resultExpanded && (
+                <div className="p-2 bg-gray-800 rounded">
+                  <ObjectInspector data={result} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// New recursive object inspector component
-const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => {
+const ObjectInspector = ({ data, depth = 0 }: { data: any; depth?: number }) => {
   const [expandedProps, setExpandedProps] = useState<Record<string, boolean>>({});
 
   const toggleProp = (prop: string) => {
-    setExpandedProps((prev: Record<string, boolean>) => ({
-      ...prev,
-      [prop]: !prev[prop]
-    }));
+    setExpandedProps(prev => ({ ...prev, [prop]: !prev[prop] }));
   };
 
   if (typeof data === 'function') {
@@ -216,9 +213,7 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
       {entries.length > 0 && (
         <div>
           {entries.map(([key, value]) => {
-            const isObject = typeof value === 'object' && value !== null;
-            const isFunction = typeof value === 'function';
-            const isExpandable = isObject || isFunction;
+            const isExpandable = (typeof value === 'object' && value !== null) || typeof value === 'function';
             const isExpanded = expandedProps[key];
 
             return (
@@ -232,17 +227,17 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
                       {isExpanded ? '▼' : '▶'}
                     </span>
                   )}
-                  <span className="text-yellow-300">{isArray ? '' : `"${key}": `}</span>
+                  <span className="text-yellow-300">
+                    {isArray ? '' : `"${key}": `}
+                  </span>
                   {isExpandable ? (
-                    isExpanded ? (
-                      <span></span>
-                    ) : (
+                    !isExpanded && (
                       <span>
-                        {isFunction
+                        {typeof value === 'function'
                           ? `[Function: ${value.name || 'anonymous'}]`
                           : isArray
-                            ? `Array(${(value as any[]).length})`
-                            : `Object {${Object.keys(value).length} keys}`}
+                          ? `Array(${(value as any[]).length})`
+                          : `Object {${Object.keys(value).length} keys}` }
                       </span>
                     )
                   ) : (
@@ -274,7 +269,6 @@ const DebugSection = ({ title, data, isExpanded, onToggle }: DebugSectionProps) 
         {title}
         <span>{isExpanded ? '−' : '+'}</span>
       </button>
-
       {isExpanded && (
         <div className="p-2 text-xs font-mono bg-gray-950 overflow-x-auto">
           <ObjectInspector data={data} />
@@ -286,100 +280,136 @@ const DebugSection = ({ title, data, isExpanded, onToggle }: DebugSectionProps) 
 
 export const DebugPanel = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<'context' | 'openaiState' | 'kipuState'>('context');
+  const [activeTab, setActiveTab] = useState<'chat' | 'doc' | 'patient' | 'context'>('context');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
-  // Get all the contexts and stores
-
+  // Get all the stores
   const facilityStore = useFacilityStore();
   const patientStore = usePatientStore();
   const documentStore = useDocumentStore();
   const evaluationsStore = useEvaluationsStore();
   const chatStore = useGlobalChatStore();
   const streamStore = useStreamStore();
+  const knowledgeStore = useKnowledgeStore();
+  const legacyChatStore = useLegacyChatStore();
+  const templatesStore = useTemplatesStore();
 
-
-
-  // Toggle section expansion
   const toggleSection = (section: string) => {
-    setExpandedSections((prev: Record<string, boolean>) => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Handle keyboard shortcut (Alt+D)
+  // Toggle panel visibility using Alt+D
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key === 'd') {
         setIsVisible(prev => !prev);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Only render in development
   if (process.env.NODE_ENV !== 'development') return null;
   if (!isVisible) return null;
 
+  const panelClass = isFullScreen
+    ? 'fixed inset-0 bg-gray-900 text-white z-50 flex flex-col'
+    : 'fixed bottom-0 right-0 w-96 max-h-[80vh] bg-gray-900 text-white z-50 rounded-tl-lg shadow-xl overflow-hidden flex flex-col';
+
   return (
-    <div className="fixed bottom-0 right-0 w-96 max-h-[80vh] bg-gray-900 text-white z-50 rounded-tl-lg shadow-xl overflow-hidden flex flex-col">
+    <div className={panelClass}>
       <div className="flex items-center justify-between p-2 bg-gray-800">
         <div className="flex space-x-2">
           <button
-            className={`px-3 py-1 rounded ${activeTab === 'context' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('context')}
+            className={`px-3 py-1 rounded ${activeTab === 'chat' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+            onClick={() => setActiveTab('chat')}
           >
-            chartChek State
+            chat State
           </button>
           <button
-            className={`px-3 py-1 rounded ${activeTab === 'kipuState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('kipuState')}
+            className={`px-3 py-1 rounded ${activeTab === 'doc' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+            onClick={() => setActiveTab('doc')}
           >
-            KIPU State
+            Document State
           </button>
           <button
-            className={`px-3 py-1 rounded ${activeTab === 'openaiState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('openaiState')}
+            className={`px-3 py-1 rounded ${activeTab === 'patient' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+            onClick={() => setActiveTab('patient')}
           >
-            OpenAI State
+            Patient State
           </button>
         </div>
-        <button
-          onClick={() => setIsVisible(false)}
-          className="p-1 hover:bg-gray-700 rounded"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setIsFullScreen(prev => !prev)}
+            className="p-1 hover:bg-gray-700 rounded"
+          >
+            {isFullScreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
+          <button
+            onClick={() => setIsVisible(false)}
+            className="p-1 hover:bg-gray-700 rounded"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="overflow-y-auto p-2 flex-1">
         {activeTab === 'context' && (
           <div className="space-y-2">
             <DebugSection
-              title="Context Store"
-              data={contextStore}
-              isExpanded={expandedSections['contextStore']}
-              onToggle={() => toggleSection('contextStore')}
+              title="Chat State"
+              data={chatStore}
+              isExpanded={expandedSections['chatStore']}
+              onToggle={() => toggleSection('chatStore')}
             />
             <DebugSection
-            title="Document Store"
-            data={documentStore}
-            isExpanded={expandedSections['documentStore']}
-            onToggle={() => toggleSection('documentStore')}
+              title="Stream Store"
+              data={streamStore}
+              isExpanded={expandedSections['streamStore']}
+              onToggle={() => toggleSection('streamStore')}
+            />
+            <DebugSection
+              title="Legacy Chat Store"
+              data={legacyChatStore}
+              isExpanded={expandedSections['legacyChatStore']}
+              onToggle={() => toggleSection('legacyChatStore')}
             />
           </div>
         )}
 
-        {activeTab === 'kipuState' && (
+        {activeTab === 'doc' && (
+          <div className="space-y-2">
+            <DebugSection
+              title="Document Store"
+              data={patientStore}
+              isExpanded={expandedSections['patientStore']}
+              onToggle={() => toggleSection('patientStore')}
+            />
+            <DebugSection
+              title="Knowledge Store"
+              data={knowledgeStore}
+              isExpanded={expandedSections['knowledgeStore']}
+              onToggle={() => toggleSection('knowledgeStore')}
+            />
+            <DebugSection
+              title="Templates Store"
+              data={templatesStore}
+              isExpanded={expandedSections['templatesStore']}
+              onToggle={() => toggleSection('templatesStore')}
+            />
+          </div>
+        )}
+
+        {activeTab === 'patient' && (
           <div className="space-y-2">
             <DebugSection
               title="Patient Store"
               data={patientStore}
               isExpanded={expandedSections['patientStore']}
-              onToggle={() => toggleSection('patientStore')}
+              onToggle={() => toggleSection('chatStore')}
             />
             <DebugSection
               title="Facility Store"
@@ -394,24 +424,6 @@ export const DebugPanel = () => {
               onToggle={() => toggleSection('evaluationsStore')}
             />
           </div>
-
-        )}
-
-        {activeTab === 'openaiState' && (
-          <div className="space-y-2">
-            <DebugSection
-              title="Chat Store"
-              data={chatStore}
-              isExpanded={expandedSections['chatStore']}
-              onToggle={() => toggleSection('chatStore')}
-            />
-            <DebugSection
-              title="Stream Store"
-              data={streamStore}
-              isExpanded={expandedSections['streamStore']}
-              onToggle={() => toggleSection('streamStore')}
-            />
-          </div>
         )}
       </div>
 
@@ -422,50 +434,31 @@ export const DebugPanel = () => {
   );
 };
 
-// Enhanced replacer function for the DebugPanel
 function replacer(key: string, value: any) {
-  // Handle functions with more detail
   if (typeof value === 'function') {
-    // Get function name or mark as anonymous
     const fnName = value.name || 'anonymous';
-
-    // Get function parameters by converting to string and extracting the parameter list
     const fnStr = value.toString();
     const paramMatch = fnStr.match(/\(([^)]*)\)/);
     const params = paramMatch ? paramMatch[1] : '';
-
-    // Get first few lines of function body for context
     const bodyMatch = fnStr.match(/{([\s\S]*)}/);
     let body = bodyMatch ? bodyMatch[1].trim() : '';
-    // Truncate body if it's too long
     if (body.length > 100) {
       body = body.substring(0, 100) + '...';
     }
-
     return `[Function: ${fnName}(${params}) {${body} }]`;
   }
-
-  // Handle React elements
   if (value && typeof value === 'object' && value.$$typeof) {
-    // Try to extract component name and props
     const type = value.type?.name || value.type?.displayName || (typeof value.type === 'string' ? value.type : 'Unknown');
     const props = value.props ? Object.keys(value.props).join(', ') : '';
     return `[React Element: <${type} ${props}>]`;
   }
-
-  // Handle circular references
   const seen = new WeakSet();
   if (typeof value === 'object' && value !== null) {
-    if (seen.has(value)) {
-      return '[Circular]';
-    }
+    if (seen.has(value)) return '[Circular]';
     seen.add(value);
   }
-
-  // Handle promises
-  if (value instanceof Promise) {
-    return '[Promise]';
-  }
-
+  if (value instanceof Promise) return '[Promise]';
   return value;
 }
+
+export default DebugPanel;

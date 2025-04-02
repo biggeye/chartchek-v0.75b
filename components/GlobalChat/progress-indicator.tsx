@@ -3,14 +3,12 @@
 import { useState, useEffect } from "react"
 
 export const PROGRESS_STEPS = [
-  "INITIALIZING REQUEST...",
-  "PULLING PATIENT RECORDS...",
-  "SANITIZING PATIENT DATA...",
-  "ANALYZING MEDICAL CONTEXT...",
-  "RETRIEVING COMPLIANCE GUIDELINES...",
-  "APPLYING REGULATORY FRAMEWORK...",
-  "GENERATING RESPONSE...",
-  "FINALIZING ANALYSIS...",
+  "SANITIZING.....",
+  ".....ANALYZING.....",
+  ".....RETRIEVING.....",
+  "....APPLYING...",
+  "..GENERATING..",
+  ".FINALIZING.",
 ]
 
 export default function ProgressIndicator() {

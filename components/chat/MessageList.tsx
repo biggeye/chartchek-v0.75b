@@ -4,10 +4,10 @@ import { DocumentTextIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/2
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useLegacyChatStore } from '@/store/legacyChatStore';
+import { useLegacyChatStore } from '@/store/chat/legacyChatStore';
 import Image from 'next/image';
 import { assistantRoster } from '@/lib/assistant/roster';
-import { useStreamStore } from '@/store/streamStore';
+import { useStreamStore } from '@/store/chat/streamStore';
 import { renderContent as renderFormattedContent } from '@/lib/chat/renderServices';
 import { ChatMessageAnnotation, ThreadMessage } from '@/types/database';
 

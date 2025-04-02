@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFacilityStore } from '@/store/facilityStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
 import { UserApiSettings } from '@/types/store/user';
 import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';

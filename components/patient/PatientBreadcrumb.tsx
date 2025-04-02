@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronRightIcon, HomeIcon, ArrowLeftIcon } from '@heroicons/react/20/solid';
-import { usePatientStore } from '@/store/patientStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 import { cn } from '@/lib/utils';
 
 interface PatientBreadcrumbProps {

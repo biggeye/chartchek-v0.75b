@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { getOpenAIClient } from '@/utils/openai/server'
 
-import { useStreamStore } from '@/store/streamStore';
+import { useStreamStore } from '@/store/chat/streamStore';
 import { ChatMessage, ChatThread } from '@/types/database';
 import { ThreadRun } from '@/types/store/stream';
 import { Thread, RunStatusResponse } from '@/types/store/legacyChat';

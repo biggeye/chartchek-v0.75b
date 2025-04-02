@@ -26,8 +26,8 @@ import ChatMessage from "./chat-message"
 import ChatMessages from "./chat-messages"
 import ModelSelector from "./model-selector"
 import TrainingSelector from "./training-selector"
-import { useGlobalChatStore } from "@/store/chatStore"
-import { useFacilityStore } from "@/store/facilityStore"
+import { useGlobalChatStore } from "@/store/chat/chatStore"
+import { useFacilityStore } from "@/store/patient/facilityStore"
 import { assistantAdditionalStream } from "@/lib/openai/assistantService"
 // Import the hook and types from the original GlobalChat component
 import { useOpenAIResponse } from '@/hooks/useOpenAIResponse';
@@ -62,7 +62,6 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
   const { currentFacilityId } = useFacilityStore();
   
   const {
-    currentAssistantId,
     queueItems,
     removeFromQueue,
     currentMessage,
@@ -71,6 +70,7 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
     isGenerating,
     isFullScreen,
     toggleFullScreen,
+    selectedTrainingDataset
   } = useGlobalChatStore()
 
   const queueRef = useRef<HTMLDivElement>(null)
@@ -90,6 +90,7 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
 
   const handleSend = () => {
     if (currentMessage.trim()) {
+      const assistantId = selectedTrainingDataset?.assistantId;
       sendMessage()
       assistantAdditionalStream(assistantId, currentMessage)
     }

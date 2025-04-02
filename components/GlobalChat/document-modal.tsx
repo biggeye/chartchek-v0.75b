@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect } from "react"
-import { useChatStore } from "@/store/chatStore"
-import type { Document as DocumentType } from "@/types"
+import { useGlobalChatStore } from "@/store/chat/chatStore"
+import type { Document as DocumentType } from "@/types/store/document"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, FileText, FileIcon as FilePdf, FileImage } from "lucide-react"
@@ -17,7 +17,7 @@ export default function DocumentModal({ onClose }: { onClose: () => void }) {
     fetchDocumentsByCategory,
     selectDocument,
     deselectDocument,
-  } = useChatStore()
+  } = useGlobalChatStore()
 
   useEffect(() => {
     fetchDocuments()

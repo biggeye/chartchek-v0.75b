@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { CheckCircleIcon, CalendarDaysIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { usePatientStore } from '@/store/patientStore';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
+import { usePatientStore } from '@/store/patient/patientStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 
 // Define a type for timeline activities
 interface TimelineActivity {

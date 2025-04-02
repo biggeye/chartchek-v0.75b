@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 // Remove this import since we're moving away from context
 // import { usePatient } from '@/lib/contexts/PatientProvider';
-import { useFacilityStore } from '@/store/facilityStore';
-import { usePatientStore } from '@/store/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 import { PatientSearch } from '@/components/patient/PatientSearch';
 import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';

@@ -5,8 +5,8 @@ import type { Patient, Document, UploadFile, QueueItem, PatientRecord } from "@/
 import { type TrainingDataset, TRAINING_DATASETS } from "@/types/training-datasets"
 import { LLMOption, LLM_OPTIONS } from "@/lib/llm-service"
 import { v4 as uuidv4 } from 'uuid'
-import { useEvaluationsStore } from "./evaluationsStore"
-import { usePatientStore } from "./patientStore"
+import { useEvaluationsStore } from "../patient/evaluationsStore"
+import { usePatientStore } from "../patient/patientStore"
 import { KipuPatientEvaluationItem } from "@/types/chartChek/kipuAdapter"
 import { GlobalChatState } from "@/types/store/globalChat"
 
@@ -62,6 +62,7 @@ export const useGlobalChatStore = create<GlobalChatState>()(
       },
 
       selectPatient: (patient: Patient) => {
+        
         set({ selectedPatient: patient })
         if (patient) {
           get().fetchPatientRecords(patient.patientId)

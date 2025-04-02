@@ -1,6 +1,6 @@
 'use client';
 
-import { initDocumentStoreSubscriptions } from './documentStore';
+import { initDocumentStoreSubscriptions } from './doc/documentStore';
 // Remove or comment out the problematic import
 // import { initPatientStoreSubscriptions } from './patientStore';
 

@@ -7,9 +7,9 @@ import { PatientBreadcrumb } from '@/components/patient/PatientBreadcrumb';
 import { PatientInfoCard } from '@/components/patient/PatientInfoCard';
 import { EvaluationsCard } from '@/components/patient/EvaluationsCard';
 import { VitalSignsCard } from '@/components/patient/VitalSignsCard';
-import { useFacilityStore } from '@/store/facilityStore';
-import { usePatientStore } from '@/store/patientStore';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { usePatientStore } from '@/store/patient/patientStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 
 import { PatientVitalSign } from '@/types/chartChek/kipuAdapter';
 import { KipuPatientEvaluation, KipuEvaluationItem } from '@/types/kipu/evaluations';

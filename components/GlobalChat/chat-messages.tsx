@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { useChatStore } from "@/store/chatStore"
+import { useChatStore } from "@/store/chat/chatStore"
 import ChatMessage from "./chat-message"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ProgressIndicator, { PROGRESS_STEPS } from "./progress-indicator"

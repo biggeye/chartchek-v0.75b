@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useCallback } from 'react';
-import { useStreamStore } from '@/store/streamStore';
-import { useDocumentStore } from '@/store/documentStore';
+import { useStreamStore } from '@/store/chat/streamStore';
+import { useDocumentStore } from '@/store/doc/documentStore';
 import { generatePDF, FormType } from '@/lib/forms/pdfGenerator';
 import PDFGenerationIndicator from '@/components/ui/PDFGenerationIndicator';
 

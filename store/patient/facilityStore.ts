@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Facility, FacilityStore, Pagination } from '@/types/store/facility';
 import { getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
 import { queryKeys } from '@/utils/react-query/config';
-import { usePatientStore } from './patientStore';
+import { usePatientStore } from '../patientStore';
 
 // Initialize Supabase client
 const supabase = createClient();

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useStreamStore } from '@/store/streamStore';
+import { useStreamStore } from '@/store/chat/streamStore';
 import { Loader2 } from 'lucide-react';
 
 export const PDFGenerationIndicator = () => {

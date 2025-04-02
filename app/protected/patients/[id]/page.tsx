@@ -3,8 +3,8 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { usePatientStore } from '@/store/patientStore';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
+import { usePatientStore } from '@/store/patient/patientStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 
 export default function PatientPage() {
   const { id: patientId } = useParams();

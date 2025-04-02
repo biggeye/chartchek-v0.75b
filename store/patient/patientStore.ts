@@ -4,9 +4,9 @@ import { create } from 'zustand';
 import { PatientStore, PatientContextOptions, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
 import { PatientBasicInfo, PatientVitalSign, KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 import { createClient } from '@/utils/supabase/client';
-import { useGlobalChatStore } from './chat/chatStore';
+import { useGlobalChatStore } from '../chat/chatStore';
 import { parsePatientId } from '@/lib/kipu/auth/config';
-import { useEvaluationsStore } from './patient/evaluationsStore';
+import { useEvaluationsStore } from './evaluationsStore';
 // Import the evaluation type for conversion
 import { KipuPatientEvaluation as KipuPatientEvaluationDetailed } from '@/types/kipu/evaluations';
 

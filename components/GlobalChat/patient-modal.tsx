@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useChatStore } from "@/store/chatStore"
-import type { Patient, PatientRecord } from "@/types"
+import { useGlobalChatStore } from "@/store/chat/chatStore"
+import type { Patient, PatientRecord } from "@/types/store/globalChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, User, FileText } from "lucide-react"
@@ -20,7 +20,7 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
     selectPatient,
     selectRecord,
     deselectRecord,
-  } = useChatStore()
+  } = useGlobalChatStore()
 
   useEffect(() => {
     fetchPatients()

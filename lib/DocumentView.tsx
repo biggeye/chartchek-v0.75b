@@ -1,7 +1,7 @@
 // app/protected/admin/knowledge/DocumentViewer.tsx
 "use client";
 
-import { useKnowledgeStore } from "@/store/knowledgeStore";
+import { useKnowledgeStore } from "@/store/doc/knowledgeStore";
 import { evaluationFieldComponents, MatrixField, extractContent } from "@/components/dynamicForms/PatientEvaluationItems";
 import { KipuPatientEvaluationItem } from "@/types/chartChek/kipuEvaluations";
 

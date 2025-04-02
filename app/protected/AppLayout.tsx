@@ -40,7 +40,7 @@ import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
-import { useFacilityStore } from '@/store/facilityStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';

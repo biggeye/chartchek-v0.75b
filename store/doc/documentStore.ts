@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
 import { Document, DocumentStore, DocumentCategorization } from '@/types/store/document';
-import { useLegacyChatStore as useChatStore } from './legacyChatStore';
+import { useLegacyChatStore as useChatStore } from '../chat/legacyChatStore';
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -86,7 +86,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
 
       fetchDocumentsForCurrentFacility: async (): Promise<Document[]> => {
         try {
-          const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
+          const facilityStore = (await import('../patient/facilityStore')).useFacilityStore.getState();
           const currentFacilityId = facilityStore.currentFacilityId;
 
           if (currentFacilityId) {
@@ -124,7 +124,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
         set({ isLoadingDocuments: true, error: null });
         try {
           // Get current facility ID
-          const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
+          const facilityStore = (await import('../patient/facilityStore')).useFacilityStore.getState();
           const facilityId = facilityStore.currentFacilityId;
           const { data: { user }, error: authError } = await supabase.auth.getUser();
           const userId = user?.id;
@@ -309,7 +309,7 @@ export const initDocumentStoreSubscriptions = () => {
   if (typeof window !== 'undefined') {
     // Only run on client-side
     // Import the facility store dynamically to avoid circular dependency
-    const { useFacilityStore } = require('./facilityStore');
+    const { useFacilityStore } = require('../patient/facilityStore');
 
     const unsubscribe = useFacilityStore.subscribe((state: any) => {
       const currentFacilityId = state.currentFacilityId;

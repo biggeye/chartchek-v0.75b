@@ -1,6 +1,6 @@
 // app/protected/admin/knowledge/AnalyticsPanel.tsx
 import { useState, useEffect } from "react";
-import { useKnowledgeStore } from "@/store/knowledgeStore";
+import { useKnowledgeStore } from "@/store/doc/knowledgeStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useStreamStore } from '@/store/streamStore';
+import { useStreamStore } from '@/store/chat/streamStore';
 
 interface PDFPreviewProps {
   className?: string;

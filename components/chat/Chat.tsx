@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { MessageList } from './MessageList';
 import RunStatusIndicator from './RunStatusIndicator';
-import { useLegacyChatStore } from '@/store/legacyChatStore';
-import { useStreamStore } from '@/store/streamStore';
+import { useLegacyChatStore } from '@/store/chat/legacyChatStore';
+import { useStreamStore } from '@/store/chat/streamStore';
 import { XCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import ToolCallDebugger from './ToolCallDebugger';
 

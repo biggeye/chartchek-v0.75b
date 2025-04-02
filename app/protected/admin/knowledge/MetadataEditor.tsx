@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useKnowledgeStore } from "@/store/knowledgeStore";
+import { useKnowledgeStore } from "@/store/doc/knowledgeStore";
 import { Loader2, Plus, Save, Trash } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select } from "@/components/ui/select"; // Import the new Select component

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useFacilityStore } from "@/store/facilityStore";
+import { useFacilityStore } from "@/store/patient/facilityStore";
 import {
   Card,
   CardContent,
