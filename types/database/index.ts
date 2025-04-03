@@ -130,20 +130,31 @@ export interface ChatThread {
   additional_instructions?: string;
 }
 
-export interface Document {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  file_name: string;
-  filePath: string;
-  fileType: string;
-  fileSize: number;
-  userId: string;
-  processingStatus: ProcessingStatus;
-  processingError?: string;
-  openai_file_id?: string;
-}
 
+// types/database/index.ts
+import { Json } from '../supabase';
+
+export type ComplianceConcernType = 'medical' | 'financial' | 'legal' | 'other';
+
+export interface Document {
+  bucket?: string;
+  compliance_concern?: ComplianceConcernType;
+  compliance_concern_other?: string | null;
+  created_at: string;
+  document_id: string;
+  facility_id?: string | null;
+  file_name?: string | null;
+  file_path: string;
+  file_size?: string | null;
+  file_type?: string | null;
+  metadata?: Json[] | null;
+  openai_file_id?: string | null;
+  patient_id?: string | null;
+  processing_error?: string | null;
+  processing_status?: string | null;
+  updated_at: string;
+  user_id: string;
+}
 export interface ThreadMessage {
   id: string;
   object: string;

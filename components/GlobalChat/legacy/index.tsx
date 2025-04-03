@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import GlobalChatScreen from "./GlobalChatScreen"
 import { Avatar } from "@/components/ui/avatar"
-import { usePatientStore } from "@/store/patientStore";
+import { usePatientStore } from "@/store/patient/patientStore";
 import Image from "next/image"
 
 

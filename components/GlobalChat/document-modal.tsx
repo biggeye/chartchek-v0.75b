@@ -1,92 +1,123 @@
+// components/GlobalChat/document-modal.tsx
 "use client"
 
 import { useEffect } from "react"
-import { useChatStore } from "@/store/chatStore"
-import type { Document as DocumentType } from "@/types"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
+import { Document, ComplianceConcernType } from "@/types/database"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, FileText, FileIcon as FilePdf, FileImage } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import useDocumentStore from "@/store/doc/documentStore"
+import { useFacilityStore } from "@/store/patient/facilityStore"
 
 export default function DocumentModal({ onClose }: { onClose: () => void }) {
   const {
     documents,
-    selectedDocuments,
     isLoadingDocuments,
     fetchDocuments,
-    fetchDocumentsByCategory,
-    selectDocument,
-    deselectDocument,
-  } = useChatStore()
+    fetchDocumentsForCurrentFacility
+  } = useDocumentStore()
+
+  const { currentFacilityId } = useFacilityStore();
+
+  const {
+    queueItems,
+    selectQueueItem,
+    deselectQueueItem
+  } = useGlobalChatStore();
+
+  // Get selected documents from queue items
+  const selectedDocuments = queueItems.filter(item => item.type === 'document');
 
   useEffect(() => {
-    fetchDocuments()
-  }, [fetchDocuments])
+    fetchDocumentsForCurrentFacility()
+  }, [fetchDocumentsForCurrentFacility])
 
-  const handleCategoryChange = (category: DocumentType["category"] | "all") => {
+  const handleCategoryChange = (category: string | "all") => {
     if (category === "all") {
-      fetchDocuments()
+      fetchDocumentsForCurrentFacility()
     } else {
-      fetchDocumentsByCategory(category)
+      // If you want to filter by category, you'll need to implement this
+      fetchDocumentsForCurrentFacility()
     }
   }
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  const formatFileSize = (sizeStr: string | null | undefined): string => {
+    if (!sizeStr) return "Unknown size";
+    
+    const bytes = parseInt(sizeStr);
+    if (isNaN(bytes)) return sizeStr;
+    
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
+    if (bytes === 0) return "0 Bytes"
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    if (i === 0) return `${bytes} ${sizes[i]}`
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
+  }
+
+  // Type guard to check if compliance_concern matches a specific value
+  const hasComplianceConcern = (doc: Document, concern: ComplianceConcernType): boolean => {
+    return doc.compliance_concern === concern;
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="space-y-4">
       <Tabs defaultValue="all" onValueChange={(value) => handleCategoryChange(value as any)}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid grid-cols-5 mb-4">
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="clinical">Clinical</TabsTrigger>
-          <TabsTrigger value="administrative">Admin</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="medical">Medical</TabsTrigger>
+          <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="legal">Legal</TabsTrigger>
+          <TabsTrigger value="other">Other</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="all" className="mt-4">
+        <TabsContent value="all">
           <DocumentList
-            documents={documents}
+            documents={documents as Document[]}
             selectedDocuments={selectedDocuments}
             isLoading={isLoadingDocuments}
-            onSelect={selectDocument}
-            onDeselect={deselectDocument}
+            onSelect={selectQueueItem}
+            onDeselect={deselectQueueItem}
             formatFileSize={formatFileSize}
           />
         </TabsContent>
-
-        <TabsContent value="clinical" className="mt-4">
+        <TabsContent value="medical">
           <DocumentList
-            documents={documents}
+            documents={(documents as Document[]).filter(d => hasComplianceConcern(d, 'medical'))}
             selectedDocuments={selectedDocuments}
             isLoading={isLoadingDocuments}
-            onSelect={selectDocument}
-            onDeselect={deselectDocument}
+            onSelect={selectQueueItem}
+            onDeselect={deselectQueueItem}
             formatFileSize={formatFileSize}
           />
         </TabsContent>
-
-        <TabsContent value="administrative" className="mt-4">
+        <TabsContent value="financial">
           <DocumentList
-            documents={documents}
+            documents={(documents as Document[]).filter(d => hasComplianceConcern(d, 'financial'))}
             selectedDocuments={selectedDocuments}
             isLoading={isLoadingDocuments}
-            onSelect={selectDocument}
-            onDeselect={deselectDocument}
+            onSelect={selectQueueItem}
+            onDeselect={deselectQueueItem}
             formatFileSize={formatFileSize}
           />
         </TabsContent>
-
-        <TabsContent value="billing" className="mt-4">
+        <TabsContent value="legal">
           <DocumentList
-            documents={documents}
+            documents={(documents as Document[]).filter(d => hasComplianceConcern(d, 'legal'))}
             selectedDocuments={selectedDocuments}
             isLoading={isLoadingDocuments}
-            onSelect={selectDocument}
-            onDeselect={deselectDocument}
+            onSelect={selectQueueItem}
+            onDeselect={deselectQueueItem}
+            formatFileSize={formatFileSize}
+          />
+        </TabsContent>
+        <TabsContent value="other">
+          <DocumentList
+            documents={(documents as Document[]).filter(d => hasComplianceConcern(d, 'other') || !d.compliance_concern)}
+            selectedDocuments={selectedDocuments}
+            isLoading={isLoadingDocuments}
+            onSelect={selectQueueItem}
+            onDeselect={deselectQueueItem}
             formatFileSize={formatFileSize}
           />
         </TabsContent>
@@ -114,12 +145,12 @@ function DocumentList({
   onDeselect,
   formatFileSize,
 }: {
-  documents: DocumentType[]
-  selectedDocuments: DocumentType[]
+  documents: Document[]
+  selectedDocuments: any[] // Using any for queue items
   isLoading: boolean
-  onSelect: (document: DocumentType) => void
+  onSelect: (document: any) => void
   onDeselect: (documentId: string) => void
-  formatFileSize: (bytes: number) => string
+  formatFileSize: (bytes: string | null | undefined) => string
 }) {
   if (isLoading) {
     return (
@@ -138,11 +169,15 @@ function DocumentList({
       <div className="p-4 space-y-2">
         {documents.map((document) => (
           <DocumentItem
-            key={document.id}
+            key={document.document_id}
             document={document}
-            isSelected={selectedDocuments.some((d) => d.id === document.id)}
-            onSelect={() => onSelect(document)}
-            onDeselect={() => onDeselect(document.id)}
+            isSelected={selectedDocuments.some((d) => d.id === document.document_id)}
+            onSelect={() => onSelect({
+              id: document.document_id,
+              name: document.file_name || 'Unnamed document',
+              type: 'document'
+            })}
+            onDeselect={() => onDeselect(document.document_id)}
             formatFileSize={formatFileSize}
           />
         ))}
@@ -158,11 +193,11 @@ function DocumentItem({
   onDeselect,
   formatFileSize,
 }: {
-  document: DocumentType
+  document: Document
   isSelected: boolean
   onSelect: () => void
   onDeselect: () => void
-  formatFileSize: (bytes: number) => string
+  formatFileSize: (bytes: string | null | undefined) => string
 }) {
   const handleClick = () => {
     if (isSelected) {
@@ -173,13 +208,14 @@ function DocumentItem({
   }
 
   const getDocumentIcon = () => {
-    switch (document.type) {
-      case "pdf":
-        return <FilePdf className="h-4 w-4 text-muted-foreground" />
-      case "image":
-        return <FileImage className="h-4 w-4 text-muted-foreground" />
-      default:
-        return <FileText className="h-4 w-4 text-muted-foreground" />
+    const fileType = document.file_type?.toLowerCase() || '';
+    
+    if (fileType.includes('pdf')) {
+      return <FilePdf className="h-4 w-4 text-muted-foreground" />
+    } else if (fileType.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => fileType.includes(ext))) {
+      return <FileImage className="h-4 w-4 text-muted-foreground" />
+    } else {
+      return <FileText className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -192,17 +228,16 @@ function DocumentItem({
     >
       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">{getDocumentIcon()}</div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{document.name}</div>
+        <div className="font-medium truncate">{document.file_name || 'Unnamed document'}</div>
         <div className="text-xs text-muted-foreground flex items-center gap-2">
-          <span>{document.type.toUpperCase()}</span>
+          <span>{document.file_type?.toUpperCase() || 'UNKNOWN'}</span>
           <span>•</span>
-          <span>{formatFileSize(document.size)}</span>
+          <span>{formatFileSize(document.file_size)}</span>
           <span>•</span>
-          <span>{document.category}</span>
+          <span>{document.compliance_concern || 'Uncategorized'}</span>
         </div>
       </div>
       {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
     </div>
   )
 }
-

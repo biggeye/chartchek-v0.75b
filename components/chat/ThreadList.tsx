@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
-import { useLegacyChatStore } from '@/store/legacyChatStore'
+import { useLegacyChatStore } from '@/store/chat/legacyChatStore'
 import { Thread } from '@/types/store/legacyChat'
 import { ScrollArea } from '../ui/scroll-area'
 

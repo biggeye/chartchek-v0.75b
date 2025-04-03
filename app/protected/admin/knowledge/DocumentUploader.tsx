@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TextArea from "@/components/ui/text-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { useKnowledgeStore } from "@/store/knowledgeStore";
+import { useKnowledgeStore } from "@/store/doc/knowledgeStore";
 import { Loader2, Upload, File, X } from "lucide-react";
 import { 
   Select,

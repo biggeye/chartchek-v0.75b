@@ -49,30 +49,18 @@ export interface PatientWithDetails {
 export interface PatientStore {
   // State
   patients: PatientBasicInfo[];
-  currentPatientId: string | null;
-  currentPatient: PatientBasicInfo | null;
-  selectedPatient: PatientBasicInfo | null;  // Added
-  vitalSigns: PatientVitalSign[];
-  currentPatientVitalSigns: PatientVitalSign[];
-  selectedPatientVitalSigns: PatientVitalSign[];  // Added
-  isLoading: boolean;
+  selectedPatient: PatientBasicInfo | null;
   isLoadingPatients: boolean; // Added
-  isLoadingVitalSigns: boolean;  // Added
   error: string | null;
 
-  // Actions
-  setPatients: (patients: PatientBasicInfo[]) => void;
-  setCurrentPatientId: (patientId: string | null) => void;
-  setCurrentPatient: (patient: PatientBasicInfo) => void;
-  setVitalSigns: (vitalSigns: PatientVitalSign[]) => void;
-
+  fetchPatients: (facilityId?: number) => Promise<PatientBasicInfo[]>;
   fetchPatientsAdmissionsByFacility: (facilityId: number, page?: number, limit?: number, startDate?: string, endDate?: string) => Promise<PatientBasicInfo[]>;
   fetchPatientsCensusByFacility: (facilityId: number, page?: number, limit?: number) => Promise<PatientBasicInfo[]>;
-  fetchPatients: (facilityId: number) => Promise<PatientBasicInfo[]>;
   fetchPatientById: (patientId: string) => Promise<PatientBasicInfo | null>;
-  fetchPatientWithDetails: (patientId: string) => Promise<PatientWithDetails | null>;
 
-  fetchPatientVitalSigns: (patientId: string, options?: { skipLoadingState?: boolean }) => Promise<PatientVitalSign[]>;
+  // Actions
+  selectPatient: (patient: PatientBasicInfo) => void;
+  setPatients: (patients: PatientBasicInfo[]) => void;
 
   setIsLoadingPatients: (isLoading: boolean) => void;
   setError: (error: string | null) => void;

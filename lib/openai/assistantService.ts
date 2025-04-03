@@ -5,9 +5,7 @@ import { createServer } from "@/utils/supabase/server";
 import { getOpenAIClient } from "@/utils/openai/server";
 import { ChatMessageAttachment } from "@/types/database";
 
-import { useLegacyChatStore } from "@/store/legacyChatStore";
-import { useStreamStore } from "@/store/streamStore";
-import { useGlobalChatStore } from "@/store/chatStore";
+import { useGlobalChatStore } from "@/store/chat/globalChatStore";
 
 const supabase = await createServer();
 
@@ -23,11 +21,7 @@ export async function assistantAdditionalStream(
   additionalInstructions: any = {},
   attachments: ChatMessageAttachment[] = []
 ): Promise<string> {
-  const streamInit = useStreamStore.getInitialState();
-  const legacyChatInit = useLegacyChatStore.getInitialState();
   const chatInit = useGlobalChatStore.getInitialState();
-
- 
   
   if (!messageContent) {
     throw new Error('Message content is required');

@@ -2,14 +2,21 @@
 
 import { useCallback } from "react"
 import { useDropzone } from "react-dropzone"
-import { useChatStore } from "@/store/chatStore"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { UploadCloud, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 export default function FileUploadModal({ onClose }: { onClose: () => void }) {
-  const { uploadFiles, isUploading, addFilesToUpload, processUploadFiles: startUpload, removeUploadFile } = useChatStore()
+  const { 
+    uploadFiles, 
+    isUploading, 
+    addFilesToUpload, 
+    processUploadFiles: startUpload, 
+    removeUploadFile,
+    
+   } = useGlobalChatStore()
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {

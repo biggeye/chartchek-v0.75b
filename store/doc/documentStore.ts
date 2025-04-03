@@ -3,53 +3,19 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
-import { Document, DocumentStore, DocumentCategorization } from '@/types/store/document';
-import { useLegacyChatStore as useChatStore } from './legacyChatStore';
-
+import { Document, DocumentCategorization, DocumentStoreState } from '@/types/store/document';
 // Initialize Supabase client
 const supabase = createClient();
 
-interface EnhancedDocumentStoreState {
-  documents: Document[];
-  fileQueue: Document[];
-  transientFileQueue: Document[];
-  isLoadingDocuments: boolean;
-  error: string | null;
-  // Methods
-  setDocuments: (documents: Document[]) => void;
-  setIsLoadingDocuments: (isLoadingDocuments: boolean) => void;
-  setError: (error: string | null) => void;
-  fetchDocuments: (facilityId?: number) => Promise<Document[]>;
-  fetchDocumentsForCurrentFacility: () => Promise<Document[]>;
-
-  // File queue methods
-  addToFileQueue: (document: Document) => void;
-  removeFromFileQueue: (document: Document) => void;
-  getFileQueue: () => Document[];
-  
-  // Document methods
-  uploadDocument: (file: File, categorization?: DocumentCategorization) => Promise<Document | null>;
-  uploadAndProcessDocument: (file: File, categorization?: DocumentCategorization) => Promise<Document | null>;
-  updateDocumentCategorization: (documentId: string, categorization: DocumentCategorization) => Promise<boolean>;
-  
-  // Chat file handling
-  addFileToQueue: (doc: Document) => void;
-  removeFileFromQueue: (doc: Document) => void;
-  clearFileQueue: () => void;
-  sendMessageWithFiles: (assistantId: string, threadId: string, content: string, files?: Document[]) => Promise<any>;
-}
-
 // Create enhanced document store with Zustand
-export const useDocumentStore = create<EnhancedDocumentStoreState>()(
+export const useDocumentStore = create<DocumentStoreState>()(
   persist(
     (set, get) => ({
       documents: [],
-      fileQueue: [],
       isLoadingDocuments: false,
       error: null,
-      transientFileQueue: [],
 
       // Original methods
       setDocuments: (documents: Document[]) => set({ documents }),
@@ -86,7 +52,7 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
 
       fetchDocumentsForCurrentFacility: async (): Promise<Document[]> => {
         try {
-          const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
+          const facilityStore = (await import('../patient/facilityStore')).useFacilityStore.getState();
           const currentFacilityId = facilityStore.currentFacilityId;
 
           if (currentFacilityId) {
@@ -101,30 +67,12 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
           return [];
         }
       },
-
-      // Original file queue methods
-      addToFileQueue: (document: Document) => {
-        set((state) => ({
-          fileQueue: [...state.fileQueue, document]
-        }));
-      },
-
-      removeFromFileQueue: (document: Document) => {
-        set((state) => ({
-          fileQueue: state.fileQueue.filter(file => file.document_id !== document.document_id)
-        }));
-      },
-
-      getFileQueue: () => {
-        return get().fileQueue;
-      },
-
       // Document upload and processing methods
       uploadDocument: async (file: File, categorization?: DocumentCategorization): Promise<Document | null> => {
         set({ isLoadingDocuments: true, error: null });
         try {
           // Get current facility ID
-          const facilityStore = (await import('./facilityStore')).useFacilityStore.getState();
+          const facilityStore = (await import('../patient/facilityStore')).useFacilityStore.getState();
           const facilityId = facilityStore.currentFacilityId;
           const { data: { user }, error: authError } = await supabase.auth.getUser();
           const userId = user?.id;
@@ -254,62 +202,20 @@ export const useDocumentStore = create<EnhancedDocumentStoreState>()(
         }
       },
 
-
-      // NEW METHODS FOR CHAT FILE HANDLING
-      addFileToQueue: (doc: Document) => set((state) => ({
-        transientFileQueue: [...state.transientFileQueue, doc]
-      })),
-
-      removeFileFromQueue: (doc: Document) => set((state) => ({
-        transientFileQueue: state.transientFileQueue.filter(
-          (item) => item.document_id !== doc.document_id
-        )
-      })),
-
-      clearFileQueue: () => set({ transientFileQueue: [] }),
-
-      sendMessageWithFiles: async (assistantId: string, threadId: string, content: string, files?: Document[]) => {
-        try {
-          const chatStore = useChatStore.getState();
-          const threadId = chatStore.currentThread?.thread_id;
-
-          if (!threadId) {
-            throw new Error('No active thread found');
-          }
-          const fileIds = files && files.length > 0
-            ? files.map(file => file.document_id)
-            : [];
-
-          return chatStore.sendMessage(
-            assistantId,
-            threadId,
-            content,
-            fileIds
-          );
-        } catch (error) {
-          console.error('Error sending message with files:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to send message with files' });
-          throw error;
-        }
-      }
     }),
-
     {
-      name: 'document-storage',
-      partialize: (state) => ({ 
-        documents: state.documents,
-        fileQueue: state.fileQueue 
-      }),
+      name: 'documentStore',
+      storage: createJSONStorage(() => localStorage)
     }
   )
-);
+)
 
 // Initialize facility subscription - moved to a function to avoid circular dependency
 export const initDocumentStoreSubscriptions = () => {
   if (typeof window !== 'undefined') {
     // Only run on client-side
     // Import the facility store dynamically to avoid circular dependency
-    const { useFacilityStore } = require('./facilityStore');
+    const { useFacilityStore } = require('../patient/facilityStore');
 
     const unsubscribe = useFacilityStore.subscribe((state: any) => {
       const currentFacilityId = state.currentFacilityId;

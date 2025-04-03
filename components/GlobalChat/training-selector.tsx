@@ -5,12 +5,12 @@ import { Check, ChevronDown, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useChatStore } from "@/store/chatStore"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
 import { Badge } from "@/components/ui/badge"
 
 export default function TrainingSelector() {
   const [open, setOpen] = useState(false)
-  const { availableTrainingDatasets, selectedTrainingDataset, setSelectedTrainingDataset } = useChatStore()
+  const { availableTrainingDatasets, selectedTrainingDataset, setSelectedTrainingDataset } = useGlobalChatStore()
 
   const getCategoryColor = (category: string) => {
     switch (category) {

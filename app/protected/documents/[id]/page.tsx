@@ -5,7 +5,7 @@ import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useDocumentStore } from '@/store/documentStore';
+import { useDocumentStore } from '@/store/doc/documentStore';
 import Breadcrumb from '@/components/ui/breadcrumb';
 import { Document as DocumentType } from '@/types/store/document';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';

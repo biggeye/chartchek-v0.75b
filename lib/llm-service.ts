@@ -1,10 +1,10 @@
 import { generateText, streamText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
-import type { Patient, PatientRecord, Document, QueueItem } from "@/types/chartChek/globalChat"
+import type { Patient, PatientRecord, Document, QueueItem } from "@/types/store/globalChat"
 
 // LLM Models
-export type LLMProvider = "openai" | "anthropic" | "gemini"
+export type LLMProvider = "openai" | "anthropic" | "gemini" | "assistants"
 export type LLMModel =
   | "gpt-4o"
   | "gpt-4-turbo"
@@ -12,6 +12,7 @@ export type LLMModel =
   | "claude-3-opus"
   | "claude-3-sonnet"
   | "claude-3-haiku"
+  | "tjc"
 
 export interface LLMOption {
   id: string

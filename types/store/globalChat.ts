@@ -13,28 +13,20 @@ export interface AggregatedContext{
 }
 
 export interface GlobalChatState {
-  // Patient state
-  patients: Patient[]
+
   selectedPatient: Patient | null
-  patientRecords: PatientRecord[]
-  selectedRecords: PatientRecord[]
-  isLoadingPatients: boolean
-  isLoadingRecords: boolean
-  aggregatedContext: AggregatedContext;
-
-  // Document state
-  documents: Document[]
+  selectedEvaluations: PatientRecord[]
   selectedDocuments: Document[]
-  isLoadingDocuments: boolean
-
-  // File upload state
-  uploadFiles: UploadFile[]
-  isUploading: boolean
 
   // Queue state
   queueItems: QueueItem[]
+  uploadFiles: UploadFile[]
+  isUploading: boolean
+
+  aggregatedContext: AggregatedContext[];
 
   // Chat state
+  assistantId: string
   messages: {
     id: string
     role: "user" | "assistant" | "system"
@@ -52,31 +44,17 @@ export interface GlobalChatState {
   availableTrainingDatasets: TrainingDataset[]
   selectedTrainingDataset: TrainingDataset
 
-  // Patient actions
-  fetchPatients: () => Promise<void>
-  selectPatient: (patient: Patient | null) => void
-  fetchPatientRecords: (patientId: string) => Promise<void>
-  selectRecord: (record: PatientRecord) => void
-  deselectRecord: (recordId: string) => void
-  clearSelectedRecords: () => void
-
-  // Document actions
-  fetchDocuments: () => Promise<void>
-  fetchDocumentsByCategory: (category: Document["category"]) => Promise<void>
-  selectDocument: (document: Document) => void
-  deselectDocument: (documentId: string) => void
-  clearSelectedDocuments: () => void
-
+  // actions
+  selectQueueItem: (record: any) => void
+  deselectQueueItem: (record: any) => void
+  clearQueue: () => void
   // File upload actions
   addFilesToUpload: (files: File[]) => void
   processUploadFiles: () => Promise<void>
   removeUploadFile: (fileId: string) => void
   clearUploadFiles: () => void
 
-  // Queue actions
-  addToQueue: (item: Omit<QueueItem, "id">) => void
-  removeFromQueue: (itemId: string) => void
-  clearQueue: () => void
+
 
   // Chat actions
   setCurrentMessage: (message: string) => void
@@ -138,8 +116,9 @@ export interface UploadFile {
 
 // Queue Item Types
 export interface QueueItem {
+  queueId: string,
   id: string
-  type: "file" | "patient" | "document"
   name: string
-  data: Patient | PatientRecord | Document | UploadFile | KipuPatientEvaluation
+  type?: "file" | "patient" | "document"
+  data?: Patient | PatientRecord | Document | UploadFile | KipuPatientEvaluation
 }

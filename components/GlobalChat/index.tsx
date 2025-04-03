@@ -26,8 +26,8 @@ import ChatMessage from "./chat-message"
 import ChatMessages from "./chat-messages"
 import ModelSelector from "./model-selector"
 import TrainingSelector from "./training-selector"
-import { useGlobalChatStore } from "@/store/chatStore"
-import { useFacilityStore } from "@/store/facilityStore"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
+import { useFacilityStore } from "@/store/patient/facilityStore"
 import { assistantAdditionalStream } from "@/lib/openai/assistantService"
 // Import the hook and types from the original GlobalChat component
 import { useOpenAIResponse } from '@/hooks/useOpenAIResponse';
@@ -62,15 +62,15 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
   const { currentFacilityId } = useFacilityStore();
   
   const {
-    currentAssistantId,
     queueItems,
-    removeFromQueue,
+    deselectQueueItem,
     currentMessage,
     setCurrentMessage,
     sendMessage,
     isGenerating,
     isFullScreen,
     toggleFullScreen,
+    assistantId
   } = useGlobalChatStore()
 
   const queueRef = useRef<HTMLDivElement>(null)
@@ -330,7 +330,7 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
                       variant="ghost"
                       size="icon"
                       className="h-4 w-4 rounded-full hover:bg-muted"
-                      onClick={() => removeFromQueue(item.id)}
+                      onClick={() => deselectQueueItem(item.id)}
                     >
                       <X className="h-2 w-2" />
                     </Button>

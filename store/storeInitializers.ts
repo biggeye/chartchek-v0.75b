@@ -1,6 +1,6 @@
 'use client';
 
-import { initDocumentStoreSubscriptions } from './documentStore';
+import { initDocumentStoreSubscriptions } from './doc/documentStore';
 // Remove or comment out the problematic import
 // import { initPatientStoreSubscriptions } from './patientStore';
 
@@ -26,7 +26,7 @@ export function initializeStoreSubscriptions() {
 export async function initializeFacilityData() {
   if (typeof window !== 'undefined') {
     // Dynamically import to avoid circular dependencies
-    const { useFacilityStore } = require('./facilityStore');
+    const { useFacilityStore } = require('./patient/facilityStore');
     
     // Fetch facilities if not already loaded
     const { facilities, fetchFacilities } = useFacilityStore.getState();

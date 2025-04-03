@@ -5,7 +5,7 @@ import { Check, ChevronDown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useGlobalChatStore } from "@/store/chatStore"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
 
 export default function ModelSelector() {
   const [open, setOpen] = useState(false)

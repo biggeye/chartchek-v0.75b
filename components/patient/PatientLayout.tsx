@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import { usePatientStore } from '@/store/patientStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 
 interface PatientBreadcrumbProps {
   children: React.ReactNode;

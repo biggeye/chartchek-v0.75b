@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Breadcrumb from '@/components/ui/breadcrumb';
-import { usePatientStore } from '@/store/patientStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 
 interface PatientLayoutProps {
   children: React.ReactNode;

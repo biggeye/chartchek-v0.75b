@@ -2,14 +2,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePatientStore } from '@/store/patientStore';
-import { useFacilityStore } from '@/store/facilityStore';
-import { useStreamStore } from '@/store/streamStore';
-
 import { X } from 'lucide-react';
-import useDocumentStore from '@/store/documentStore';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
-import { useGlobalChatStore } from '@/store/chatStore';
+// patient state
+import { usePatientStore } from '@/store/patient/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
+// chat state
+import { useGlobalChatStore } from '@/store/chat/globalChatStore';
+//doc state
+import useDocumentStore from '@/store/doc/documentStore';
+import useTemplateStore from '@/store/doc/templateStore';
+import { useKnowledgeStore } from '@/store/doc/knowledgeStore';
+
 
 interface DebugSectionProps {
   title: string;
@@ -20,21 +24,34 @@ interface DebugSectionProps {
 
 interface FunctionInspectorProps {
   func: Function;
+  setSelectedFunction: (func: Function) => void;
 }
 
-const FunctionInspector = ({ func }: FunctionInspectorProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+interface FunctionExecutorProps {
+  func: Function;
+  onClose: () => void;
+}
 
+export const FunctionInspector = ({ func, setSelectedFunction }: FunctionInspectorProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const funcName = func.name || 'anonymous';
   const funcString = func.toString();
 
   return (
     <div className="my-1">
-      <div
-        className="cursor-pointer text-blue-400 hover:text-blue-300"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        {isExpanded ? '▼' : '▶'} [Function: {funcName}]
+      <div className="flex items-center">
+        <div
+          className="cursor-pointer text-blue-400 hover:text-blue-300 flex-grow"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? '▼' : '▶'} [Function: {funcName}]
+        </div>
+        <button
+          className="px-2 py-0.5 text-xs bg-blue-600 hover:bg-blue-700 rounded text-white"
+          onClick={() => setSelectedFunction(func)}
+        >
+          Execute
+        </button>
       </div>
 
       {isExpanded && (
@@ -46,19 +63,13 @@ const FunctionInspector = ({ func }: FunctionInspectorProps) => {
   );
 };
 
-// Add this to your DebugPanel.tsx file
-
-interface FunctionExecutorProps {
-  func: Function;
-  onClose: () => void;
-}
-
 const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
   const [args, setArgs] = useState<string[]>([]);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resultExpanded, setResultExpanded] = useState(true);
+  const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
 
   // Parse function signature to get parameter names
   const funcString = func.toString();
@@ -176,7 +187,10 @@ const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
 
                 {resultExpanded && (
                   <div className="p-2 bg-gray-800 rounded">
-                    <ObjectInspector data={result} />
+                    <ObjectInspector 
+                      data={result} 
+                      setSelectedFunction={setSelectedFunction}
+                    />
                   </div>
                 )}
               </div>
@@ -189,7 +203,15 @@ const FunctionExecutor = ({ func, onClose }: FunctionExecutorProps) => {
 };
 
 // New recursive object inspector component
-const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => {
+const ObjectInspector = ({ 
+  data, 
+  depth = 0,
+  setSelectedFunction 
+}: { 
+  data: any, 
+  depth?: number,
+  setSelectedFunction: (func: Function) => void
+}) => {
   const [expandedProps, setExpandedProps] = useState<Record<string, boolean>>({});
 
   const toggleProp = (prop: string) => {
@@ -200,7 +222,10 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
   };
 
   if (typeof data === 'function') {
-    return <FunctionInspector func={data} />;
+    return <FunctionInspector 
+      func={data} 
+      setSelectedFunction={setSelectedFunction} 
+    />;
   }
 
   if (typeof data !== 'object' || data === null) {
@@ -209,7 +234,7 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
 
   const isArray = Array.isArray(data);
   const entries = Object.entries(data);
-
+    
   return (
     <div style={{ marginLeft: depth > 0 ? 16 : 0 }}>
       <span>{isArray ? '[' : '{'}</span>
@@ -252,7 +277,11 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
                   )}
                 </div>
                 {isExpanded && isExpandable && (
-                  <ObjectInspector data={value} depth={depth + 1} />
+                  <ObjectInspector 
+                    data={value} 
+                    depth={depth + 1} 
+                    setSelectedFunction={setSelectedFunction}
+                  />
                 )}
               </div>
             );
@@ -264,7 +293,15 @@ const ObjectInspector = ({ data, depth = 0 }: { data: any, depth?: number }) => 
   );
 };
 
-const DebugSection = ({ title, data, isExpanded, onToggle }: DebugSectionProps) => {
+const DebugSection = ({ 
+  title, 
+  data, 
+  isExpanded, 
+  onToggle,
+  setSelectedFunction 
+}: DebugSectionProps & { 
+  setSelectedFunction: (func: Function) => void 
+}) => {
   return (
     <div className="bg-gray-800 rounded overflow-hidden">
       <button
@@ -277,7 +314,10 @@ const DebugSection = ({ title, data, isExpanded, onToggle }: DebugSectionProps) 
 
       {isExpanded && (
         <div className="p-2 text-xs font-mono bg-gray-950 overflow-x-auto">
-          <ObjectInspector data={data} />
+          <ObjectInspector 
+            data={data} 
+            setSelectedFunction={setSelectedFunction}
+          />
         </div>
       )}
     </div>
@@ -286,21 +326,19 @@ const DebugSection = ({ title, data, isExpanded, onToggle }: DebugSectionProps) 
 
 export const DebugPanel = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<'context' | 'openaiState' | 'kipuState'>('context');
+  const [activeTab, setActiveTab] = useState<'chat' | 'doc' | 'patient'>('chat');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-
+  const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
+  
   // Get all the contexts and stores
-
   const facilityStore = useFacilityStore();
   const patientStore = usePatientStore();
   const documentStore = useDocumentStore();
   const evaluationsStore = useEvaluationsStore();
   const chatStore = useGlobalChatStore();
-  const streamStore = useStreamStore();
+  const templateStore = useTemplateStore();
+  const knowledgeStore = useKnowledgeStore();
 
-
-
-  // Toggle section expansion
   const toggleSection = (section: string) => {
     setExpandedSections((prev: Record<string, boolean>) => ({
       ...prev,
@@ -308,7 +346,6 @@ export const DebugPanel = () => {
     }));
   };
 
-  // Handle keyboard shortcut (Alt+D)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key === 'd') {
@@ -320,147 +357,114 @@ export const DebugPanel = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Only render in development
   if (process.env.NODE_ENV !== 'development') return null;
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 right-0 w-96 max-h-[80vh] bg-gray-900 text-white z-50 rounded-tl-lg shadow-xl overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between p-2 bg-gray-800">
-        <div className="flex space-x-2">
+    <>
+      {selectedFunction && (
+        <FunctionExecutor
+          func={selectedFunction}
+          onClose={() => setSelectedFunction(null)}
+        />
+      )}
+      <div className="fixed bottom-0 right-0 w-96 max-h-[80vh] bg-gray-900 text-white z-50 rounded-tl-lg shadow-xl overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-2 bg-gray-800">
+          <div className="flex space-x-2">
+            <button
+              className={`px-3 py-1 rounded ${activeTab === 'chat' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+              onClick={() => setActiveTab('chat')}
+            >
+              chatState
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${activeTab === 'doc' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+              onClick={() => setActiveTab('doc')}
+            >
+              docState
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${activeTab === 'patient' ? 'bg-indigo-600' : 'bg-gray-700'}`}
+              onClick={() => setActiveTab('patient')}
+            >patientState
+            </button>
+          </div>
           <button
-            className={`px-3 py-1 rounded ${activeTab === 'context' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('context')}
+            onClick={() => setIsVisible(false)}
+            className="p-1 hover:bg-gray-700 rounded"
           >
-            chartChek State
-          </button>
-          <button
-            className={`px-3 py-1 rounded ${activeTab === 'kipuState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('kipuState')}
-          >
-            KIPU State
-          </button>
-          <button
-            className={`px-3 py-1 rounded ${activeTab === 'openaiState' ? 'bg-indigo-600' : 'bg-gray-700'}`}
-            onClick={() => setActiveTab('openaiState')}
-          >
-            OpenAI State
+            <X size={16} />
           </button>
         </div>
-        <button
-          onClick={() => setIsVisible(false)}
-          className="p-1 hover:bg-gray-700 rounded"
-        >
-          <X size={16} />
-        </button>
+
+        <div className="overflow-y-auto p-2 flex-1">
+          {activeTab === 'chat' && (
+            <div className="space-y-2">
+              <DebugSection
+                title="Chat State"
+                data={chatStore}
+                isExpanded={expandedSections['chatStore']}
+                onToggle={() => toggleSection('chatStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+            </div>
+          )}
+
+          {activeTab === 'patient' && (
+            <div className="space-y-2">
+              <DebugSection
+                title="Patient State"
+                data={patientStore}
+                isExpanded={expandedSections['patientStore']}
+                onToggle={() => toggleSection('patientStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+              <DebugSection
+                title="Facility State"
+                data={facilityStore}
+                isExpanded={expandedSections['facilityStore']}
+                onToggle={() => toggleSection('facilityStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+              <DebugSection
+                title="Evaluations State"
+                data={evaluationsStore}
+                isExpanded={expandedSections['evaluationsStore']}
+                onToggle={() => toggleSection('evaluationsStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+            </div>
+          )}
+
+          {activeTab === 'doc' && (
+            <div className="space-y-2">
+              <DebugSection
+                title="Document State"
+                data={documentStore}
+                isExpanded={expandedSections['documentStore']}
+                onToggle={() => toggleSection('documentStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+              <DebugSection
+                title="Template State"
+                data={templateStore}
+                isExpanded={expandedSections['templateStore']}
+                onToggle={() => toggleSection('templateStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+              <DebugSection
+                title="Knowledge State"
+                data={knowledgeStore}
+                isExpanded={expandedSections['knowledgeStore']}
+                onToggle={() => toggleSection('knowledgeStore')}
+                setSelectedFunction={setSelectedFunction}
+              />
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className="overflow-y-auto p-2 flex-1">
-        {activeTab === 'context' && (
-          <div className="space-y-2">
-         
-            <DebugSection
-            title="Document Store"
-            data={documentStore}
-            isExpanded={expandedSections['documentStore']}
-            onToggle={() => toggleSection('documentStore')}
-            />
-          </div>
-        )}
-
-        {activeTab === 'kipuState' && (
-          <div className="space-y-2">
-            <DebugSection
-              title="Patient Store"
-              data={patientStore}
-              isExpanded={expandedSections['patientStore']}
-              onToggle={() => toggleSection('patientStore')}
-            />
-            <DebugSection
-              title="Facility Store"
-              data={facilityStore}
-              isExpanded={expandedSections['facilityStore']}
-              onToggle={() => toggleSection('facilityStore')}
-            />
-            <DebugSection
-              title="Evaluations Store"
-              data={evaluationsStore}
-              isExpanded={expandedSections['evaluationsStore']}
-              onToggle={() => toggleSection('evaluationsStore')}
-            />
-          </div>
-
-        )}
-
-        {activeTab === 'openaiState' && (
-          <div className="space-y-2">
-            <DebugSection
-              title="Chat Store"
-              data={chatStore}
-              isExpanded={expandedSections['chatStore']}
-              onToggle={() => toggleSection('chatStore')}
-            />
-            <DebugSection
-              title="Stream Store"
-              data={streamStore}
-              isExpanded={expandedSections['streamStore']}
-              onToggle={() => toggleSection('streamStore')}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="p-2 bg-gray-800 text-xs text-gray-400">
-        Press Alt+D to toggle this panel
-      </div>
-    </div>
+    </>
   );
 };
 
-// Enhanced replacer function for the DebugPanel
-function replacer(key: string, value: any) {
-  // Handle functions with more detail
-  if (typeof value === 'function') {
-    // Get function name or mark as anonymous
-    const fnName = value.name || 'anonymous';
-
-    // Get function parameters by converting to string and extracting the parameter list
-    const fnStr = value.toString();
-    const paramMatch = fnStr.match(/\(([^)]*)\)/);
-    const params = paramMatch ? paramMatch[1] : '';
-
-    // Get first few lines of function body for context
-    const bodyMatch = fnStr.match(/{([\s\S]*)}/);
-    let body = bodyMatch ? bodyMatch[1].trim() : '';
-    // Truncate body if it's too long
-    if (body.length > 100) {
-      body = body.substring(0, 100) + '...';
-    }
-
-    return `[Function: ${fnName}(${params}) {${body} }]`;
-  }
-
-  // Handle React elements
-  if (value && typeof value === 'object' && value.$$typeof) {
-    // Try to extract component name and props
-    const type = value.type?.name || value.type?.displayName || (typeof value.type === 'string' ? value.type : 'Unknown');
-    const props = value.props ? Object.keys(value.props).join(', ') : '';
-    return `[React Element: <${type} ${props}>]`;
-  }
-
-  // Handle circular references
-  const seen = new WeakSet();
-  if (typeof value === 'object' && value !== null) {
-    if (seen.has(value)) {
-      return '[Circular]';
-    }
-    seen.add(value);
-  }
-
-  // Handle promises
-  if (value instanceof Promise) {
-    return '[Promise]';
-  }
-
-  return value;
-}
+export default DebugPanel;

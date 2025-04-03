@@ -1,6 +1,7 @@
 // store/evaluationsStore.ts
 import { create } from 'zustand';
 import { KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
+import { KipuPatientEvaluationsResponse } from '@/types/chartChek/kipuAdapter';
 
 interface KipuEvaluationsState {
   // UI State
@@ -13,7 +14,7 @@ interface KipuEvaluationsState {
 
   // Actions - Patient Evaluations
   fetchPatientEvaluations: (patientId?: string, options?: any[]) => Promise<void>;
-  fetchPatientEvaluationById: (id: number) => Promise<KipuPatientEvaluation>;
+  selectPatientEvaluation: (id: KipuPatientEvaluation) => Promise<KipuPatientEvaluation>;
   clearSelectedPatientEvaluation: () => void;
 }
 
@@ -23,8 +24,6 @@ export const useEvaluationsStore = create<KipuEvaluationsState>((set) => ({
   selectedPatientEvaluation: null,
   isLoadingEvaluations: false,
   error: null,
-
-
 
   fetchPatientEvaluations: async (patientId?: string, options?: {
     page?: number;
@@ -70,7 +69,7 @@ export const useEvaluationsStore = create<KipuEvaluationsState>((set) => ({
     }
   },
 
-  fetchPatientEvaluationById: async (id: number) => {
+  selectPatientEvaluation: async (id: KipuPatientEvaluation) => {
     set({ isLoadingEvaluations: true, error: null });
     try {
       const response = await fetch(`/api/kipu/patient_evaluations/${id}`);
@@ -85,8 +84,11 @@ export const useEvaluationsStore = create<KipuEvaluationsState>((set) => ({
       set({ error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     } finally {
-      set({ isLoadingEvaluations: false });
+      set({ 
+        selectedPatientEvaluation: id,
+        isLoadingEvaluations: false });
     }
   },
+
   clearSelectedPatientEvaluation: () => set({ selectedPatientEvaluation: null })
 }));

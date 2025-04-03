@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useEvaluationsStore } from '@/store/evaluationsStore';
+import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
 
 export default function KipuPatientEvaluationsPage() {

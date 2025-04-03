@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { useLegacyChatStore } from '@/store/legacyChatStore'
+import { useLegacyChatStore } from '@/store/chat/legacyChatStore'
 import { XCircleIcon, ClockIcon, ArrowPathIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
 import { RunStatusResponse } from '@/types/store/legacyChat'
 

@@ -3,29 +3,31 @@
 import { useEffect, useState } from 'react';
 // Remove this import since we're moving away from context
 // import { usePatient } from '@/lib/contexts/PatientProvider';
-import { useFacilityStore } from '@/store/facilityStore';
-import { usePatientStore } from '@/store/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 import { PatientSearch } from '@/components/patient/PatientSearch';
 import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
+
+import { PatientBreadcrumb } from "@/components/patient/PatientBreadcrumb";
 
 
 
 export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ 
-    start: null, 
-    end: null 
+  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
+    start: null,
+    end: null
   });
   const [isClientReady, setIsClientReady] = useState(false);
   // Replace PatientContext with PatientStore
   const {
-    currentPatient,
-    isPatientContextEnabled,
+    selectedPatient,
     setIsLoadingPatients,
     isLoadingPatients,
     error,
     patients,
+    fetchPatients,
     fetchPatientsCensusByFacility,
     fetchPatientsAdmissionsByFacility
   } = usePatientStore();
@@ -47,18 +49,16 @@ export default function PatientsPage() {
 
   useEffect(() => {
     const loadPatients = async () => {
-    if (!isClientReady || !currentFacilityId) return;
-    
-    setIsLoadingPatients(true);
-    
-    const fetchFunction = await fetchPatientsAdmissionsByFacility;
-      
-    fetchFunction(currentFacilityId)
-      .finally(() => setIsLoadingPatients(false));
+      if (!isClientReady || !currentFacilityId) return;
+
+      setIsLoadingPatients(true);
+
+      await fetchPatients(currentFacilityId)
+        .finally(() => setIsLoadingPatients(false));
     };
     loadPatients();
   }, [currentFacilityId, isClientReady, fetchPatientsAdmissionsByFacility]);
-  
+
 
   if (!isClientReady) {
     return (
@@ -69,33 +69,33 @@ export default function PatientsPage() {
   }
 
   // Filter patients based on search query
-  const filteredPatients = !patients ? [] : 
+  const filteredPatients = !patients ? [] :
     patients.filter(patient => {
       // First filter by facility
       if (patient.facilityId !== currentFacilityId) return false;
-      
+
       // Then filter by search query
-      const matchesSearch = searchQuery.trim() === '' || 
+      const matchesSearch = searchQuery.trim() === '' ||
         (patient.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         patient.lastName?.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+          patient.lastName?.toLowerCase().includes(searchQuery.toLowerCase()));
+
       // Then filter by date range if applicable
       let matchesDateRange = true;
       if (dateRange.start || dateRange.end) {
         const admissionDate = patient.admissionDate ? new Date(patient.admissionDate) : null;
         if (!admissionDate) return false;
-        
+
         if (dateRange.start) {
           const startDate = new Date(dateRange.start);
           if (admissionDate < startDate) matchesDateRange = false;
         }
-        
+
         if (dateRange.end) {
           const endDate = new Date(dateRange.end);
           if (admissionDate > endDate) matchesDateRange = false;
         }
       }
-      
+
       return matchesSearch && matchesDateRange;
     });
 
@@ -105,20 +105,21 @@ export default function PatientsPage() {
   };
 
 
+
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-2">
-        
-      
-          <h1 className="text-2xl font-bold">Patients</h1>
+      <PatientBreadcrumb
+        actionButtons={
           <PatientSearch
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-        />
-     
-      </div>
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+          />
+        }
+      />
+
+
 
 
       {/* Patient list */}

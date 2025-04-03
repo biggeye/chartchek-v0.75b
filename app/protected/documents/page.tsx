@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useDocumentStore } from '@/store/documentStore'
+import { useDocumentStore } from '@/store/doc/documentStore'
 import { Document, DocumentCategorization } from '@/types/store/document'
 import { Button } from '@/components/ui/button'
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog'

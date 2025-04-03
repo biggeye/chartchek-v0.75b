@@ -340,6 +340,45 @@ export type Database = {
           },
         ]
       }
+      facilities: {
+        Row: {
+          address1: string
+          address2: string | null
+          beds: string | null
+          city: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          name: string | null
+          state: string | null
+          zip: string
+        }
+        Insert: {
+          address1: string
+          address2?: string | null
+          beds?: string | null
+          city: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          state?: string | null
+          zip: string
+        }
+        Update: {
+          address1?: string
+          address2?: string | null
+          beds?: string | null
+          city?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          state?: string | null
+          zip?: string
+        }
+        Relationships: []
+      }
       facility_accreditations: {
         Row: {
           account_number: string
@@ -369,6 +408,263 @@ export type Database = {
           receive_date?: string
         }
         Relationships: []
+      }
+      facility_statistics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          facility_id: string
+          id: string
+          is_active: boolean | null
+          operational_stats: Json | null
+          outcome_stats: Json | null
+          patient_stats: Json | null
+          staff_stats: Json | null
+          timestamp: string
+          treatment_stats: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          facility_id: string
+          id?: string
+          is_active?: boolean | null
+          operational_stats?: Json | null
+          outcome_stats?: Json | null
+          patient_stats?: Json | null
+          staff_stats?: Json | null
+          timestamp?: string
+          treatment_stats?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          facility_id?: string
+          id?: string
+          is_active?: boolean | null
+          operational_stats?: Json | null
+          outcome_stats?: Json | null
+          patient_stats?: Json | null
+          staff_stats?: Json | null
+          timestamp?: string
+          treatment_stats?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_statistics_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_chunks: {
+        Row: {
+          chunk_id: string
+          content: string | null
+          created_at: string | null
+          document_id: string | null
+          id: string
+          token_count: number | null
+        }
+        Insert: {
+          chunk_id: string
+          content?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          token_count?: number | null
+        }
+        Update: {
+          chunk_id?: string
+          content?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          token_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_corpus: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          display_name: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_document_metadata: {
+        Row: {
+          created_at: string | null
+          document_id: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string | null
+          value_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: string | null
+          value_type: string
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_document_metadata_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_documents: {
+        Row: {
+          content_hash: string | null
+          corpus_id: string | null
+          corpus_name: string | null
+          created_at: string | null
+          created_by: string | null
+          document_name: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          original_filename: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_hash?: string | null
+          corpus_id?: string | null
+          corpus_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document_name: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          original_filename?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_hash?: string | null
+          corpus_id?: string | null
+          corpus_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          original_filename?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_documents_corpus_id_fkey"
+            columns: ["corpus_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_corpus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_queries: {
+        Row: {
+          corpus_id: string | null
+          created_at: string | null
+          document_id: string | null
+          id: string
+          query: string
+          response_time_ms: number | null
+          result_count: number | null
+          user_id: string | null
+        }
+        Insert: {
+          corpus_id?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          query: string
+          response_time_ms?: number | null
+          result_count?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          corpus_id?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          query?: string
+          response_time_ms?: number | null
+          result_count?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_queries_corpus_id_fkey"
+            columns: ["corpus_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_corpus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_queries_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nods_page: {
         Row: {
@@ -512,6 +808,124 @@ export type Database = {
         }
         Relationships: []
       }
+      template_field_mappings: {
+        Row: {
+          created_at: string | null
+          field_id: string | null
+          id: string
+          system_field_id: string
+          system_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_id?: string | null
+          id?: string
+          system_field_id: string
+          system_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string | null
+          id?: string
+          system_field_id?: string
+          system_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_field_mappings_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "template_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_fields: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          order_index: number
+          required: boolean | null
+          template_id: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order_index: number
+          required?: boolean | null
+          template_id?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          required?: boolean | null
+          template_id?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          target_systems: string[] | null
+          updated_at: string | null
+          updated_by: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          target_systems?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          target_systems?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       thread_runs: {
         Row: {
           assistant_id: string | null
@@ -613,9 +1027,9 @@ export type Database = {
       }
       user_api_settings: {
         Row: {
+          api_id: string
           created_at: string
           has_api_key_configured: boolean
-          id: number
           kipu_access_id: string
           kipu_api_endpoint: string
           kipu_app_id: string
@@ -623,9 +1037,9 @@ export type Database = {
           owner_id: string
         }
         Insert: {
+          api_id?: string
           created_at?: string
           has_api_key_configured: boolean
-          id?: number
           kipu_access_id: string
           kipu_api_endpoint: string
           kipu_app_id: string
@@ -633,9 +1047,9 @@ export type Database = {
           owner_id: string
         }
         Update: {
+          api_id?: string
           created_at?: string
           has_api_key_configured?: boolean
-          id?: number
           kipu_access_id?: string
           kipu_api_endpoint?: string
           kipu_app_id?: string

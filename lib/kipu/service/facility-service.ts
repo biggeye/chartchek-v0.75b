@@ -306,7 +306,7 @@ export async function fetchAndStoreFacilities(
     const facilities = result.data.locations.map((location: any) => mapKipuLocationToFacility(location));
      
     // Update the facility store with the fetched facilities
-    const { useFacilityStore } = await import('@/store/facilityStore');
+    const { useFacilityStore } = await import('@/store/patient/facilityStore');
     const store = useFacilityStore.getState();
     
     // Update the store state with the new facilities

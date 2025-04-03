@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFacilityStore } from '@/store/facilityStore';
-import { usePatientStore } from '@/store/patientStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
+import { usePatientStore } from '@/store/patient/patientStore';
 import { Facility } from '@/types/chartChek/kipuAdapter';
 import { Dialog, Transition } from '@headlessui/react';
 import { BuildingOffice2Icon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
@@ -28,35 +28,25 @@ export function FacilitySelector({ variant = 'header', className }: FacilitySele
     getCurrentFacility
   } = useFacilityStore();
 
-  // Get the patient store
-  const { clearPatientContext } = usePatientStore();
 
   // Get the current facility object
   const currentFacility = getCurrentFacility();
 
   // Fetch facilities on component mount
   useEffect(() => {
-    if(currentFacilityId){
+    if (currentFacilityId) {
       return
     }
-     fetchFacilities();
+    fetchFacilities();
   }, [fetchFacilities]);
 
   // Handle facility selection
   const handleSelectFacility = (facilityId: number) => {
-    // Change the facility in the store
     changeFacilityWithContext(facilityId);
-
-    // Clear the patient context
-    clearPatientContext();
-
-      // Fetch patients for the new facility
-  fetchPatientsCensusByFacility(facilityId);
-    // Close the modal
+    fetchPatientsCensusByFacility(facilityId);
     setIsModalOpen(false);
   };
 
-  // Shared modal rendering
   const renderModal = () => (
     <Transition show={isModalOpen} as="div">
       <Dialog

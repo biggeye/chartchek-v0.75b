@@ -1,33 +1,51 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useGlobalChatStore } from "@/store/chatStore"
+import { useGlobalChatStore } from "@/store/chat/globalChatStore"
 import type { Patient, PatientRecord } from "@/types/store/globalChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, User, FileText } from "lucide-react"
+import { usePatientStore } from "@/store/patient/patientStore"
+import { useFacilityStore } from "@/store/patient/facilityStore"
+import { useEvaluationsStore } from "@/store/patient/evaluationsStore"
+
 
 export default function PatientModal({ onClose }: { onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<"patients" | "records">("patients")
+
   const {
-    patients,
-    selectedPatient,
-    patientRecords,
-    selectedRecords,
-    isLoadingPatients,
-    isLoadingRecords,
-    fetchPatients,
-    selectPatient,
-    selectRecord,
-    deselectRecord,
+    queueItems,
+    selectQueueItem,
+    deselectQueueItem,
   } = useGlobalChatStore()
 
+  const { 
+    isLoadingEvaluations,
+    patientEvaluations,
+    fetchPatientEvaluations,
+  } = useEvaluationsStore();
+
+  const { currentFacilityId } = useFacilityStore();
+
+  const {
+    isLoadingPatients,
+    fetchPatients,
+    patients,
+    selectPatient,
+    selectedPatient
+  } = usePatientStore();
+
   useEffect(() => {
-    if (isLoadingPatients) fetchPatients()
-    if (selectedPatient && isLoadingRecords) {
-      fetchPatients();
-    } },
-[fetchPatients, isLoadingPatients, isLoadingRecords, selectedPatient])
+    fetchPatients();
+  }, [fetchPatients]);
+
+  useEffect(() => {
+    if (selectedPatient) {
+      const patientId = selectedPatient.patientId;
+      fetchPatientEvaluations(patientId);
+    }
+  }, [selectedPatient]);
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -52,7 +70,13 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
                 {patients.map((patient) => (
                   <PatientItem
                     key={patient.patientId}
-                    patient={patient}
+                    patient={{
+                      patientId: patient.patientId,
+                      firstName: patient.firstName,
+                      lastName: patient.lastName,
+                      facilityId: patient.facilityId.toString(),
+                      // Add any other required fields from the Patient interface
+                    }}
                     isSelected={selectedPatient?.patientId === patient.patientId}
                     onSelect={() => selectPatient(patient)}
                   />
@@ -69,20 +93,27 @@ export default function PatientModal({ onClose }: { onClose: () => void }) {
                 Patient Evaluations for {selectedPatient.firstName} {selectedPatient.lastName}
               </h3>
 
-              {isLoadingRecords ? (
+              {isLoadingEvaluations ? (
                 <div className="flex justify-center py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : patientRecords.length > 0 ? (
+              ) : patientEvaluations.length > 0 ? (
                 <ScrollArea className="h-[250px] rounded-md border">
                   <div className="p-2 space-y-2">
-                    {patientRecords.map((record) => (
+                    {patientEvaluations.map((record) => (
                       <RecordItem
                         key={record.id}
-                        record={record}
-                        isSelected={selectedRecords.some((r) => r.id === record.id)}
-                        onSelect={() => selectRecord(record)}
-                        onDeselect={() => deselectRecord(record.id)}
+                        record={{
+                          id: record.id.toString(),
+                          patientId: selectedPatient.patientId, // Add the missing patientId
+                          title: record.name,
+                          date: record.createdAt,
+                          type: record.evaluationType || "evaluation", // Ensure type exists
+                          provider: record.createdBy
+                        }}
+                        isSelected={queueItems.some((r) => r.id === record.id)}
+                        onSelect={() => selectQueueItem(record.id, record.name)}
+                        onDeselect={() => deselectQueueItem(record.id)}
                       />
                     ))}
                   </div>
@@ -109,9 +140,8 @@ function PatientItem({
 }) {
   return (
     <div
-      className={`p-2 rounded-md cursor-pointer transition-colors flex items-center gap-2 ${
-        isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
-      }`}
+      className={`p-2 rounded-md cursor-pointer transition-colors flex items-center gap-2 ${isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
+        }`}
       onClick={onSelect}
     >
       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
@@ -151,9 +181,8 @@ function RecordItem({
 
   return (
     <div
-      className={`p-2 rounded-md cursor-pointer transition-colors ${
-        isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
-      }`}
+      className={`p-2 rounded-md cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted border border-transparent"
+        }`}
       onClick={handleClick}
     >
       <div className="flex items-center gap-2">

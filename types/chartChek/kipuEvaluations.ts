@@ -169,7 +169,7 @@ export interface KipuPatientEvaluationItem {
 
 
 export interface KipuPatientEvaluation {
-  id: number;
+  id: string;
   name: string;
   status: string;
   patientCasefileId: string; // Must follow the regex pattern: ^[0-9]+\\:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$

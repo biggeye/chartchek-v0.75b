@@ -40,10 +40,9 @@ import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChatBubbleBottomCenterIcon } from '@heroicons/react/24/outline';
-import { useFacilityStore } from '@/store/facilityStore';
+import { useFacilityStore } from '@/store/patient/facilityStore';
 import { initializeStoreSubscriptions } from '@/store/storeInitializers';
 import { useSidebarStore } from '@/store/sidebarStore';
-import { PDFGeneratorListener } from '@/components/dynamicForms/PDFGeneratorListener';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingBar } from '@/components/ui/loading-bar';
 import Image from 'next/image';
@@ -267,7 +266,6 @@ export default function AppLayout({ children, user_id }: AppLayoutProps) {
         {children}
         <GlobalChat />
       </main>
-      <PDFGeneratorListener />
       <DebugPanel />
     </div>
 
