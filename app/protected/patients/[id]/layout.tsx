@@ -12,7 +12,7 @@ import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 import { PatientBreadcrumb } from "@/components/patient/PatientBreadcrumb";
 
 import { PatientVitalSign } from '@/types/chartChek/kipuAdapter';
-import { KipuPatientEvaluation, KipuEvaluationItem } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation, KipuEvaluationItem } from '@/types/chartChek/kipuAdapter';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ActiveTabType = 'overview' | 'evaluations' | 'appointments' | 'vitals' | 'orders' | 'treatmentPlan';

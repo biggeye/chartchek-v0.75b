@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
-import { KipuPatientEvaluation } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 
 export default function KipuPatientEvaluationsPage() {
   const { id: patientId } = useParams<{ id: string }>();

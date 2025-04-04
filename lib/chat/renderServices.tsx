@@ -1,5 +1,5 @@
 import React, { ReactNode, useMemo } from 'react';
-import type { ChatMessageAnnotation } from '@/types/database';
+import type { ChatMessageAnnotation } from '@/types/supabase';
 import { marked } from 'marked';
 
 interface ProcessedContent {

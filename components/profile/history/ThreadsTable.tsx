@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChatThread } from '@/types/database/index';
+import { ChatThread } from '@/types/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import ThreadDetailModal from './ThreadDetailModal';
 

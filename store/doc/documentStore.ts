@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
-import { Document, DocumentCategorization, DocumentStoreState } from '@/types/store/document';
+import { Document, DocumentCategorization, DocumentStoreState } from '@/types/store/doc/document';
 // Initialize Supabase client
 const supabase = createClient();
 

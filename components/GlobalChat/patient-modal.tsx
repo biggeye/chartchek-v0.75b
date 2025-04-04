@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useGlobalChatStore } from "@/store/chat/globalChatStore"
-import type { Patient, PatientRecord } from "@/types/store/globalChat"
+import type { Patient, PatientRecord } from "@/types/store/chat/globalChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, User, FileText } from "lucide-react"

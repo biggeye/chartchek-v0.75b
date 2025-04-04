@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import DocumentCategorizationForm from './DocumentCategorizationForm'
-import { DocumentCategorization } from '@/types/store/document'
+import { DocumentCategorization } from '@/types/store/doc/document'
 import { Transition } from '@headlessui/react'
 
 interface DocumentUploadDialogProps {

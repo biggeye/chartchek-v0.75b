@@ -1,8 +1,8 @@
 // hooks/useOpenAIResponse.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import openAIResponseService, { CreateResponseOptions } from '@/lib/openai/responseService';
-import { OpenAIResponse, OpenAIError } from '@/types/openai/responses';
+import openAIResponseService, { CreateResponseOptions } from '@/lib/ai/openai/responseService';
+import { OpenAIResponse, OpenAIError } from '@/types/chatChek/openAiAdapter';
 
 interface UseOpenAIResponseProps {
   initialOptions?: Partial<CreateResponseOptions>;

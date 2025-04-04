@@ -1,22 +1,8 @@
 // store/evaluationsStore.ts
 import { create } from 'zustand';
-import { KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
-import { KipuPatientEvaluationsResponse } from '@/types/chartChek/kipuAdapter';
+import { KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
+import { KipuEvaluationsState } from '@/types/store/patient/evaluations'
 
-interface KipuEvaluationsState {
-  // UI State
-  isLoadingEvaluations: boolean;
-  error: string | null;
-
-  // Patient Evaluations
-  patientEvaluations: KipuPatientEvaluation[];
-  selectedPatientEvaluation: KipuPatientEvaluation | null;
-
-  // Actions - Patient Evaluations
-  fetchPatientEvaluations: (patientId?: string, options?: any[]) => Promise<void>;
-  selectPatientEvaluation: (id: KipuPatientEvaluation) => Promise<KipuPatientEvaluation>;
-  clearSelectedPatientEvaluation: () => void;
-}
 
 export const useEvaluationsStore = create<KipuEvaluationsState>((set) => ({
   // Initial state

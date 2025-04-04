@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { Text } from '@/components/ui/text'
 import { renderContent } from '@/lib/chat/renderServices';
-import { MessageContent as MessageContentType, ChatMessageAnnotation } from '@/types/database'
+import { MessageContent as MessageContentType, ChatMessageAnnotation } from '@/types/supabase'
 
 interface MessageContentProps {
   content: MessageContentType | any

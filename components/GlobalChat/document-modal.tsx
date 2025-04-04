@@ -3,7 +3,7 @@
 
 import { useEffect } from "react"
 import { useGlobalChatStore } from "@/store/chat/globalChatStore"
-import { Document, ComplianceConcernType } from "@/types/database"
+import { Document, ComplianceConcernType } from "@/types/supabase"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, CheckCircle2, FileText, FileIcon as FilePdf, FileImage } from "lucide-react"

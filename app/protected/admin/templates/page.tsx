@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTemplateStore } from '@/store/doc/templateStore';
-import { ChartChekTemplate } from '@/types/store/templates';
+import { ChartChekTemplate } from '@/types/store/doc/templates';
 import { KipuEvaluation } from '@/types/chartChek/kipuAdapter';
 import TemplateEditor from './TemplateEditor';
 import { Button } from '@/components/ui/button';

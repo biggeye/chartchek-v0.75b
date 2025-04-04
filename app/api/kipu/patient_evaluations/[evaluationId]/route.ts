@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { kipuGetPatientEvaluation } from '@/lib/kipu/service/patient-evaluation-service';
-import { KipuEvaluation,KipuPatientEvaluation, KipuEvaluationItem} from '@/types/kipu/evaluations';
+import { KipuEvaluation,KipuPatientEvaluation, KipuEvaluationItem} from '@/types/chartChek/kipuAdapter';
 import { redis, getCachedData, cacheKeys, cacheTTL } from '@/utils/cache/redis';
 import { snakeToCamel } from '@/utils/case-converters';
 /**

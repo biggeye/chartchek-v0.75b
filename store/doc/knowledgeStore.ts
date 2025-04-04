@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createClient } from '@/utils/supabase/client';
 
-import { Corpus, KnowledgeDocument, KnowledgeDocumentMetadata, KnowledgeState, } from '@/types/store/knowledgeBase';
+import { Corpus, KnowledgeDocument, KnowledgeDocumentMetadata, KnowledgeState, } from '@/types/store/doc/knowledgeBase';
 // Utility functions outside the store to prevent recreation on each call
 const getSupabaseClient = (() => {
     let client: ReturnType<typeof createClient> | null = null;

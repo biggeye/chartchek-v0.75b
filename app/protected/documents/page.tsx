@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useDocumentStore } from '@/store/doc/documentStore'
-import { Document, DocumentCategorization } from '@/types/store/document'
+import { Document, DocumentCategorization } from '@/types/store/doc/document'
 import { Button } from '@/components/ui/button'
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog'
 import DocumentsTable from '@/components/documents/DocumentTable'

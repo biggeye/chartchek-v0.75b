@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { geminiCorpusService } from '@/lib/gemini/corpusService/';
 import { createServer } from '@/utils/supabase/server';
-import { Corpus } from '@/types/store/knowledgeBase';
+import { Corpus } from '@/types/store/doc/knowledgeBase';
 
 export async function GET() {
   const supabase = await createServer();

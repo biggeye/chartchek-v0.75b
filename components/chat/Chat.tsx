@@ -3,26 +3,13 @@
 import { useState, useEffect } from 'react';
 import { MessageList } from './MessageList';
 import RunStatusIndicator from './RunStatusIndicator';
-import { useLegacyChatStore } from '@/store/chat/legacyChatStore';
-import { useStreamStore } from '@/store/chat/streamStore';
+import { useGlobalChatStore } from '@/store/chat/globalChatStore';
 import { XCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import ToolCallDebugger from './ToolCallDebugger';
 
 export default function Chat() {
-  const { currentThread, createThread, sendMessage, setCurrentAssistantId, activeRunStatus, currentAssistantId } = useLegacyChatStore();
-  const {
-    currentStreamContent,
-    isStreamingActive,
-    streamError,
-    startStream,
-    cancelStream,
-    isFormProcessing,
-    currentFormKey,
-    formData,
-    toolCallsInProgress,
-    currentRunId
-  } = useStreamStore();
-
+  const { currentThread, createThread, setCurrentAssistantId, activeRunStatus, currentAssistantId } = useThreadStore();
+  const { sendMessage,  } = useGlobalChatStore();
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 

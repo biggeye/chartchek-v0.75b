@@ -1,7 +1,7 @@
 import { generateText, streamText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
-import type { Patient, PatientRecord, Document, QueueItem } from "@/types/store/globalChat"
+import type { Patient, PatientRecord, Document, QueueItem } from "@/types/store/chat/globalChat"
 
 // LLM Models
 export type LLMProvider = "openai" | "anthropic" | "gemini" | "assistants"

@@ -1,6 +1,6 @@
 'use client'
-import { Document as DBDocument } from "@/types/database";
-import { Document as StoreDocument } from "@/types/store/document";
+import { Document as DBDocument } from "@/types/supabase";
+import { Document as StoreDocument } from "@/types/store/doc/document";
 import { Input } from '@/components/ui/input';
 import { ArrowUpTrayIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';

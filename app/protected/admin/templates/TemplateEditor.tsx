@@ -6,12 +6,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { ChartChekTemplate, TemplateField } from '@/types/store/templates';
+import { ChartChekTemplate, TemplateField } from '@/types/store/doc/templates';
 import { KipuEvaluation } from '@/types/chartChek/kipuAdapter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react'; // Add icon for delete button
 import { adaptKipuEvaluationToTemplate } from '@/lib/kipu/mapping/kipuEvaluationAdapter';
-import { KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
+import { KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 
 interface TemplateEditorProps {
   template?: ChartChekTemplate;

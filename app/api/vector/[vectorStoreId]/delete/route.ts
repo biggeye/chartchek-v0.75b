@@ -42,7 +42,7 @@ Response
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServer } from '@/utils/supabase/server';
-import { getOpenAIClient } from '@/utils/openai/server'
+import { getOpenAIClient } from '@/utils/ai/openai/server'
 ;
 
 const openai = getOpenAIClient()

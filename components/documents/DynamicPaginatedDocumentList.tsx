@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { Document } from '@/types/store/document'
+import { Document } from '@/types/store/doc/document'
 import Image from 'next/image'
 
 interface DynamicPaginatedDocumentListProps {

@@ -1,14 +1,14 @@
 'use client';
 
 import { create } from 'zustand';
-import { PatientStore, PatientContextOptions, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient';
+import { PatientStore, PatientContextOptions, DEFAULT_PATIENT_CONTEXT_OPTIONS } from '@/types/store/patient/patient';
 import { PatientBasicInfo, PatientVitalSign, KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 import { createClient } from '@/utils/supabase/client';
 import { parsePatientId } from '@/lib/kipu/auth/config';
 import { useEvaluationsStore } from './evaluationsStore';
 
 // Import the evaluation type for conversion
-import { KipuPatientEvaluation as KipuPatientEvaluationDetailed } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluation as KipuPatientEvaluationDetailed } from '@/types/chartChek/kipuAdapter';
 
 // Initialize Supabase client
 const supabase = createClient();

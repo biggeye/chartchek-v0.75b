@@ -6,7 +6,7 @@ import { useEvaluationsStore } from '@/store/patient/evaluationsStore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/kipuEvaluations';
+import { KipuPatientEvaluationItem, KipuPatientEvaluation } from '@/types/chartChek/kipuAdapter';
 import { DocumentView } from '@/lib/DocumentView';
 
 export default function EvaluationDetailPage() {

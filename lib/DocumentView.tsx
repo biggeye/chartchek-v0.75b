@@ -3,7 +3,7 @@
 
 import { useKnowledgeStore } from "@/store/doc/knowledgeStore";
 import { evaluationFieldComponents, MatrixField, extractContent } from "@/components/dynamicForms/PatientEvaluationItems";
-import { KipuPatientEvaluationItem } from "@/types/chartChek/kipuEvaluations";
+import { KipuPatientEvaluationItem } from "@/types/chartChek/kipuAdapter";
 
 interface DocumentViewer extends Document {
   content: string;

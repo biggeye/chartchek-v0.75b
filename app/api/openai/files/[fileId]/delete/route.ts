@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenAIClient } from '@/utils/openai/server'
+import { getOpenAIClient } from '@/utils/ai/openai/server'
 
 
 export async function DELETE(request: NextRequest) {

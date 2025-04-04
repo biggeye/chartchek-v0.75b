@@ -5,7 +5,7 @@ import {
 } from '@/lib/kipu/service/patient-evaluation-service';
 import { serverLoadKipuCredentialsFromSupabase } from '@/lib/kipu/auth/server';
 import { parsePatientId } from '@/lib/kipu/auth/config';
-import { KipuPatientEvaluationsResponse } from '@/types/kipu/evaluations';
+import { KipuPatientEvaluationsResponse } from '@/types/chartChek/kipuAdapter';
 import { snakeToCamel } from '@/utils/case-converters';
 // Add this near the top of the file, after the imports
 interface KipuEvaluationResponse {

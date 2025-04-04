@@ -3,7 +3,7 @@
 import React, { useState, useEffect, FormEvent, Fragment } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { ChatThread } from '@/types/database'
+import { ChatThread } from '@/types/supabase'
 import { ThreadRun } from '@/types/store/stream'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'

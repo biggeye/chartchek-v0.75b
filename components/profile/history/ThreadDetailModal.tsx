@@ -3,7 +3,7 @@
 import React from 'react';
 import DetailModal from '../../ui/detail-modal';
 import DetailField from '../../ui/detail-field';
-import { ChatThread } from '@/types/database';
+import { ChatThread } from '@/types/supabase';
 import { format } from 'date-fns';
 
 interface ThreadDetailModalProps {

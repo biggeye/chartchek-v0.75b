@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { DocumentCategorization } from '@/types/store/document'
+import { DocumentCategorization } from '@/types/store/doc/document'
 import { Label } from '@/components/ui/label'
 import { 
   Select,

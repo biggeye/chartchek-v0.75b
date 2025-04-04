@@ -4,12 +4,10 @@ import { DocumentTextIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/2
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useLegacyChatStore } from '@/store/chat/legacyChatStore';
 import Image from 'next/image';
-import { assistantRoster } from '@/lib/assistant/roster';
-import { useStreamStore } from '@/store/chat/streamStore';
+import { assistantRoster } from '@/lib/ai/openai/roster';
 import { renderContent as renderFormattedContent } from '@/lib/chat/renderServices';
-import { ChatMessageAnnotation, ThreadMessage } from '@/types/database';
+import { ChatMessageAnnotation, ThreadMessage } from '@/types/supabase';
 
 interface MessageListProps {
   isAssistantLoading?: boolean;
@@ -22,7 +20,7 @@ export const MessageList = React.memo(({
   isStreamingActive,
   streamingContent
 }: MessageListProps) => {
-  const { currentThread, fetchOpenAIMessages, error, setError } = useLegacyChatStore();
+
   
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +28,6 @@ export const MessageList = React.memo(({
   const [fadeOutActive, setFadeOutActive] = useState(false);
   const [previousStreamContent, setPreviousStreamContent] = useState<string | null>(null);
 
-  const pdfUrl = useStreamStore(state => state.pdfPreviewUrl);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get messages from the current thread

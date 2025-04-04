@@ -1,6 +1,6 @@
 // store/templateStore.ts
 import { create } from 'zustand';
-import { ChartChekTemplate } from '@/types/store/templates';
+import { ChartChekTemplate } from '@/types/store/doc/templates';
 import { KipuEvaluation, KipuEvaluationItemObject } from '@/types/chartChek/kipuAdapter';
 
 interface TemplateState {

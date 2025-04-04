@@ -1,7 +1,7 @@
 // api/vector/[vectorStoreId]/files/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenAIClient } from '@/utils/openai/server';
+import { getOpenAIClient } from '@/utils/ai/openai/server';
 
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);

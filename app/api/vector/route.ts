@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '@/utils/openai/server'
+import { getOpenAIClient } from '@/utils/ai/openai/server'
 ;
 import { createServer } from '@/utils/supabase/server';
 

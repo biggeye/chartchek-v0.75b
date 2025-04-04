@@ -28,10 +28,10 @@ import ModelSelector from "./model-selector"
 import TrainingSelector from "./training-selector"
 import { useGlobalChatStore } from "@/store/chat/globalChatStore"
 import { useFacilityStore } from "@/store/patient/facilityStore"
-import { assistantAdditionalStream } from "@/lib/openai/assistantService"
+
 // Import the hook and types from the original GlobalChat component
 import { useOpenAIResponse } from '@/hooks/useOpenAIResponse';
-import { OutputTextContent, ReasoningOutput } from '@/types/openai/responses';
+import { OutputTextContent } from '@/types/chatChek/openAiAdapter';
 // Add keyframes for slide-up animation
 const slideUpKeyframes = `
   @keyframes slideUp {
@@ -60,17 +60,17 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
   const [isVisible, setIsVisible] = useState(true)
 
   const { currentFacilityId } = useFacilityStore();
-  
+
   const {
     queueItems,
     deselectQueueItem,
     currentMessage,
     setCurrentMessage,
-    sendMessage,
+    setIsGenerating,
     isGenerating,
     isFullScreen,
     toggleFullScreen,
-    assistantId
+    sendMessage
   } = useGlobalChatStore()
 
   const queueRef = useRef<HTMLDivElement>(null)
@@ -88,17 +88,40 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
     }
   }, [])
 
-  const handleSend = () => {
-    if (currentMessage.trim()) {
-      sendMessage()
-      assistantAdditionalStream(assistantId, currentMessage)
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsGenerating(true);
+    if (!currentMessage.trim()) return;
+
+    const userMessage = { role: 'user' as const, content: currentMessage };
+   
+// temporary hard-code:
+    const dataset = 'tjc';
+    const provider = 'google';
+    const model = 'gemini-2.0-flash-001'
+
+    try {
+      setMessages(prev => [...prev, userMessage]);
+      const chatResponse = await sendMessage();
+
+    } catch (error) {
+      console.error('Error getting Gemini response:', error);
+      // Add error message with explicit type
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: 'Sorry, I encountered an error processing your request.'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
     }
   }
 
@@ -182,37 +205,7 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleOpenAIChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    if (!currentMessage.trim()) return;
-
-    // Add user message
-    const userMessage = { role: 'user' as const, content: currentMessage };
-    setMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-
-    // Get conversation history
-    const conversationHistory = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    const sentToAssistant = assistantAdditionalStream(assistantId, currentMessage);
-    // Stream the response
-    streamResponse({
-      model: 'gpt-4o',
-      input: [
-        ...conversationHistory.map(msg => ({
-          type: msg.role,
-          text: msg.content
-        })),
-        {
-          type: 'user',
-          text: userMessage.content
-        }
-      ],
-    });
-  };
   // --- END INTEGRATED GLOBAL CHAT LOGIC ---
 
   return (
@@ -416,7 +409,7 @@ export default function MasterGlobalChat() { // Renamed to avoid conflicts
 
                 {/* Send Button - directly attached to input */}
                 <Button
-                  onClick={handleOpenAIChatSubmit} // Changed to the new handler
+                  onClick={handleSubmit} // Changed to the new handler
                   size="icon"
                   className="rounded-full h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 mr-2"
                   disabled={isGenerating || !currentMessage.trim()}
